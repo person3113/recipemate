@@ -8,7 +8,19 @@
 - Clean: `./gradlew clean`
 
 ## Technology Stack
-Spring Boot 3.5.7, Java 21, JPA, Lombok, QueryDSL, H2 (dev), PostgreSQL (prod), Spring Security, Thymeleaf
+**Backend**: Spring Boot 3.5.7, Java 21, JPA, Lombok, QueryDSL, Spring Security
+**Database**: H2 (dev), PostgreSQL 16 (prod)
+**Frontend**: Thymeleaf, Bootstrap (CDN), htmx (primary), Alpine.js (secondary), Vanilla JS
+**Cache**: Redis (session, cache - when needed)
+**Container**: Docker, Docker Compose
+**Reverse Proxy**: Nginx
+
+## Frontend Approach
+- **htmx**: Primary tool for AJAX - server returns HTML fragments, htmx swaps them into DOM
+- **Alpine.js**: Client-side interactivity without server calls (dropdowns, modals, toggles)
+- **Thymeleaf**: Server-side rendering for initial page load
+- **Bootstrap**: Styling via CDN
+- **Vanilla JS**: Only when htmx/Alpine.js insufficient
 
 ## Code Style & Conventions
 - Package structure: `com.recipemate.{domain}.{layer}` (e.g., `com.recipemate.user.service`)
@@ -26,3 +38,26 @@ Spring Boot 3.5.7, Java 21, JPA, Lombok, QueryDSL, H2 (dev), PostgreSQL (prod), 
 - Use Korean for error messages and validation messages
 - Follow TDD: write tests before implementation (Red → Green → Refactor)
 - Agile approach: start simple, iterate, improve incrementally
+
+## Development Methodology
+- **TDD (Test-Driven Development)**:
+  1. Red: Write failing test first
+  2. Green: Write minimum code to pass test
+  3. Refactor: Improve code while keeping tests passing
+- **DDD (Domain-Driven Design)**: Design using domain language, evolve rich domain models
+- **Agile**: 
+  - Start simple, add complexity later
+  - Core features first, additional features later
+  - Avoid premature perfection - make it work, then improve
+  - Iterative improvement: simple version → core features → details → optimization
+
+## Testing Strategy
+- Unit tests: Domain service level
+- Integration tests: Repository, Controller level
+- E2E tests: Main flows only (optional)
+- When refactoring: update tests first, then refactor code
+
+## Performance & Optimization
+- Pagination: Offset-based (initial implementation)
+- Caching: Redis for API responses, frequently accessed data
+- Indexing: Add on FKs and search fields as needed

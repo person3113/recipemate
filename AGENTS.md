@@ -23,7 +23,7 @@
 - **Vanilla JS**: Only when htmx/Alpine.js insufficient
 
 ## Code Style & Conventions
-- Package structure: `com.recipemate.{domain}.{layer}` (e.g., `com.recipemate.user.service`)
+- Package structure: `com.recipemate.domain.{domain}.{layer}` (e.g., `com.recipemate.domain.user.service`)
 - Global utilities in `com.recipemate.global.{common,exception,config}`
 - Use Lombok annotations: `@Getter`, `@AllArgsConstructor(access = AccessLevel.PRIVATE)` for DTOs
 - Entities extend `BaseEntity` for audit fields (createdAt, updatedAt, deletedAt)
@@ -41,15 +41,15 @@
 
 ## Development Methodology
 - **TDD (Test-Driven Development)**:
-  1. Red: Write failing test first
-  2. Green: Write minimum code to pass test
-  3. Refactor: Improve code while keeping tests passing
+    1. Red: Write failing test first
+    2. Green: Write minimum code to pass test
+    3. Refactor: Improve code while keeping tests passing
 - **DDD (Domain-Driven Design)**: Design using domain language, evolve rich domain models
-- **Agile**: 
-  - Start simple, add complexity later
-  - Core features first, additional features later
-  - Avoid premature perfection - make it work, then improve
-  - Iterative improvement: simple version → core features → details → optimization
+- **Agile**:
+    - Start simple, add complexity later
+    - Core features first, additional features later
+    - Avoid premature perfection - make it work, then improve
+    - Iterative improvement: simple version → core features → details → optimization
 
 ## Testing Strategy
 - Unit tests: Domain service level

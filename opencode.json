@@ -1,0 +1,12 @@
+{
+  "instructions": [
+    "./docs/GUIDELINE.md",
+    "./docs/references/DEVELOPMENT_TASKS.md",
+    "./docs/references/BACKLOG.md",
+    "./docs/references/PROJECT_PLAN.md",
+    "./docs/references/FEATURE.md",
+    "./docs/references/ENTITY.md",
+    "./docs/references/URL_DESIGN.md"
+  ],
+  "$schema": "https://opencode.ai/config.json"
+}

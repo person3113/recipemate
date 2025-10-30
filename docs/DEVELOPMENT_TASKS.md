@@ -155,15 +155,15 @@
   - `findByRecipeApiId(String recipeApiId)`
   - 페이징 쿼리 메서드
 
-#### [ ] Task 1-3-2: GroupBuyImage 엔티티 작성
-- [ ] 테스트 작성
+#### [x] Task 1-3-2: GroupBuyImage 엔티티 작성
+- [x] 테스트 작성
   - 같은 공구 내 displayOrder 중복 불가
   - 최대 3장 제한 (Application Layer)
-- [ ] GroupBuyImage 엔티티 구현
+- [x] GroupBuyImage 엔티티 구현
   - 필드: id, groupBuy(FK), imageUrl, displayOrder
   - 제약조건: UNIQUE(groupBuyId, displayOrder)
   - orphanRemoval = true
-- [ ] GroupBuyImageRepository 작성
+- [x] GroupBuyImageRepository 작성
   - `findByGroupBuyIdOrderByDisplayOrderAsc(Long groupBuyId)`
 
 #### [ ] Task 1-3-3: 공구 생성 기능 (일반 공구)

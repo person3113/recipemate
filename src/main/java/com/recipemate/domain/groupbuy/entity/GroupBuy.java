@@ -7,10 +7,14 @@ import com.recipemate.global.common.GroupBuyStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "group_buys", indexes = {
@@ -20,6 +24,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_groupbuy_host_id", columnList = "host_id")
 })
 @Getter
+@SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class GroupBuy extends BaseEntity {
@@ -32,8 +37,9 @@ public class GroupBuy extends BaseEntity {
     @JoinColumn(name = "host_id", nullable = false, foreignKey = @ForeignKey(name = "fk_groupbuy_host"))
     private User host;
 
+    @Builder.Default
     @Version
-    private Long version;
+    private Long version = 0L;
 
     @Column(nullable = false, length = 100)
     private String title;
@@ -50,15 +56,17 @@ public class GroupBuy extends BaseEntity {
     @Column(nullable = false)
     private Integer targetHeadcount;
 
+    @Builder.Default
     @Column(nullable = false)
-    private Integer currentHeadcount;
+    private Integer currentHeadcount = 0;
 
     @Column(nullable = false)
     private LocalDateTime deadline;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private DeliveryMethod deliveryMethod;
+    private DeliveryMethod deliveryMethod = DeliveryMethod.BOTH;
 
     @Column(length = 200)
     private String meetupLocation;
@@ -66,12 +74,14 @@ public class GroupBuy extends BaseEntity {
     @Column
     private Integer parcelFee;
 
+    @Builder.Default
     @Column(nullable = false)
-    private Boolean participantListPublic;
+    private Boolean isParticipantListPublic = false;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private GroupBuyStatus status;
+    private GroupBuyStatus status = GroupBuyStatus.RECRUITING;
 
     @Column(length = 100)
     private String recipeApiId;
@@ -82,143 +92,80 @@ public class GroupBuy extends BaseEntity {
     @Column(length = 500)
     private String recipeImageUrl;
 
-    public static GroupBuy createGeneral(
-            User host,
-            String title,
-            String content,
-            String category,
-            Integer totalPrice,
-            Integer targetHeadcount,
-            LocalDateTime deadline,
-            DeliveryMethod deliveryMethod,
-            String meetupLocation,
-            Integer parcelFee,
-            Boolean participantListPublic
-    ) {
-        validateCreation(totalPrice, targetHeadcount, deadline);
+    @Builder.Default
+    @OneToMany(mappedBy = "groupBuy", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("displayOrder asc")
+    private List<GroupBuyImage> images = new ArrayList<>();
 
-        return new GroupBuy(
-                null,
-                host,
-                0L,
-                title,
-                content,
-                category,
-                totalPrice,
-                targetHeadcount,
-                0,
-                deadline,
-                deliveryMethod,
-                meetupLocation,
-                parcelFee,
-                participantListPublic,
-                GroupBuyStatus.RECRUITING,
-                null,
-                null,
-                null
-        );
+    //== 생성 메서드 ==//
+    public static GroupBuy createGeneral(
+        User host, String title, String content, String category, Integer totalPrice,
+        Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
+        String meetupLocation, Integer parcelFee, boolean isParticipantListPublic
+    ) {
+        validateCreateArgs(totalPrice, targetHeadcount, deadline);
+        return GroupBuy.builder()
+            .host(host)
+            .title(title)
+            .content(content)
+            .category(category)
+            .totalPrice(totalPrice)
+            .targetHeadcount(targetHeadcount)
+            .currentHeadcount(0)
+            .deadline(deadline)
+            .deliveryMethod(deliveryMethod)
+            .meetupLocation(meetupLocation)
+            .parcelFee(parcelFee)
+            .isParticipantListPublic(isParticipantListPublic)
+            .status(GroupBuyStatus.RECRUITING)
+            .build();
     }
 
     public static GroupBuy createRecipeBased(
-            User host,
-            String title,
-            String content,
-            String category,
-            Integer totalPrice,
-            Integer targetHeadcount,
-            LocalDateTime deadline,
-            DeliveryMethod deliveryMethod,
-            String meetupLocation,
-            Integer parcelFee,
-            Boolean participantListPublic,
-            String recipeApiId,
-            String recipeName,
-            String recipeImageUrl
+        User host, String title, String content, String category, Integer totalPrice,
+        Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
+        String meetupLocation, Integer parcelFee, boolean isParticipantListPublic,
+        String recipeApiId, String recipeName, String recipeImageUrl
     ) {
-        validateCreation(totalPrice, targetHeadcount, deadline);
-
-        return new GroupBuy(
-                null,
-                host,
-                0L,
-                title,
-                content,
-                category,
-                totalPrice,
-                targetHeadcount,
-                0,
-                deadline,
-                deliveryMethod,
-                meetupLocation,
-                parcelFee,
-                participantListPublic,
-                GroupBuyStatus.RECRUITING,
-                recipeApiId,
-                recipeName,
-                recipeImageUrl
-        );
+        validateCreateArgs(totalPrice, targetHeadcount, deadline);
+        return GroupBuy.builder()
+            .host(host)
+            .title(title)
+            .content(content)
+            .category(category)
+            .totalPrice(totalPrice)
+            .targetHeadcount(targetHeadcount)
+            .currentHeadcount(0)
+            .deadline(deadline)
+            .deliveryMethod(deliveryMethod)
+            .meetupLocation(meetupLocation)
+            .parcelFee(parcelFee)
+            .isParticipantListPublic(isParticipantListPublic)
+            .status(GroupBuyStatus.RECRUITING)
+            .recipeApiId(recipeApiId)
+            .recipeName(recipeName)
+            .recipeImageUrl(recipeImageUrl)
+            .build();
     }
 
-    private static void validateCreation(Integer totalPrice, Integer targetHeadcount, LocalDateTime deadline) {
-        if (totalPrice < 0) {
-            throw new IllegalArgumentException("총 금액은 0원 이상이어야 합니다");
-        }
-        if (targetHeadcount < 2) {
-            throw new IllegalArgumentException("목표 인원은 2명 이상이어야 합니다");
-        }
-        if (deadline.isBefore(LocalDateTime.now())) {
+    private static void validateCreateArgs(Integer totalPrice, Integer targetHeadcount, LocalDateTime deadline) {
+        if (deadline == null || !deadline.isAfter(LocalDateTime.now())) {
             throw new IllegalArgumentException("마감일은 현재보다 이후여야 합니다");
         }
-    }
-
-    public void increaseParticipant() {
-        if (currentHeadcount >= targetHeadcount) {
-            throw new IllegalStateException("목표 인원에 도달했습니다");
+        if (targetHeadcount == null || targetHeadcount < 2) {
+            throw new IllegalArgumentException("목표 인원은 2명 이상이어야 합니다");
         }
-        this.currentHeadcount++;
-    }
-
-    public void decreaseParticipant() {
-        if (currentHeadcount <= 0) {
-            throw new IllegalStateException("참여 인원이 0명입니다");
+        if (totalPrice == null || totalPrice < 0) {
+            throw new IllegalArgumentException("총 금액은 0원 이상이어야 합니다");
         }
-        this.currentHeadcount--;
     }
 
-    public boolean isTargetReached() {
-        return currentHeadcount >= targetHeadcount;
-    }
-
-    public void close() {
-        this.status = GroupBuyStatus.CLOSED;
-    }
-
-    public void markAsImminent() {
-        this.status = GroupBuyStatus.IMMINENT;
-    }
-
+    //== 수정 메서드 ==//
     public void update(
-            String title,
-            String content,
-            String category,
-            Integer totalPrice,
-            Integer targetHeadcount,
-            LocalDateTime deadline,
-            DeliveryMethod deliveryMethod,
-            String meetupLocation,
-            Integer parcelFee,
-            Boolean participantListPublic
+        String title, String content, String category, Integer totalPrice,
+        Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
+        String meetupLocation, Integer parcelFee, boolean isParticipantListPublic
     ) {
-        if (totalPrice < 0) {
-            throw new IllegalArgumentException("총 금액은 0원 이상이어야 합니다");
-        }
-        if (targetHeadcount < 2) {
-            throw new IllegalArgumentException("목표 인원은 2명 이상이어야 합니다");
-        }
-        if (deadline.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("마감일은 현재보다 이후여야 합니다");
-        }
-
         this.title = title;
         this.content = content;
         this.category = category;
@@ -228,7 +175,36 @@ public class GroupBuy extends BaseEntity {
         this.deliveryMethod = deliveryMethod;
         this.meetupLocation = meetupLocation;
         this.parcelFee = parcelFee;
-        this.participantListPublic = participantListPublic;
+        this.isParticipantListPublic = isParticipantListPublic;
+    }
+
+    //== 비즈니스 로직 ==//
+    public void increaseParticipant() {
+        if (this.currentHeadcount + 1 > this.targetHeadcount) {
+            throw new IllegalStateException("목표 인원에 도달했습니다.");
+        }
+        this.currentHeadcount++;
+    }
+
+    public void decreaseParticipant() {
+        if (this.currentHeadcount <= 0) {
+            throw new IllegalStateException("참여 인원이 1명(주최자)입니다.");
+        }
+        this.currentHeadcount--;
+    }
+
+    public boolean isTargetReached() {
+        return this.currentHeadcount >= this.targetHeadcount;
+    }
+
+    public void close() {
+        this.status = GroupBuyStatus.CLOSED;
+    }
+
+    public void markAsImminent() {
+        if (this.status == GroupBuyStatus.RECRUITING) {
+            this.status = GroupBuyStatus.IMMINENT;
+        }
     }
 
     public boolean isHost(User user) {
@@ -236,10 +212,14 @@ public class GroupBuy extends BaseEntity {
     }
 
     public boolean canParticipate() {
-        return status == GroupBuyStatus.RECRUITING && !isTargetReached();
+        return this.status == GroupBuyStatus.RECRUITING && !isTargetReached();
     }
 
     public boolean isRecipeBased() {
-        return recipeApiId != null;
+        return this.recipeApiId != null;
+    }
+
+    public Boolean getParticipantListPublic() {
+        return isParticipantListPublic;
     }
 }

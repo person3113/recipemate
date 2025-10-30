@@ -13,7 +13,7 @@ import java.util.List;
 
 public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long> {
 
-    List<GroupBuy> findByStatusOrderByDeadlineAsc(GroupBuyStatus status);
+    Page<GroupBuy> findByStatusOrderByDeadlineAsc(GroupBuyStatus status, Pageable pageable);
 
     Page<GroupBuy> findByStatus(GroupBuyStatus status, Pageable pageable);
 

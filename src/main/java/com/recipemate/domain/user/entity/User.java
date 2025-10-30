@@ -7,8 +7,10 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "users", indexes = {
@@ -18,6 +20,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+@SuperBuilder
 public class User extends BaseEntity {
 
     @Id
@@ -41,8 +44,9 @@ public class User extends BaseEntity {
     @Column(length = 500)
     private String profileImageUrl;
 
+    @Builder.Default
     @Column(nullable = false)
-    private Double mannerTemperature;
+    private Double mannerTemperature = 36.5;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

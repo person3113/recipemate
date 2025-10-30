@@ -139,17 +139,17 @@
 
 ### 1.3. 공동구매 핵심 기능 (GroupBuy Domain)
 
-#### [ ] Task 1-3-1: GroupBuy 엔티티 작성
-- [ ] 테스트 작성 (GroupBuyTest.java)
+#### [x] Task 1-3-1: GroupBuy 엔티티 작성
+- [x] 테스트 작성 (GroupBuyTest.java)
   - 현재 인원이 목표 인원 초과 불가
   - 마감일이 생성일보다 이후인지 확인
   - 낙관적 락 버전 관리 확인
-- [ ] GroupBuy 엔티티 구현
+- [x] GroupBuy 엔티티 구현
   - 필드: id, host(User FK), version, title, content, category, totalPrice, targetHeadcount, currentHeadcount, deadline, deliveryMethod, meetupLocation, parcelFee, isParticipantListPublic, status, recipeApiId, recipeName, recipeImageUrl
   - 인덱스: status+deadline, recipeApiId, category, hostId
   - 제약조건: CHECK (currentHeadcount <= targetHeadcount)
   - `@Version` 필드 (낙관적 락)
-- [ ] GroupBuyRepository 인터페이스 작성
+- [x] GroupBuyRepository 인터페이스 작성
   - `findByStatusOrderByDeadlineAsc(GroupBuyStatus status)`
   - `findByHostId(Long hostId)`
   - `findByRecipeApiId(String recipeApiId)`

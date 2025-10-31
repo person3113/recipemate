@@ -17,6 +17,9 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -78,6 +81,40 @@ public class ParticipationService {
         // 10. 목표 인원 도달 시 공구 상태를 CLOSED로 변경
         if (groupBuy.isTargetReached()) {
             groupBuy.close();
+        }
+    }
+
+    @Transactional
+    @Retryable(
+        retryFor = ObjectOptimisticLockingFailureException.class,
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 100)
+    )
+    public void cancelParticipation(Long userId, Long groupBuyId) {
+        // 1. 참여 기록 조회
+        Participation participation = participationRepository.findByUserIdAndGroupBuyId(userId, groupBuyId)
+            .orElseThrow(() -> new CustomException(ErrorCode.PARTICIPATION_NOT_FOUND));
+
+        // 2. 공구 조회
+        GroupBuy groupBuy = groupBuyRepository.findById(groupBuyId)
+            .orElseThrow(() -> new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
+
+        // 3. 마감 1일 전 취소 제한 검증
+        LocalDateTime now = LocalDateTime.now();
+        long hoursUntilDeadline = ChronoUnit.HOURS.between(now, groupBuy.getDeadline());
+        if (hoursUntilDeadline < 24) {
+            throw new CustomException(ErrorCode.CANCELLATION_DEADLINE_PASSED);
+        }
+
+        // 4. 참여 기록 삭제
+        participationRepository.delete(participation);
+
+        // 5. 공구 참여 인원 감소
+        groupBuy.decreaseParticipant();
+
+        // 6. CLOSED 상태였다면 RECRUITING으로 재개
+        if (groupBuy.getStatus() == GroupBuyStatus.CLOSED && !groupBuy.isTargetReached()) {
+            groupBuy.reopen();
         }
     }
 }

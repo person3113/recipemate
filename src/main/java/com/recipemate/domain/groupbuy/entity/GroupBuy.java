@@ -196,7 +196,7 @@ public class GroupBuy extends BaseEntity {
 
     public void decreaseParticipant() {
         if (this.currentHeadcount <= 0) {
-            throw new IllegalStateException("참여 인원이 1명(주최자)입니다.");
+            throw new IllegalStateException("참여 인원이 0명입니다.");
         }
         this.currentHeadcount--;
     }
@@ -207,6 +207,12 @@ public class GroupBuy extends BaseEntity {
 
     public void close() {
         this.status = GroupBuyStatus.CLOSED;
+    }
+
+    public void reopen() {
+        if (this.status == GroupBuyStatus.CLOSED) {
+            this.status = GroupBuyStatus.RECRUITING;
+        }
     }
 
     public void markAsImminent() {

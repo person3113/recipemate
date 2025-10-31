@@ -262,16 +262,16 @@
   - `POST /group-purchases/{purchaseId}/participate`
   - 요청 DTO: ParticipateRequest (selectedDeliveryMethod, quantity)
 
-#### [ ] Task 1-4-3: 공구 참여 취소 기능
-- [ ] 테스트 작성
+#### [x] Task 1-4-3: 공구 참여 취소 기능
+- [x] 테스트 작성
   - 취소 성공 시 currentHeadcount 감소
   - 마감 1일 전 취소 제한 (비즈니스 로직)
   - 참여하지 않은 공구 취소 불가
-- [ ] ParticipationService 구현
+- [x] ParticipationService 구현
   - `cancelParticipation(Long userId, Long purchaseId)`
   - currentHeadcount-- (트랜잭션)
   - 마감일 확인 로직
-- [ ] GroupBuyController 구현
+- [x] GroupBuyController 구현
   - `DELETE /group-purchases/{purchaseId}/participate`
 
 #### [ ] Task 1-4-4: 참여자 목록 조회 기능

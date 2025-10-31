@@ -142,4 +142,22 @@ public class GroupBuyController {
         participationService.participate(user.getId(), purchaseId, request);
         return ApiResponse.success(null);
     }
+
+    /**
+     * 공구 참여 취소
+     * @param userDetails 인증된 사용자
+     * @param purchaseId 공구 ID
+     */
+    @DeleteMapping("/{purchaseId}/participate")
+    public ApiResponse<Void> cancelParticipation(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @PathVariable Long purchaseId
+    ) {
+        // 이메일로 사용자 조회
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        participationService.cancelParticipation(user.getId(), purchaseId);
+        return ApiResponse.success(null);
+    }
 }

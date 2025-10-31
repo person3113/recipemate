@@ -129,7 +129,7 @@ class GroupBuyTest {
         // when & then
         assertThatThrownBy(groupBuy::decreaseParticipant)
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("참여 인원이 1명(주최자)입니다");
+                .hasMessageContaining("참여 인원이 0명입니다");
     }
 
     @Test

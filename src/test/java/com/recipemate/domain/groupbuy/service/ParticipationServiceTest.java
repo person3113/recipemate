@@ -228,4 +228,69 @@ class ParticipationServiceTest {
         assertThat(updatedGroupBuy.getCurrentHeadcount()).isEqualTo(5);
         assertThat(updatedGroupBuy.getStatus()).isEqualTo(GroupBuyStatus.CLOSED);
     }
+
+    @Test
+    @DisplayName("참여 취소 성공 - currentHeadcount 감소 확인")
+    void cancelParticipation_Success_DecrementsCurrentHeadcount() {
+        // given
+        ParticipateRequest request = ParticipateRequest.builder()
+            .selectedDeliveryMethod(DeliveryMethod.DIRECT)
+            .quantity(1)
+            .build();
+        participationService.participate(participant.getId(), groupBuy.getId(), request);
+
+        // when
+        participationService.cancelParticipation(participant.getId(), groupBuy.getId());
+
+        // then
+        GroupBuy updatedGroupBuy = groupBuyRepository.findById(groupBuy.getId()).orElseThrow();
+        assertThat(updatedGroupBuy.getCurrentHeadcount()).isEqualTo(0);
+
+        boolean exists = participationRepository.existsByUserIdAndGroupBuyId(participant.getId(), groupBuy.getId());
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    @DisplayName("참여 취소 실패 - 참여하지 않은 공구 취소 불가")
+    void cancelParticipation_Fail_NotParticipated() {
+        // given - 참여하지 않은 상태
+
+        // when & then
+        assertThatThrownBy(() -> participationService.cancelParticipation(participant.getId(), groupBuy.getId()))
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining("참여하지 않은 공동구매입니다");
+    }
+
+    @Test
+    @DisplayName("참여 취소 실패 - 마감 1일 전 취소 제한")
+    void cancelParticipation_Fail_DeadlineLessThanOneDay() {
+        // given
+        // 마감일이 내일인 공구 생성
+        GroupBuy imminentGroupBuy = GroupBuy.createGeneral(
+            host,
+            "내일 마감 공구",
+            "테스트 내용",
+            "식재료",
+            50000,
+            5,
+            LocalDateTime.now().plusHours(20), // 20시간 후 마감 (1일 미만)
+            DeliveryMethod.BOTH,
+            "서울역",
+            3000,
+            true
+        );
+        groupBuyRepository.save(imminentGroupBuy);
+
+        // 참여
+        ParticipateRequest request = ParticipateRequest.builder()
+            .selectedDeliveryMethod(DeliveryMethod.DIRECT)
+            .quantity(1)
+            .build();
+        participationService.participate(participant.getId(), imminentGroupBuy.getId(), request);
+
+        // when & then
+        assertThatThrownBy(() -> participationService.cancelParticipation(participant.getId(), imminentGroupBuy.getId()))
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining("마감 1일 전에는 참여를 취소할 수 없습니다");
+    }
 }

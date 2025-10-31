@@ -425,14 +425,14 @@
 
 ### 2.3. 찜 기능 (Wishlist Domain)
 
-#### [ ] Task 2-3-1: Wishlist 엔티티 작성
-- [ ] 테스트 작성
+#### [x] Task 2-3-1: Wishlist 엔티티 작성
+- [x] 테스트 작성
   - 중복 찜 방지 (user + groupBuy 유니크)
-- [ ] Wishlist 엔티티 구현
+- [x] Wishlist 엔티티 구현
   - 필드: id, user(FK), groupBuy(FK), wishedAt
   - 제약조건: UNIQUE(userId, groupBuyId)
   - 인덱스: userId+wishedAt, groupBuyId
-- [ ] WishlistRepository 작성
+- [x] WishlistRepository 작성
   - `findByUserIdAndGroupBuyId(Long userId, Long groupBuyId)`
   - `findByUserIdOrderByWishedAtDesc(Long userId, Pageable pageable)`
 

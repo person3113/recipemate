@@ -57,7 +57,7 @@ class GroupBuyTest {
         assertThat(groupBuy.getCurrentHeadcount()).isEqualTo(0);
         assertThat(groupBuy.getStatus()).isEqualTo(GroupBuyStatus.RECRUITING);
         assertThat(groupBuy.getRecipeApiId()).isNull();
-        assertThat(groupBuy.getVersion()).isEqualTo(0L);
+        assertThat(groupBuy.getVersion()).isNull(); // version은 새 엔티티에서 null이어야 함
     }
 
     @Test

@@ -39,9 +39,8 @@ public class GroupBuy extends BaseEntity {
     @JoinColumn(name = "host_id", nullable = false, foreignKey = @ForeignKey(name = "fk_groupbuy_host"))
     private User host;
 
-    @Builder.Default
     @Version
-    private Long version = 0L;
+    private Long version;
 
     @Column(nullable = false, length = 100)
     private String title;

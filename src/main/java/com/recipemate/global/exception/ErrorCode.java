@@ -24,6 +24,7 @@ public enum ErrorCode {
     INVALID_DELIVERY_METHOD(HttpStatus.BAD_REQUEST, "GROUP-013", "수령 방법은 필수입니다."),
     INVALID_RECIPE_API_ID(HttpStatus.BAD_REQUEST, "GROUP-014", "레시피 API ID는 필수입니다."),
     TARGET_HEADCOUNT_BELOW_CURRENT(HttpStatus.BAD_REQUEST, "GROUP-015", "목표 인원은 현재 참여 인원보다 작을 수 없습니다."),
+    HOST_CANNOT_PARTICIPATE(HttpStatus.BAD_REQUEST, "GROUP-016", "주최자는 자신의 공동구매에 참여할 수 없습니다."),
     
     RECIPE_NOT_FOUND(HttpStatus.NOT_FOUND, "RECIPE-001", "레시피를 찾을 수 없습니다."),
     

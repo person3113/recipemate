@@ -3,8 +3,10 @@ package com.recipemate.domain.groupbuy.controller;
 import com.recipemate.domain.groupbuy.dto.CreateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
+import com.recipemate.domain.groupbuy.dto.ParticipateRequest;
 import com.recipemate.domain.groupbuy.dto.UpdateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.service.GroupBuyService;
+import com.recipemate.domain.groupbuy.service.ParticipationService;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.ApiResponse;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 public class GroupBuyController {
 
     private final GroupBuyService groupBuyService;
+    private final ParticipationService participationService;
     private final UserRepository userRepository;
 
     /**
@@ -117,6 +120,26 @@ public class GroupBuyController {
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
         groupBuyService.deleteGroupBuy(user.getId(), purchaseId);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 공구 참여
+     * @param userDetails 인증된 사용자
+     * @param purchaseId 공구 ID
+     * @param request 참여 요청 정보 (수령 방법, 수량)
+     */
+    @PostMapping("/{purchaseId}/participate")
+    public ApiResponse<Void> participate(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @PathVariable Long purchaseId,
+        @Valid @RequestBody ParticipateRequest request
+    ) {
+        // 이메일로 사용자 조회
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        participationService.participate(user.getId(), purchaseId, request);
         return ApiResponse.success(null);
     }
 }

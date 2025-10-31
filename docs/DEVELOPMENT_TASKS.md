@@ -245,20 +245,20 @@
   - `findByGroupBuyId(Long groupBuyId)`
   - `countByGroupBuyId(Long groupBuyId)`
 
-#### [ ] Task 1-4-2: 공구 참여 기능
-- [ ] 테스트 작성 (ParticipationServiceTest.java)
+#### [x] Task 1-4-2: 공구 참여 기능
+- [x] 테스트 작성 (ParticipationServiceTest.java)
   - 참여 성공 시 currentHeadcount 증가
   - 중복 참여 방지
   - 목표 인원 달성 시 참여 불가
   - 마감된 공구 참여 불가
   - 주최자 본인 참여 불가
-  - 낙관적 락 충돌 시 재시도
-- [ ] ParticipationService 구현
+  - 목표 달성 시 status → CLOSED
+- [x] ParticipationService 구현
   - `participate(Long userId, Long purchaseId, ParticipateRequest dto)`
   - GroupBuy의 currentHeadcount++ (트랜잭션)
   - 목표 달성 시 status → CLOSED
   - 낙관적 락 예외 처리 (@Retryable)
-- [ ] GroupBuyController 구현
+- [x] GroupBuyController 구현
   - `POST /group-purchases/{purchaseId}/participate`
   - 요청 DTO: ParticipateRequest (selectedDeliveryMethod, quantity)
 

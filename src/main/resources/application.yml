@@ -4,6 +4,13 @@ spring:
   profiles:
     active: dev
 
+# 식품안전나라 API 설정
+food:
+  safety:
+    api:
+      key: ${FOOD_SAFETY_API_KEY:sample}
+      base-url: http://openapi.foodsafetykorea.go.kr/api
+
 ---
 spring:
   config:

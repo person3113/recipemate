@@ -346,13 +346,28 @@
 - [x] DTO 작성
   - MealResponse (strMeal, strMealThumb, strIngredient1~20, strMeasure1~20, ...)
 
-#### [ ] Task 2-1-2: 식품안전나라 API 클라이언트 작성
-- [ ] 테스트 작성
+#### [x] Task 2-1-2: 식품안전나라 API 클라이언트 작성
+- [x] 테스트 작성
   - 한식 레시피 조회
-- [ ] FoodSafetyClient 구현
+  - 레시피 이름으로 검색
+  - 재료로 레시피 검색
+  - 요리 종류로 필터링
+  - 잘못된 범위/1000건 초과 요청 검증
+  - API 응답 파싱 검증
+- [x] FoodSafetyClient 구현
   - `getKoreanRecipes(int start, int end)`
-- [ ] DTO 작성
-  - CookRecipeResponse (RCP_NM, RCP_PARTS_DTLS, MANUAL01~20, ...)
+  - `searchRecipesByName(String keyword, int start, int end)`
+  - `searchRecipesByIngredient(String ingredient, int start, int end)`
+  - `searchRecipesByCategory(String category, int start, int end)`
+  - 페이징 처리 (최대 1,000건 제한)
+  - 에러 처리 (RESULT.CODE 검증)
+- [x] DTO 작성
+  - FoodSafetyApiResult (CODE, MSG)
+  - CookRecipeResponse (RCP_NM, RCP_PARTS_DTLS, MANUAL01~20, 동적 필드 처리)
+  - CookRecipeListResponse (COOKRCP01 래퍼)
+- [x] application.yml 설정
+  - food.safety.api.key (환경변수)
+  - food.safety.api.base-url
 
 #### [ ] Task 2-1-3: Recipe 서비스 레이어 작성
 - [ ] RecipeService 구현

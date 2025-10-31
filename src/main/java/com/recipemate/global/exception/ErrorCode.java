@@ -15,6 +15,15 @@ public enum ErrorCode {
     MAX_PARTICIPANTS_EXCEEDED(HttpStatus.BAD_REQUEST, "GROUP-004", "최대 참여 인원을 초과했습니다."),
     UNAUTHORIZED_GROUP_BUY_ACCESS(HttpStatus.FORBIDDEN, "GROUP-005", "공동구매 접근 권한이 없습니다."),
     HAS_PARTICIPANTS(HttpStatus.BAD_REQUEST, "GROUP-006", "참여자가 있는 공동구매는 삭제할 수 없습니다."),
+    INVALID_TITLE(HttpStatus.BAD_REQUEST, "GROUP-007", "제목은 필수입니다."),
+    INVALID_CONTENT(HttpStatus.BAD_REQUEST, "GROUP-008", "내용은 필수입니다."),
+    INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "GROUP-009", "카테고리는 필수입니다."),
+    INVALID_TOTAL_PRICE(HttpStatus.BAD_REQUEST, "GROUP-010", "총 금액은 0원 이상이어야 합니다."),
+    INVALID_TARGET_HEADCOUNT(HttpStatus.BAD_REQUEST, "GROUP-011", "목표 인원은 2명 이상이어야 합니다."),
+    INVALID_DEADLINE(HttpStatus.BAD_REQUEST, "GROUP-012", "마감일은 현재보다 이후여야 합니다."),
+    INVALID_DELIVERY_METHOD(HttpStatus.BAD_REQUEST, "GROUP-013", "수령 방법은 필수입니다."),
+    INVALID_RECIPE_API_ID(HttpStatus.BAD_REQUEST, "GROUP-014", "레시피 API ID는 필수입니다."),
+    TARGET_HEADCOUNT_BELOW_CURRENT(HttpStatus.BAD_REQUEST, "GROUP-015", "목표 인원은 현재 참여 인원보다 작을 수 없습니다."),
     
     RECIPE_NOT_FOUND(HttpStatus.NOT_FOUND, "RECIPE-001", "레시피를 찾을 수 없습니다."),
     

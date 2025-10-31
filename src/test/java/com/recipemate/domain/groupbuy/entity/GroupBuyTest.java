@@ -3,6 +3,8 @@ package com.recipemate.domain.groupbuy.entity;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyStatus;
+import com.recipemate.global.exception.CustomException;
+import com.recipemate.global.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -206,8 +208,8 @@ class GroupBuyTest {
                 "서울대학교 정문",
                 null,
                 true
-        )).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("마감일은 현재보다 이후여야 합니다");
+        )).isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_DEADLINE);
     }
 
     @Test
@@ -229,8 +231,8 @@ class GroupBuyTest {
                 "서울대학교 정문",
                 null,
                 true
-        )).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("목표 인원은 2명 이상이어야 합니다");
+        )).isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_TARGET_HEADCOUNT);
     }
 
     @Test
@@ -252,8 +254,8 @@ class GroupBuyTest {
                 "서울대학교 정문",
                 null,
                 true
-        )).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("총 금액은 0원 이상이어야 합니다");
+        )).isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_TOTAL_PRICE);
     }
 
     @Test

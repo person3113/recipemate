@@ -4,49 +4,73 @@
 
 ---
 
-## 🔴 HIGH Priority
+## ✅ COMPLETED (완료된 작업)
 
-### 1. Controller 아키텍처 변경 (Thymeleaf 통합)
-- 현재 모든 Controller가 @RestController로 JSON만 반환
-- Thymeleaf 템플릿 없어 브라우저 직접 접근 불가
-- htmx 미사용 상태
-- 해결: 페이지용 @Controller + API용 @RestController 이원화
-- 작업: User 도메인 Controller 수정, Thymeleaf 템플릿 작성, htmx 통합, 테스트 수정
-- 처리 시점: GroupBuy 백엔드 완성 후 전체 화면 통합 (권장)
-- 예상 시간: 4-6시간
+### [2025-10-31] 예외 처리 일관성 개선 및 데이터 검증 강화
+**처리 항목**:
+1. ✅ **GroupBuy.update() targetHeadcount 검증 추가**
+   - `GroupBuy.java:163-181`: targetHeadcount < currentHeadcount 검증 추가
+   - `ErrorCode.TARGET_HEADCOUNT_BELOW_CURRENT` 추가
+   - 데이터 무결성 보장
+
+2. ✅ **ErrorCode에 검증 관련 에러코드 추가**
+   - `ErrorCode.java:18-24`: 9개 검증 에러코드 추가
+   - `INVALID_TITLE`, `INVALID_CONTENT`, `INVALID_CATEGORY`
+   - `INVALID_TOTAL_PRICE`, `INVALID_TARGET_HEADCOUNT`, `INVALID_DEADLINE`
+   - `INVALID_DELIVERY_METHOD`, `INVALID_RECIPE_API_ID`
+   - `TARGET_HEADCOUNT_BELOW_CURRENT`
+
+3. ✅ **GroupBuyService 예외 처리 표준화**
+   - `GroupBuyService.java:104, 303-325`: IllegalArgumentException → CustomException
+   - `validateRequest()` 메서드 전체 변경
+   - `createRecipeBasedGroupBuy()` 메서드 변경
+
+4. ✅ **GroupBuy 엔티티 예외 처리 표준화**
+   - `GroupBuy.java:1-17`: CustomException, ErrorCode import 추가
+   - `GroupBuy.java:151-161`: validateCreateArgs() IllegalArgumentException → CustomException
+   - `GroupBuy.java:163-181`: update() 메서드 검증 추가 및 CustomException 사용
+
+5. ✅ **테스트 코드 업데이트**
+   - `GroupBuyTest.java`: 예외 타입 변경 (IllegalArgumentException → CustomException)
+   - `GroupBuyServiceTest.java`: 예외 타입 및 검증 방식 변경
+   - 모든 테스트 통과 확인 (64 tests)
+
+**효과**:
+- 에러코드 추적 가능
+- HTTP 상태 자동 매핑
+- 클라이언트 친화적 구조화된 응답
+- 일관된 예외 처리 패턴
+
+**소요 시간**: 약 1.5시간
 
 ---
 
-## 🟡 MEDIUM Priority
+## 🔴 HIGH Priority (즉시 수정)
 
-### 2. Validator 패턴 도입
-- 현재 검증 로직이 Service 클래스에 직접 구현
-- 해결: 별도 Validator 컴포넌트 분리로 Service 간결화, 재사용성 향상
-- 처리 시점: GroupBuy 개발 중 검증 로직 복잡해질 때
-- 예상 시간: 2-3시간
-
-### 3. PermissionChecker 패턴 도입
-- GroupBuy 도메인에서 권한 체크 필요 (주최자/참가자 확인, 수정/삭제/리뷰 권한)
-- 처리 시점: GroupBuy Service 구현 중 권한 체크 반복 시
-- 예상 시간: 1-2시간
-
-### 4. GroupBuy 엔티티 양방향 연관관계 추가
-- 현재 GroupBuy → Participation 단방향만 존재
-- isParticipant(User) 메서드 미구현으로 권한 체크 불가
-- 해결: @OneToMany(mappedBy) 추가
-- 처리 시점: Participation 엔티티 구현 시
-- 예상 시간: 30분
-
-### 5. GroupBuy update() 메서드 targetHeadcount 변경 제한
-- 현재 목표 인원 변경 시 검증 없음
-- 현재 참여자보다 적은 목표 인원으로 변경 가능한 문제
-- 해결: targetHeadcount < currentHeadcount 검증 추가
-- 처리 시점: GroupBuy Service 구현 중
-- 예상 시간: 30분
+> 현재 HIGH Priority 항목 없음
 
 ---
 
-## 🟢 LOW Priority
+## 🟡 MEDIUM Priority (Phase 1 완료 전)
+
+### 3. GroupBuy 엔티티 Participation 양방향 연관관계 추가
+- **필요성**: `isParticipant(User)` 메서드로 권한 체크
+- **해결**: 
+  1. `GroupBuy`에 `@OneToMany(mappedBy = "groupBuy") List<Participation> participations` 추가
+  2. `isParticipant(User user)` 메서드 구현
+- **처리 시점**: Participation 엔티티 구현 시 (Task 1-4-1)
+- **예상 시간**: 30분
+
+### 4. Controller 아키텍처 변경 (Thymeleaf 통합)
+- **현황**: 모든 Controller가 @RestController (JSON만 반환)
+- **문제**: Thymeleaf 템플릿 없어 브라우저 직접 접근 불가, htmx 미사용
+- **해결**: 페이지용 @Controller + API용 @RestController 이원화
+- **처리 시점**: Phase 1 백엔드 완성 후 전체 화면 통합
+- **예상 시간**: 4-6시간
+
+---
+
+## 🟢 LOW Priority (Phase 2 이후)
 
 ### 6. Remember-Me 기능 완전 구현
 - 현재 기본 세션 인증만 동작
@@ -89,40 +113,31 @@
 - 처리 시점: Phase 4 리팩터링 단계
 - 예상 시간: 1-2시간
 
-### 11. 예외 처리 일관성 개선 (Validation Exception)
-- 현재 Service 검증 로직에서 IllegalArgumentException 사용 (GroupBuyService:126-146)
-- CustomException + ErrorCode 인프라 존재하나 일부 미활용
-- 해결: ErrorCode에 검증 관련 에러코드 추가 (INVALID_TITLE, INVALID_CONTENT 등), Service에서 CustomException 사용
-- 장점: 에러코드 추적 가능, HTTP 상태 자동 매핑, 클라이언트 친화적 구조화된 응답, i18n 확장 용이
-- 처리 시점: GroupBuy 도메인 완성 후 리팩터링
-- 예상 시간: 1-2시간
-
 ---
 
 ## 📊 우선순위 요약
 
-| 항목 | 우선순위 | 처리 시점 | 예상 시간 |
-|------|----------|-----------|-----------|
-| Controller Thymeleaf 통합 | 🔴 HIGH | GroupBuy 백엔드 완성 후 | 4-6시간 |
-| Validator 패턴 도입 | 🟡 MEDIUM | GroupBuy 개발 중 복잡도 증가 시 | 2-3시간 |
-| PermissionChecker 도입 | 🟡 MEDIUM | GroupBuy 권한 체크 반복 시 | 1-2시간 |
-| GroupBuy 양방향 연관관계 | 🟡 MEDIUM | Participation 엔티티 구현 시 | 30분 |
-| GroupBuy update() 검증 | 🟡 MEDIUM | GroupBuy Service 구현 중 | 30분 |
-| Remember-Me 구현 | 🟢 LOW | 프로덕션 배포 전 | 2-3시간 |
-| Custom Validation | 🟢 LOW | 검증 로직 복잡 시 | 3-4시간 |
-| QueryDSL 활용 | 🟢 LOW | 검색 기능 구현 시 | 2-3시간 |
-| Repository 쿼리 최적화 | 🟢 LOW | Phase 2 검색 최적화 | 2-3시간 |
-| 엔티티 불변성 강화 | 🟢 LOW | Phase 4 리팩터링 | 1-2시간 |
-| 예외 처리 일관성 개선 | 🟢 LOW | GroupBuy 도메인 완성 후 | 1-2시간 |
+| 항목 | 우선순위 | 처리 시점 | 예상 시간 | 상태 |
+|------|----------|-----------|-----------|------|
+| GroupBuy update() 검증 | 🔴 HIGH | 즉시 | 30분 | ✅ 완료 |
+| 예외 처리 일관성 개선 | 🔴 HIGH | 즉시 | 1시간 | ✅ 완료 |
+| GroupBuy 양방향 연관관계 | 🟡 MEDIUM | Participation 엔티티 구현 시 | 30분 | ⏳ 대기 |
+| Controller Thymeleaf 통합 | 🟡 MEDIUM | Phase 1 백엔드 완성 후 | 4-6시간 | ⏳ 대기 |
+| Remember-Me 구현 | 🟢 LOW | 프로덕션 배포 전 | 2-3시간 | ⏳ 대기 |
+| Custom Validation | 🟢 LOW | 검증 로직 복잡 시 | 3-4시간 | ⏳ 대기 |
+| QueryDSL 활용 | 🟢 LOW | 검색 기능 구현 시 | 2-3시간 | ⏳ 대기 |
+| Repository 쿼리 최적화 | 🟢 LOW | Phase 2 검색 최적화 | 2-3시간 | ⏳ 대기 |
+| 엔티티 불변성 강화 | 🟢 LOW | Phase 4 리팩터링 | 1-2시간 | ⏳ 대기 |
 
 ---
 
 ## 🎯 권장 처리 순서
 
-1. **현재**: GroupBuy 도메인 백엔드 개발 (Entity, Service, RestController)
-2. **Phase 1 완료 후**: Controller → Thymeleaf 통합 (모든 도메인 화면 구현)
-3. **Phase 2**: 필요 시 Validator/PermissionChecker 리팩터링
-4. **Phase 3**: QueryDSL 검색 기능, Remember-Me 등 부가 기능
+1. ✅ **완료**: GroupBuy 도메인 검증 로직 및 예외 처리 개선 (2025-10-31)
+2. **다음**: Participation 엔티티 구현 (Task 1-4-1) → 양방향 연관관계 추가
+3. **Phase 1 완료 후**: Controller → Thymeleaf 통합 (모든 도메인 화면 구현)
+4. **Phase 2**: QueryDSL 검색 기능, Remember-Me 등 부가 기능
+5. **Phase 4**: 필요 시 Validator/PermissionChecker 리팩터링
 
 ---
 

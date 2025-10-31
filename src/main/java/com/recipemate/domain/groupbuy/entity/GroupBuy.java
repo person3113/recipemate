@@ -4,6 +4,8 @@ import com.recipemate.domain.user.entity.User;
 import com.recipemate.global.common.BaseEntity;
 import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyStatus;
+import com.recipemate.global.exception.CustomException;
+import com.recipemate.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -150,13 +152,13 @@ public class GroupBuy extends BaseEntity {
 
     private static void validateCreateArgs(Integer totalPrice, Integer targetHeadcount, LocalDateTime deadline) {
         if (deadline == null || !deadline.isAfter(LocalDateTime.now())) {
-            throw new IllegalArgumentException("마감일은 현재보다 이후여야 합니다");
+            throw new CustomException(ErrorCode.INVALID_DEADLINE);
         }
         if (targetHeadcount == null || targetHeadcount < 2) {
-            throw new IllegalArgumentException("목표 인원은 2명 이상이어야 합니다");
+            throw new CustomException(ErrorCode.INVALID_TARGET_HEADCOUNT);
         }
         if (totalPrice == null || totalPrice < 0) {
-            throw new IllegalArgumentException("총 금액은 0원 이상이어야 합니다");
+            throw new CustomException(ErrorCode.INVALID_TOTAL_PRICE);
         }
     }
 
@@ -166,6 +168,11 @@ public class GroupBuy extends BaseEntity {
         Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
         String meetupLocation, Integer parcelFee, boolean isParticipantListPublic
     ) {
+        // 목표 인원 검증: 현재 참여 인원보다 작을 수 없음
+        if (targetHeadcount != null && targetHeadcount < this.currentHeadcount) {
+            throw new CustomException(ErrorCode.TARGET_HEADCOUNT_BELOW_CURRENT);
+        }
+        
         // 레시피 기반 공구인 경우, 레시피 관련 필드는 수정 불가
         // (이미 recipeApiId, recipeName, recipeImageUrl은 변경되지 않음)
         this.title = title;

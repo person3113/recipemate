@@ -114,7 +114,8 @@ class GroupBuyServiceTest {
 
         // when & then
         assertThatThrownBy(() -> groupBuyService.createGroupBuy(testUser.getId(), request))
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_TITLE);
     }
 
     @Test
@@ -133,8 +134,8 @@ class GroupBuyServiceTest {
 
         // when & then
         assertThatThrownBy(() -> groupBuyService.createGroupBuy(testUser.getId(), request))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("마감일은 현재보다 이후여야 합니다");
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_DEADLINE);
     }
 
     @Test
@@ -153,8 +154,8 @@ class GroupBuyServiceTest {
 
         // when & then
         assertThatThrownBy(() -> groupBuyService.createGroupBuy(testUser.getId(), request))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("목표 인원은 2명 이상이어야 합니다");
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_TARGET_HEADCOUNT);
     }
 
     @Test
@@ -173,8 +174,8 @@ class GroupBuyServiceTest {
 
         // when & then
         assertThatThrownBy(() -> groupBuyService.createGroupBuy(testUser.getId(), request))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("총 금액은 0원 이상이어야 합니다");
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_TOTAL_PRICE);
     }
 
     @Test
@@ -910,8 +911,8 @@ class GroupBuyServiceTest {
 
         // when & then
         assertThatThrownBy(() -> groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("레시피 API ID는 필수입니다");
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_RECIPE_API_ID);
     }
 
     @Test

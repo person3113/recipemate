@@ -101,7 +101,7 @@ public class GroupBuyService {
     public GroupBuyResponse createRecipeBasedGroupBuy(Long userId, CreateGroupBuyRequest request) {
         // 0. 레시피 필드 검증
         if (request.getRecipeApiId() == null || request.getRecipeApiId().isBlank()) {
-            throw new IllegalArgumentException("레시피 API ID는 필수입니다");
+            throw new CustomException(ErrorCode.INVALID_RECIPE_API_ID);
         }
         
         // 일반 생성 메서드 사용 (내부에서 레시피 필드를 감지하여 처리)
@@ -302,25 +302,25 @@ public class GroupBuyService {
      */
     private void validateRequest(CreateGroupBuyRequest request) {
         if (request.getTitle() == null || request.getTitle().isBlank()) {
-            throw new IllegalArgumentException("제목은 필수입니다");
+            throw new CustomException(ErrorCode.INVALID_TITLE);
         }
         if (request.getContent() == null || request.getContent().isBlank()) {
-            throw new IllegalArgumentException("내용은 필수입니다");
+            throw new CustomException(ErrorCode.INVALID_CONTENT);
         }
         if (request.getCategory() == null || request.getCategory().isBlank()) {
-            throw new IllegalArgumentException("카테고리는 필수입니다");
+            throw new CustomException(ErrorCode.INVALID_CATEGORY);
         }
         if (request.getTotalPrice() == null) {
-            throw new IllegalArgumentException("총 금액은 필수입니다");
+            throw new CustomException(ErrorCode.INVALID_TOTAL_PRICE);
         }
         if (request.getTargetHeadcount() == null) {
-            throw new IllegalArgumentException("목표 인원은 필수입니다");
+            throw new CustomException(ErrorCode.INVALID_TARGET_HEADCOUNT);
         }
         if (request.getDeadline() == null) {
-            throw new IllegalArgumentException("마감일은 필수입니다");
+            throw new CustomException(ErrorCode.INVALID_DEADLINE);
         }
         if (request.getDeliveryMethod() == null) {
-            throw new IllegalArgumentException("수령 방법은 필수입니다");
+            throw new CustomException(ErrorCode.INVALID_DELIVERY_METHOD);
         }
     }
 }

@@ -2,12 +2,14 @@ package com.recipemate.domain.groupbuy.service;
 
 import com.recipemate.domain.groupbuy.dto.CreateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
+import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.repository.GroupBuyImageRepository;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.DeliveryMethod;
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +17,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -246,5 +251,292 @@ class GroupBuyServiceTest {
         assertThatThrownBy(() -> groupBuyService.createGroupBuy(999L, request))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+    }
+
+    // ========== 공구 목록 조회 테스트 ==========
+
+    @Test
+    @DisplayName("공구 목록 조회 성공 - 페이징")
+    void getGroupBuyList_Success_WithPagination() {
+        // given
+        // 10개의 공구 생성
+        for (int i = 1; i <= 10; i++) {
+            CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
+                .title("공구 " + i)
+                .content("공구 내용 " + i)
+                .category("육류")
+                .totalPrice(10000 * i)
+                .targetHeadcount(5)
+                .deadline(LocalDateTime.now().plusDays(7))
+                .deliveryMethod(DeliveryMethod.BOTH)
+                .imageFiles(new ArrayList<>())
+                .build();
+            groupBuyService.createGroupBuy(testUser.getId(), request);
+        }
+
+        Pageable pageable = PageRequest.of(0, 5);
+
+        // when
+        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(null, pageable);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(5);
+        assertThat(result.getTotalElements()).isEqualTo(10);
+        assertThat(result.getTotalPages()).isEqualTo(2);
+        assertThat(result.isFirst()).isTrue();
+    }
+
+    @Test
+    @DisplayName("공구 목록 조회 성공 - 카테고리 필터링")
+    void getGroupBuyList_Success_FilterByCategory() {
+        // given
+        // 육류 카테고리 공구 3개
+        for (int i = 1; i <= 3; i++) {
+            CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
+                .title("육류 공구 " + i)
+                .content("육류 공구 내용 " + i)
+                .category("육류")
+                .totalPrice(10000)
+                .targetHeadcount(5)
+                .deadline(LocalDateTime.now().plusDays(7))
+                .deliveryMethod(DeliveryMethod.BOTH)
+                .imageFiles(new ArrayList<>())
+                .build();
+            groupBuyService.createGroupBuy(testUser.getId(), request);
+        }
+
+        // 채소 카테고리 공구 2개
+        for (int i = 1; i <= 2; i++) {
+            CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
+                .title("채소 공구 " + i)
+                .content("채소 공구 내용 " + i)
+                .category("채소")
+                .totalPrice(5000)
+                .targetHeadcount(5)
+                .deadline(LocalDateTime.now().plusDays(7))
+                .deliveryMethod(DeliveryMethod.BOTH)
+                .imageFiles(new ArrayList<>())
+                .build();
+            groupBuyService.createGroupBuy(testUser.getId(), request);
+        }
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when - 육류 카테고리만 조회
+        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
+            GroupBuySearchCondition.builder().category("육류").build(),
+            pageable
+        );
+
+        // then
+        assertThat(result.getContent()).hasSize(3);
+        assertThat(result.getContent())
+            .allMatch(gb -> gb.getCategory().equals("육류"));
+    }
+
+    @Test
+    @DisplayName("공구 목록 조회 성공 - 상태 필터링 (RECRUITING)")
+    void getGroupBuyList_Success_FilterByStatus() {
+        // given
+        GroupBuy recruiting = GroupBuy.createGeneral(
+            testUser,
+            "모집중 공구",
+            "내용",
+            "육류",
+            10000,
+            5,
+            LocalDateTime.now().plusDays(7),
+            DeliveryMethod.BOTH,
+            null,
+            null,
+            true
+        );
+        groupBuyRepository.save(recruiting);
+
+        // 마감임박 공구 생성
+        GroupBuy imminent = GroupBuy.createGeneral(
+            testUser,
+            "마감임박 공구",
+            "내용",
+            "육류",
+            10000,
+            5,
+            LocalDateTime.now().plusHours(23), // 24시간 이내
+            DeliveryMethod.BOTH,
+            null,
+            null,
+            true
+        );
+        groupBuyRepository.save(imminent);
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when - RECRUITING 상태만 조회
+        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
+            GroupBuySearchCondition.builder().status(GroupBuyStatus.RECRUITING).build(),
+            pageable
+        );
+
+        // then
+        assertThat(result.getContent()).isNotEmpty();
+        assertThat(result.getContent())
+            .allMatch(gb -> gb.getStatus() == GroupBuyStatus.RECRUITING);
+    }
+
+    @Test
+    @DisplayName("공구 목록 조회 성공 - 키워드 검색 (제목)")
+    void getGroupBuyList_Success_SearchByKeywordInTitle() {
+        // given
+        CreateGroupBuyRequest request1 = CreateGroupBuyRequest.builder()
+            .title("삼겹살 공동구매")
+            .content("신선한 고기")
+            .category("육류")
+            .totalPrice(50000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .build();
+        groupBuyService.createGroupBuy(testUser.getId(), request1);
+
+        CreateGroupBuyRequest request2 = CreateGroupBuyRequest.builder()
+            .title("양파 공동구매")
+            .content("싱싱한 양파")
+            .category("채소")
+            .totalPrice(20000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .build();
+        groupBuyService.createGroupBuy(testUser.getId(), request2);
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when - "삼겹살" 키워드로 검색
+        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
+            GroupBuySearchCondition.builder().keyword("삼겹살").build(),
+            pageable
+        );
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getTitle()).contains("삼겹살");
+    }
+
+    @Test
+    @DisplayName("공구 목록 조회 성공 - 키워드 검색 (내용)")
+    void getGroupBuyList_Success_SearchByKeywordInContent() {
+        // given
+        CreateGroupBuyRequest request1 = CreateGroupBuyRequest.builder()
+            .title("고기 공동구매")
+            .content("프리미엄 한우 삼겹살입니다")
+            .category("육류")
+            .totalPrice(50000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .build();
+        groupBuyService.createGroupBuy(testUser.getId(), request1);
+
+        CreateGroupBuyRequest request2 = CreateGroupBuyRequest.builder()
+            .title("채소 공동구매")
+            .content("싱싱한 양파")
+            .category("채소")
+            .totalPrice(20000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .build();
+        groupBuyService.createGroupBuy(testUser.getId(), request2);
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when - "프리미엄" 키워드로 검색
+        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
+            GroupBuySearchCondition.builder().keyword("프리미엄").build(),
+            pageable
+        );
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getContent()).contains("프리미엄");
+    }
+
+    @Test
+    @DisplayName("공구 목록 조회 성공 - 복합 필터 (카테고리 + 키워드)")
+    void getGroupBuyList_Success_MultipleFilters() {
+        // given
+        CreateGroupBuyRequest request1 = CreateGroupBuyRequest.builder()
+            .title("삼겹살 공동구매")
+            .content("신선한 고기")
+            .category("육류")
+            .totalPrice(50000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .build();
+        groupBuyService.createGroupBuy(testUser.getId(), request1);
+
+        CreateGroupBuyRequest request2 = CreateGroupBuyRequest.builder()
+            .title("목살 공동구매")
+            .content("맛있는 고기")
+            .category("육류")
+            .totalPrice(40000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .build();
+        groupBuyService.createGroupBuy(testUser.getId(), request2);
+
+        CreateGroupBuyRequest request3 = CreateGroupBuyRequest.builder()
+            .title("양파 공동구매")
+            .content("신선한 양파")
+            .category("채소")
+            .totalPrice(20000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .build();
+        groupBuyService.createGroupBuy(testUser.getId(), request3);
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when - 카테고리=육류 AND 키워드=삼겹살
+        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
+            GroupBuySearchCondition.builder()
+                .category("육류")
+                .keyword("삼겹살")
+                .build(),
+            pageable
+        );
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getTitle()).contains("삼겹살");
+        assertThat(result.getContent().get(0).getCategory()).isEqualTo("육류");
+    }
+
+    @Test
+    @DisplayName("공구 목록 조회 성공 - 빈 결과")
+    void getGroupBuyList_Success_EmptyResult() {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when - 존재하지 않는 카테고리로 검색
+        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
+            GroupBuySearchCondition.builder().category("존재하지않는카테고리").build(),
+            pageable
+        );
+
+        // then
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isEqualTo(0);
     }
 }

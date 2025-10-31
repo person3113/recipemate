@@ -2,14 +2,20 @@ package com.recipemate.domain.groupbuy.controller;
 
 import com.recipemate.domain.groupbuy.dto.CreateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
+import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
 import com.recipemate.domain.groupbuy.service.GroupBuyService;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.ApiResponse;
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -36,5 +42,32 @@ public class GroupBuyController {
         
         GroupBuyResponse response = groupBuyService.createGroupBuy(user.getId(), request);
         return ApiResponse.success(response);
+    }
+
+    /**
+     * 공구 목록 조회 (검색 및 필터링)
+     * @param category 카테고리 필터 (optional)
+     * @param status 상태 필터 (optional: RECRUITING, IMMINENT, CLOSED)
+     * @param recipeOnly 레시피 기반 공구만 조회 (optional, default: false)
+     * @param keyword 검색 키워드 - 제목 또는 내용 (optional)
+     * @param pageable 페이징 정보 (default: page=0, size=20, sort=createdAt,desc)
+     */
+    @GetMapping
+    public ApiResponse<Page<GroupBuyResponse>> getGroupBuyList(
+        @RequestParam(required = false) String category,
+        @RequestParam(required = false) GroupBuyStatus status,
+        @RequestParam(required = false, defaultValue = "false") Boolean recipeOnly,
+        @RequestParam(required = false) String keyword,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        GroupBuySearchCondition condition = GroupBuySearchCondition.builder()
+            .category(category)
+            .status(status)
+            .recipeOnly(recipeOnly)
+            .keyword(keyword)
+            .build();
+        
+        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(condition, pageable);
+        return ApiResponse.success(result);
     }
 }

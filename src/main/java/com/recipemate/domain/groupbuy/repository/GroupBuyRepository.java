@@ -5,13 +5,14 @@ import com.recipemate.global.common.GroupBuyStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long> {
+public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSpecificationExecutor<GroupBuy> {
 
     Page<GroupBuy> findByStatusOrderByDeadlineAsc(GroupBuyStatus status, Pageable pageable);
 

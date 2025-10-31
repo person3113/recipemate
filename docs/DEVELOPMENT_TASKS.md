@@ -186,17 +186,17 @@
   - 파일명 UUID 생성
   - 파일 크기/확장자 검증
 
-#### [ ] Task 1-3-4: 공구 목록 조회 기능
-- [ ] 테스트 작성 (GroupBuyServiceTest.java)
+#### [x] Task 1-3-4: 공구 목록 조회 기능
+- [x] 테스트 작성 (GroupBuyServiceTest.java)
   - 전체 목록 조회 (페이징)
   - 카테고리별 필터링
   - 상태별 필터링 (모집중/마감임박/종료)
   - 레시피 기반 공구만 필터링
   - 검색 (제목, 내용)
-- [ ] GroupBuyService 구현
+- [x] GroupBuyService 구현
   - `getGroupBuyList(GroupBuySearchCondition condition, Pageable pageable)`
-  - QueryDSL 또는 JPA Specification 사용
-- [ ] GroupBuyController 구현
+  - JPA Specification 사용
+- [x] GroupBuyController 구현
   - `GET /group-purchases`
   - 쿼리 파라미터: category, status, recipeOnly, keyword, page, size, sort
 

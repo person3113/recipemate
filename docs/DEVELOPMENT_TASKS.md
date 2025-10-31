@@ -232,15 +232,15 @@
 
 ### 1.4. 공구 참여/취소 기능 (Participation Domain)
 
-#### [ ] Task 1-4-1: Participation 엔티티 작성
-- [ ] 테스트 작성
+#### [x] Task 1-4-1: Participation 엔티티 작성
+- [x] 테스트 작성
   - 중복 참여 방지 (user + groupBuy 유니크)
   - selectedDeliveryMethod는 DIRECT 또는 PARCEL만 가능
-- [ ] Participation 엔티티 구현
+- [x] Participation 엔티티 구현
   - 필드: id, user(FK), groupBuy(FK), quantity, selectedDeliveryMethod, participatedAt
   - 제약조건: UNIQUE(userId, groupBuyId)
   - 인덱스: userId, groupBuyId
-- [ ] ParticipationRepository 작성
+- [x] ParticipationRepository 작성
   - `findByUserIdAndGroupBuyId(Long userId, Long groupBuyId)`
   - `findByGroupBuyId(Long groupBuyId)`
   - `countByGroupBuyId(Long groupBuyId)`

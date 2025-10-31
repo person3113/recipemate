@@ -14,6 +14,13 @@
 - `PUT /users/me`: 내 프로필 정보 수정
 - `DELETE /users/me`: 회원 탈퇴
 - `GET /users/{userId}/profile`: 특정 사용자 프로필 조회
+
+### 2.1. 내 활동 내역
+- `GET /users/me/group-purchases`: 내가 만든 공동구매 목록 조회
+- `GET /users/me/participations`: 내가 참여한 공동구매 목록 조회
+- `GET /users/me/bookmarks`: 내가 찜한 공동구매 목록 조회
+
+### 2.2. 알림
 - `GET /users/me/notifications`: 내 알림 목록 조회
 - `PUT /users/me/notifications/{notificationId}`: 특정 알림 읽음 처리
 - `DELETE /users/me/notifications`: 모든 알림 삭제

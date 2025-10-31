@@ -54,4 +54,14 @@ public class CreateGroupBuyRequest {
 
     @Builder.Default
     private List<MultipartFile> imageFiles = new ArrayList<>();
+
+    // Recipe fields (optional - only for recipe-based group buys)
+    @Size(max = 100, message = "레시피 API ID는 100자 이내여야 합니다")
+    private String recipeApiId;
+
+    @Size(max = 200, message = "레시피 이름은 200자 이내여야 합니다")
+    private String recipeName;
+
+    @Size(max = 500, message = "레시피 이미지 URL은 500자 이내여야 합니다")
+    private String recipeImageUrl;
 }

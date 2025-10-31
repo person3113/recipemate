@@ -166,6 +166,8 @@ public class GroupBuy extends BaseEntity {
         Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
         String meetupLocation, Integer parcelFee, boolean isParticipantListPublic
     ) {
+        // 레시피 기반 공구인 경우, 레시피 관련 필드는 수정 불가
+        // (이미 recipeApiId, recipeName, recipeImageUrl은 변경되지 않음)
         this.title = title;
         this.content = content;
         this.category = category;

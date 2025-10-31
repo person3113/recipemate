@@ -857,4 +857,194 @@ class GroupBuyServiceTest {
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.GROUP_BUY_NOT_FOUND);
     }
+
+    // ========== 레시피 기반 공구 테스트 ==========
+
+    @Test
+    @DisplayName("레시피 기반 공구 생성 성공")
+    void createRecipeBasedGroupBuy_Success() {
+        // given
+        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
+            .title("김치찌개 재료 공구")
+            .content("맛있는 김치찌개 재료 공동구매")
+            .category("육류")
+            .totalPrice(30000)
+            .targetHeadcount(4)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .isParticipantListPublic(true)
+            .imageFiles(new ArrayList<>())
+            .recipeApiId("RECIPE_12345")
+            .recipeName("김치찌개")
+            .recipeImageUrl("https://example.com/recipe/kimchi.jpg")
+            .build();
+
+        // when
+        GroupBuyResponse response = groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getTitle()).isEqualTo("김치찌개 재료 공구");
+        assertThat(response.getRecipeApiId()).isEqualTo("RECIPE_12345");
+        assertThat(response.getRecipeName()).isEqualTo("김치찌개");
+        assertThat(response.getRecipeImageUrl()).isEqualTo("https://example.com/recipe/kimchi.jpg");
+    }
+
+    @Test
+    @DisplayName("레시피 기반 공구 생성 실패 - 레시피 API ID 누락")
+    void createRecipeBasedGroupBuy_Fail_NoRecipeApiId() {
+        // given
+        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
+            .title("김치찌개 재료 공구")
+            .content("맛있는 김치찌개 재료 공동구매")
+            .category("육류")
+            .totalPrice(30000)
+            .targetHeadcount(4)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .recipeApiId(null) // 레시피 ID 누락
+            .recipeName("김치찌개")
+            .recipeImageUrl("https://example.com/recipe/kimchi.jpg")
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("레시피 API ID는 필수입니다");
+    }
+
+    @Test
+    @DisplayName("레시피 기반 공구 수정 시 레시피 필드는 불변")
+    void updateGroupBuy_RecipeFieldsImmutable() {
+        // given - 레시피 기반 공구 생성
+        CreateGroupBuyRequest createRequest = CreateGroupBuyRequest.builder()
+            .title("김치찌개 재료 공구")
+            .content("맛있는 김치찌개 재료 공동구매")
+            .category("육류")
+            .totalPrice(30000)
+            .targetHeadcount(4)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .recipeApiId("RECIPE_12345")
+            .recipeName("김치찌개")
+            .recipeImageUrl("https://example.com/recipe/kimchi.jpg")
+            .build();
+        GroupBuyResponse created = groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), createRequest);
+
+        // 수정 요청 (레시피 필드는 수정 불가)
+        UpdateGroupBuyRequest updateRequest = UpdateGroupBuyRequest.builder()
+            .title("된장찌개 재료 공구") // 제목만 수정
+            .content("맛있는 된장찌개 재료 공동구매")
+            .category("육류")
+            .totalPrice(35000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(10))
+            .deliveryMethod(DeliveryMethod.DIRECT)
+            .isParticipantListPublic(false)
+            .build();
+
+        // when
+        GroupBuyResponse updated = groupBuyService.updateGroupBuy(testUser.getId(), created.getId(), updateRequest);
+
+        // then - 레시피 필드는 변경되지 않아야 함
+        assertThat(updated.getTitle()).isEqualTo("된장찌개 재료 공구"); // 제목은 변경됨
+        assertThat(updated.getRecipeApiId()).isEqualTo("RECIPE_12345"); // 레시피 ID는 그대로
+        assertThat(updated.getRecipeName()).isEqualTo("김치찌개"); // 레시피 이름은 그대로
+        assertThat(updated.getRecipeImageUrl()).isEqualTo("https://example.com/recipe/kimchi.jpg"); // 레시피 이미지는 그대로
+    }
+
+    @Test
+    @DisplayName("레시피 기반 공구 목록 필터링 성공")
+    void getGroupBuyList_Success_FilterRecipeOnly() {
+        // given
+        // 레시피 기반 공구 2개 생성
+        for (int i = 1; i <= 2; i++) {
+            CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
+                .title("레시피 공구 " + i)
+                .content("레시피 기반 공구")
+                .category("육류")
+                .totalPrice(30000)
+                .targetHeadcount(4)
+                .deadline(LocalDateTime.now().plusDays(7))
+                .deliveryMethod(DeliveryMethod.BOTH)
+                .imageFiles(new ArrayList<>())
+                .recipeApiId("RECIPE_" + i)
+                .recipeName("레시피 " + i)
+                .recipeImageUrl("https://example.com/recipe" + i + ".jpg")
+                .build();
+            groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request);
+        }
+
+        // 일반 공구 1개 생성
+        CreateGroupBuyRequest generalRequest = CreateGroupBuyRequest.builder()
+            .title("일반 공구")
+            .content("일반 공동구매")
+            .category("육류")
+            .totalPrice(50000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .build();
+        groupBuyService.createGroupBuy(testUser.getId(), generalRequest);
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when - 레시피 기반 공구만 조회
+        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
+            GroupBuySearchCondition.builder().recipeOnly(true).build(),
+            pageable
+        );
+
+        // then
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent()).allMatch(gb -> gb.getRecipeApiId() != null);
+    }
+
+    // ========== 동시성 제어 테스트 ==========
+
+    @Test
+    @DisplayName("공구 엔티티에 @Version 필드가 있어 낙관적 락 지원")
+    void groupBuy_HasVersionField_ForOptimisticLocking() {
+        // given - 공구 생성
+        CreateGroupBuyRequest createRequest = CreateGroupBuyRequest.builder()
+            .title("삼겹살 공동구매")
+            .content("신선한 삼겹살")
+            .category("육류")
+            .totalPrice(50000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .build();
+        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), createRequest);
+
+        // when - 공구 조회
+        GroupBuy groupBuy = groupBuyRepository.findById(created.getId()).orElseThrow();
+
+        // then - @Version 필드가 존재하고 초기값이 0이어야 함
+        assertThat(groupBuy.getVersion()).isNotNull();
+        assertThat(groupBuy.getVersion()).isEqualTo(0L);
+
+        // when - 공구 수정
+        UpdateGroupBuyRequest updateRequest = UpdateGroupBuyRequest.builder()
+            .title("수정된 공구")
+            .content("수정된 내용")
+            .category("육류")
+            .totalPrice(60000)
+            .targetHeadcount(7)
+            .deadline(LocalDateTime.now().plusDays(10))
+            .deliveryMethod(DeliveryMethod.DIRECT)
+            .isParticipantListPublic(false)
+            .build();
+        groupBuyService.updateGroupBuy(testUser.getId(), created.getId(), updateRequest);
+        entityManager.flush();
+        entityManager.clear();
+
+        // then - 수정 후 버전이 증가해야 함
+        GroupBuy updated = groupBuyRepository.findById(created.getId()).orElseThrow();
+        assertThat(updated.getVersion()).isEqualTo(1L);
+    }
 }

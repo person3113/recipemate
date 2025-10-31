@@ -49,20 +49,40 @@ public class GroupBuyService {
         // 2. 이미지 업로드 (있는 경우)
         List<String> imageUrls = imageUploadUtil.uploadImages(request.getImageFiles());
 
-        // 3. GroupBuy 엔티티 생성
-        GroupBuy groupBuy = GroupBuy.createGeneral(
-            host,
-            request.getTitle(),
-            request.getContent(),
-            request.getCategory(),
-            request.getTotalPrice(),
-            request.getTargetHeadcount(),
-            request.getDeadline(),
-            request.getDeliveryMethod(),
-            request.getMeetupLocation(),
-            request.getParcelFee(),
-            request.getIsParticipantListPublic()
-        );
+        // 3. GroupBuy 엔티티 생성 (레시피 기반 여부 확인)
+        GroupBuy groupBuy;
+        if (request.getRecipeApiId() != null) {
+            groupBuy = GroupBuy.createRecipeBased(
+                host,
+                request.getTitle(),
+                request.getContent(),
+                request.getCategory(),
+                request.getTotalPrice(),
+                request.getTargetHeadcount(),
+                request.getDeadline(),
+                request.getDeliveryMethod(),
+                request.getMeetupLocation(),
+                request.getParcelFee(),
+                request.getIsParticipantListPublic(),
+                request.getRecipeApiId(),
+                request.getRecipeName(),
+                request.getRecipeImageUrl()
+            );
+        } else {
+            groupBuy = GroupBuy.createGeneral(
+                host,
+                request.getTitle(),
+                request.getContent(),
+                request.getCategory(),
+                request.getTotalPrice(),
+                request.getTargetHeadcount(),
+                request.getDeadline(),
+                request.getDeliveryMethod(),
+                request.getMeetupLocation(),
+                request.getParcelFee(),
+                request.getIsParticipantListPublic()
+            );
+        }
 
         // 4. GroupBuy 저장
         GroupBuy savedGroupBuy = groupBuyRepository.save(groupBuy);
@@ -72,6 +92,20 @@ public class GroupBuyService {
 
         // 6. 응답 DTO 생성
         return mapToResponse(savedGroupBuy, imageUrls);
+    }
+
+    /**
+     * 레시피 기반 공구 생성
+     */
+    @Transactional
+    public GroupBuyResponse createRecipeBasedGroupBuy(Long userId, CreateGroupBuyRequest request) {
+        // 0. 레시피 필드 검증
+        if (request.getRecipeApiId() == null || request.getRecipeApiId().isBlank()) {
+            throw new IllegalArgumentException("레시피 API ID는 필수입니다");
+        }
+        
+        // 일반 생성 메서드 사용 (내부에서 레시피 필드를 감지하여 처리)
+        return createGroupBuy(userId, request);
     }
 
     /**

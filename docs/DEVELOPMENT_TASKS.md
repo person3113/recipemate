@@ -469,12 +469,12 @@
   - `findByCategoryOrderByCreatedAtDesc(PostCategory category, Pageable pageable)`
   - `findByAuthorId(Long authorId)`
 
-#### [ ] Task 3-1-2: PostImage 엔티티 작성
-- [ ] PostImage 엔티티 구현
+#### [x] Task 3-1-2: PostImage 엔티티 작성
+- [x] PostImage 엔티티 구현
   - 필드: id, post(FK), imageUrl, displayOrder
   - 제약조건: UNIQUE(postId, displayOrder)
   - 최대 5장 제한 (Application Layer)
-- [ ] PostImageRepository 작성
+- [x] PostImageRepository 작성
 
 #### [ ] Task 3-1-3: 게시글 CRUD 기능
 - [ ] 테스트 작성

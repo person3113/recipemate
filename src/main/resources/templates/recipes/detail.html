@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${recipe.name} + ' - RecipeMate'">레시피 상세</title>
+</head>
+<body>
+    <h1 th:text="${recipe.name}">레시피 이름</h1>
+    
+    <!-- Recipe Image -->
+    <img th:if="${recipe.imageUrl != null}" th:src="${recipe.imageUrl}" th:alt="${recipe.name}" width="400">
+    
+    <!-- Recipe Info -->
+    <div class="recipe-info">
+        <p><strong>카테고리:</strong> <span th:text="${recipe.category}"></span></p>
+        <p th:if="${recipe.area != null}"><strong>지역:</strong> <span th:text="${recipe.area}"></span></p>
+        <p><strong>출처:</strong> <span th:text="${recipe.source}"></span></p>
+    </div>
+    
+    <!-- Ingredients -->
+    <div class="ingredients">
+        <h2>재료</h2>
+        <ul>
+            <li th:each="ingredient : ${recipe.ingredients}">
+                <span th:text="${ingredient.name}"></span>: 
+                <span th:text="${ingredient.measure}"></span>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Instructions -->
+    <div class="instructions">
+        <h2>조리법</h2>
+        <p th:text="${recipe.instructions}" style="white-space: pre-line;"></p>
+    </div>
+    
+    <!-- External Links -->
+    <div class="links">
+        <h2>참고 링크</h2>
+        <p th:if="${recipe.youtubeUrl != null}">
+            <a th:href="${recipe.youtubeUrl}" target="_blank">YouTube 영상 보기</a>
+        </p>
+        <p th:if="${recipe.sourceUrl != null}">
+            <a th:href="${recipe.sourceUrl}" target="_blank">원본 레시피 보기</a>
+        </p>
+    </div>
+    
+    <!-- Actions -->
+    <div class="actions">
+        <a th:href="@{/group-purchases/new(recipeApiId=${recipe.id})}" class="btn">이 레시피로 공동구매 만들기</a>
+        <a href="/recipes" class="btn">레시피 목록으로</a>
+    </div>
+</body>
+</html>

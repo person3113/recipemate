@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>레시피 카테고리 - RecipeMate</title>
+</head>
+<body>
+    <h1>레시피 카테고리</h1>
+    
+    <p>다양한 레시피 카테고리를 탐색해보세요.</p>
+    
+    <!-- Category List -->
+    <div th:if="${categories != null && !categories.isEmpty()}">
+        <div th:each="category : ${categories}" class="category-item">
+            <h3 th:text="${category.name}">카테고리 이름</h3>
+            <img th:if="${category.thumbnail != null}" 
+                 th:src="${category.thumbnail}" 
+                 th:alt="${category.name}" 
+                 width="150">
+            <p th:if="${category.description != null}" th:text="${category.description}"></p>
+            <a th:href="@{/recipes(keyword=${category.name})}" class="btn">이 카테고리 레시피 보기</a>
+        </div>
+    </div>
+    
+    <div th:if="${categories == null || categories.isEmpty()}">
+        <p>카테고리를 불러올 수 없습니다.</p>
+    </div>
+    
+    <hr>
+    <div>
+        <a href="/recipes">레시피 검색</a> | 
+        <a href="/recipes/random">랜덤 레시피</a>
+    </div>
+</body>
+</html>

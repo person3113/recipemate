@@ -369,24 +369,34 @@
   - food.safety.api.key (환경변수)
   - food.safety.api.base-url
 
-#### [ ] Task 2-1-3: Recipe 서비스 레이어 작성
-- [ ] RecipeService 구현
+#### [x] Task 2-1-3: Recipe 서비스 레이어 작성
+- [x] RecipeService 구현
   - `searchRecipes(String keyword)`
   - `getRecipeDetail(String apiId)`
   - `getRandomRecipes()`
   - `getCategories()`
   - API 응답 캐싱 (Redis - 선택)
-- [ ] 재료 파싱 로직
+- [x] 재료 파싱 로직
   - strIngredient1~20 추출
   - null/빈 문자열 필터링
   - 재료 + 분량 조합
 
-#### [ ] Task 2-1-4: Recipe 컨트롤러 작성
-- [ ] RecipeController 구현
+#### [x] Task 2-1-4: Recipe 컨트롤러 작성
+- [x] 테스트 작성 (RecipeControllerTest.java)
+  - 레시피 검색 페이지 렌더링
+  - 레시피 상세 페이지 렌더링
+  - 랜덤 레시피 조회
+  - 카테고리 목록 조회
+- [x] RecipeController 구현
   - `GET /recipes` (검색, 필터링)
   - `GET /recipes/{recipeId}` (상세 조회)
   - `GET /recipes/random` (랜덤 추천)
   - `GET /recipes/categories`
+- [x] Thymeleaf 템플릿 작성
+  - templates/recipes/list.html
+  - templates/recipes/detail.html
+  - templates/recipes/random.html
+  - templates/recipes/categories.html
 
 ---
 

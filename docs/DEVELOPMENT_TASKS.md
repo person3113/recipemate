@@ -329,21 +329,21 @@
 
 ### 2.1. 외부 API 연동 (Recipe Domain)
 
-#### [ ] Task 2-1-1: TheMealDB API 클라이언트 작성
-- [ ] 테스트 작성 (API Mock 사용)
+#### [x] Task 2-1-1: TheMealDB API 클라이언트 작성
+- [x] 테스트 작성 (API Mock 사용)
   - 레시피 검색 (이름)
   - 레시피 상세 조회 (ID)
   - 랜덤 레시피 조회
   - 카테고리 목록 조회
-- [ ] RestTemplate 설정
+- [x] RestTemplate 설정
   - API Base URL 설정
   - 타임아웃 설정
-- [ ] TheMealDBClient 구현
+- [x] TheMealDBClient 구현
   - `searchRecipes(String name)`
   - `getRecipeDetail(String id)`
   - `getRandomRecipes(int count)`
   - `getCategories()`
-- [ ] DTO 작성
+- [x] DTO 작성
   - MealResponse (strMeal, strMealThumb, strIngredient1~20, strMeasure1~20, ...)
 
 #### [ ] Task 2-1-2: 식품안전나라 API 클라이언트 작성

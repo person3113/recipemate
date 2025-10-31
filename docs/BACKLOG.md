@@ -11,57 +11,23 @@
 
 ## 🔴 HIGH Priority (즉시 수정)
 
+### 1. Security 통합 테스트 추가
+- **현황**: Controller 단위 테스트는 Security OFF, Security 설정 검증 테스트 누락
+- **개선**: `SecurityConfigIntegrationTest.java` 신규 생성하여 인증/인가 규칙 검증
+- **처리 시점**: Phase 1 완료 전
+- **예상 시간**: 30분
+
 ---
 
-## 🟡 MEDIUM Priority 
+## 🟡 MEDIUM Priority
 
-### 1. 테스트 코드 리팩터링 - 슬라이스 테스트 및 단위 테스트 전환
-- **현황**: Service와 Controller 테스트가 `@SpringBootTest`로 전체 Context 로딩 (무거움)
-- **문제점**:
-  - Service 테스트: 전체 ApplicationContext 로딩, 실제 DB 연동 → 느림
-  - Controller 테스트: `@SpringBootTest` + `@AutoConfigureMockMvc` → 통합 테스트 수준
-  - `@MockBean` deprecated (Spring Boot 3.4.0+) 경고 발생
-- **개선 방안**:
-  
-  **✅ Entity 테스트 (현재 방식 유지)**
-  - Plain JUnit, 프레임워크 의존성 없음
-  - 순수 도메인 로직 검증 (속도: ⚡ 매우 빠름)
-  
-  **✅ Repository 테스트 (현재 방식 유지)**
-  - `@DataJpaTest` 슬라이스 테스트 (JPA 관련 빈만 로딩)
-  - 인메모리 DB (H2) 사용, QueryDSL 설정 @Import
-  - 쿼리 메서드, 커스텀 쿼리 검증 (속도: 🚀 빠름)
-  
-  **⚠️ Service 테스트 (전환 필요)**
-  - 현재: `@SpringBootTest` (무거움)
-  - 개선: `@ExtendWith(MockitoExtension.class)` + `@Mock`
-  - Repository와 의존성을 Mock으로 주입, 순수 비즈니스 로직만 테스트
-  - Context 로딩 없이 격리된 단위 테스트 (속도: ⚡ 매우 빠름)
-  
-  **⚠️ Controller 테스트 (전환 필요)**
-  - 현재: `@SpringBootTest` + `@AutoConfigureMockMvc` (무거움)
-  - 개선: `@WebMvcTest(ControllerName.class)`
-  - MVC 레이어만 로딩, Service는 `@MockitoBean`으로 주입
-  - MockMvc를 통한 HTTP 요청/응답 검증 (속도: 🚀 빠름)
-  
-  **📌 @MockBean Deprecation 대응 (Spring Boot 3.4.0+)**
-  - Deprecated: `@MockBean`, `@SpyBean`
-  - 대체: `@MockitoBean`, `@MockitoSpyBean`
-  - import 변경: `org.springframework.boot.test.mock.mockito.MockBean`
-    → `org.springframework.test.context.bean.override.mockito.MockitoBean`
-  
-  **Integration 테스트 (최소화)**
-  - `@SpringBootTest`는 전체 플로우 E2E 테스트에만 사용
-  - 핵심 시나리오 몇 개만 작성 (속도: 🐌 느림)
-  
-- **장점**:
-  - 테스트 실행 속도 5~10배 향상 (Context 로딩 시간 제거)
-  - 레이어별 책임 명확화 (단위 테스트 vs 통합 테스트)
-  - Mock을 통한 의존성 제어로 테스트 격리성 향상
-  - TDD 사이클 단축 (빠른 피드백)
-- **처리 시점**: Phase 1 완료 전 (테스트 속도 개선 필수)
-- **예상 시간**: 4-6시간
-- **참고**: 기존 테스트 로직 유지하면서 어노테이션 및 Mock 설정만 변경
+### 1. FoodSafetyClientTest 리팩토링
+- **현황**: `@SpringBootTest`로 전체 Context 로딩 (느림)
+- **개선**: `MockRestServiceServer` 사용으로 전환
+- **효과**: 테스트 속도 5~10배 향상
+- **처리 시점**: Phase 1 테스트 최적화 단계
+- **예상 시간**: 1시간 
+
 
 ---
 

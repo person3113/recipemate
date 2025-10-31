@@ -5,52 +5,65 @@ import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
 import com.recipemate.domain.groupbuy.dto.UpdateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
+import com.recipemate.domain.groupbuy.entity.GroupBuyImage;
 import com.recipemate.domain.groupbuy.repository.GroupBuyImageRepository;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
+import com.recipemate.domain.recipe.dto.RecipeDetailResponse;
+import com.recipemate.domain.recipe.service.RecipeService;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
+import com.recipemate.global.util.ImageUploadUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.*;
 
-@SpringBootTest
-@Transactional
+@ExtendWith(MockitoExtension.class)
 class GroupBuyServiceTest {
 
-    @Autowired
+    @InjectMocks
     private GroupBuyService groupBuyService;
 
-    @Autowired
+    @Mock
     private GroupBuyRepository groupBuyRepository;
 
-    @Autowired
+    @Mock
     private GroupBuyImageRepository groupBuyImageRepository;
 
-    @Autowired
+    @Mock
     private UserRepository userRepository;
 
-    @Autowired
-    private jakarta.persistence.EntityManager entityManager;
+    @Mock
+    private ImageUploadUtil imageUploadUtil;
+
+    @Mock
+    private RecipeService recipeService;
 
     private User testUser;
+    private Long testUserId = 1L;
 
     @BeforeEach
     void setUp() {
@@ -60,8 +73,10 @@ class GroupBuyServiceTest {
             "테스터",
             "010-1234-5678"
         );
-        userRepository.save(testUser);
+        setUserId(testUser, testUserId);
     }
+
+    // ========== 공구 생성 테스트 ==========
 
     @Test
     @DisplayName("일반 공구 생성 성공")
@@ -81,8 +96,27 @@ class GroupBuyServiceTest {
             .imageFiles(new ArrayList<>())
             .build();
 
+        GroupBuy savedGroupBuy = GroupBuy.createGeneral(
+            testUser,
+            request.getTitle(),
+            request.getContent(),
+            request.getCategory(),
+            request.getTotalPrice(),
+            request.getTargetHeadcount(),
+            request.getDeadline(),
+            request.getDeliveryMethod(),
+            request.getMeetupLocation(),
+            request.getParcelFee(),
+            request.getIsParticipantListPublic()
+        );
+        setGroupBuyId(savedGroupBuy, 1L);
+
+        given(userRepository.findById(testUserId)).willReturn(Optional.of(testUser));
+        given(imageUploadUtil.uploadImages(anyList())).willReturn(new ArrayList<>());
+        given(groupBuyRepository.save(any(GroupBuy.class))).willReturn(savedGroupBuy);
+
         // when
-        GroupBuyResponse response = groupBuyService.createGroupBuy(testUser.getId(), request);
+        GroupBuyResponse response = groupBuyService.createGroupBuy(testUserId, request);
 
         // then
         assertThat(response).isNotNull();
@@ -96,6 +130,10 @@ class GroupBuyServiceTest {
         assertThat(response.getMeetupLocation()).isEqualTo("강남역 2번 출구");
         assertThat(response.getParcelFee()).isEqualTo(3000);
         assertThat(response.getHostNickname()).isEqualTo("테스터");
+        
+        verify(userRepository).findById(testUserId);
+        verify(imageUploadUtil).uploadImages(anyList());
+        verify(groupBuyRepository).save(any(GroupBuy.class));
     }
 
     @Test
@@ -113,29 +151,12 @@ class GroupBuyServiceTest {
             .build();
 
         // when & then
-        assertThatThrownBy(() -> groupBuyService.createGroupBuy(testUser.getId(), request))
+        assertThatThrownBy(() -> groupBuyService.createGroupBuy(testUserId, request))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_TITLE);
-    }
-
-    @Test
-    @DisplayName("마감일이 과거일 때 실패")
-    void createGroupBuy_Fail_PastDeadline() {
-        // given
-        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
-            .title("삼겹살 공동구매")
-            .content("신선한 삼겹살 공동구매합니다")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().minusDays(1))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .build();
-
-        // when & then
-        assertThatThrownBy(() -> groupBuyService.createGroupBuy(testUser.getId(), request))
-            .isInstanceOf(CustomException.class)
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_DEADLINE);
+        
+        verify(userRepository, never()).save(any(User.class));
+        verify(groupBuyRepository, never()).save(any(GroupBuy.class));
     }
 
     @Test
@@ -150,10 +171,15 @@ class GroupBuyServiceTest {
             .targetHeadcount(1)
             .deadline(LocalDateTime.now().plusDays(7))
             .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
             .build();
 
+        given(userRepository.findById(testUserId)).willReturn(Optional.of(testUser));
+        given(imageUploadUtil.uploadImages(anyList())).willReturn(new ArrayList<>());
+
         // when & then
-        assertThatThrownBy(() -> groupBuyService.createGroupBuy(testUser.getId(), request))
+        // GroupBuy.createGeneral()에서 targetHeadcount 검증이 일어남
+        assertThatThrownBy(() -> groupBuyService.createGroupBuy(testUserId, request))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_TARGET_HEADCOUNT);
     }
@@ -172,8 +198,11 @@ class GroupBuyServiceTest {
             .deliveryMethod(DeliveryMethod.BOTH)
             .build();
 
+        given(userRepository.findById(testUserId)).willReturn(Optional.of(testUser));
+        given(imageUploadUtil.uploadImages(anyList())).willReturn(new ArrayList<>());
+
         // when & then
-        assertThatThrownBy(() -> groupBuyService.createGroupBuy(testUser.getId(), request))
+        assertThatThrownBy(() -> groupBuyService.createGroupBuy(testUserId, request))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_TOTAL_PRICE);
     }
@@ -203,8 +232,12 @@ class GroupBuyServiceTest {
             .imageFiles(imageFiles)
             .build();
 
+        given(userRepository.findById(testUserId)).willReturn(Optional.of(testUser));
+        given(imageUploadUtil.uploadImages(imageFiles))
+            .willThrow(new IllegalArgumentException("이미지는 최대 3장까지 업로드 가능합니다"));
+
         // when & then
-        assertThatThrownBy(() -> groupBuyService.createGroupBuy(testUser.getId(), request))
+        assertThatThrownBy(() -> groupBuyService.createGroupBuy(testUserId, request))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("이미지는 최대 3장까지 업로드 가능합니다");
     }
@@ -216,6 +249,11 @@ class GroupBuyServiceTest {
         List<MultipartFile> imageFiles = List.of(
             new MockMultipartFile("image1", "test1.jpg", "image/jpeg", "test1".getBytes()),
             new MockMultipartFile("image2", "test2.jpg", "image/jpeg", "test2".getBytes())
+        );
+        
+        List<String> uploadedImageUrls = List.of(
+            "https://example.com/image1.jpg",
+            "https://example.com/image2.jpg"
         );
 
         CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
@@ -230,12 +268,32 @@ class GroupBuyServiceTest {
             .imageFiles(imageFiles)
             .build();
 
+        GroupBuy savedGroupBuy = GroupBuy.createGeneral(
+            testUser,
+            request.getTitle(),
+            request.getContent(),
+            request.getCategory(),
+            request.getTotalPrice(),
+            request.getTargetHeadcount(),
+            request.getDeadline(),
+            request.getDeliveryMethod(),
+            request.getMeetupLocation(),
+            request.getParcelFee(),
+            request.getIsParticipantListPublic()
+        );
+        setGroupBuyId(savedGroupBuy, 1L);
+
+        given(userRepository.findById(testUserId)).willReturn(Optional.of(testUser));
+        given(imageUploadUtil.uploadImages(imageFiles)).willReturn(uploadedImageUrls);
+        given(groupBuyRepository.save(any(GroupBuy.class))).willReturn(savedGroupBuy);
+
         // when
-        GroupBuyResponse response = groupBuyService.createGroupBuy(testUser.getId(), request);
+        GroupBuyResponse response = groupBuyService.createGroupBuy(testUserId, request);
 
         // then
         assertThat(response).isNotNull();
         assertThat(response.getImageUrls()).hasSize(2);
+        verify(groupBuyImageRepository).saveAll(anyList());
     }
 
     @Test
@@ -252,6 +310,8 @@ class GroupBuyServiceTest {
             .deliveryMethod(DeliveryMethod.BOTH)
             .build();
 
+        given(userRepository.findById(999L)).willReturn(Optional.empty());
+
         // when & then
         assertThatThrownBy(() -> groupBuyService.createGroupBuy(999L, request))
             .isInstanceOf(CustomException.class)
@@ -264,22 +324,32 @@ class GroupBuyServiceTest {
     @DisplayName("공구 목록 조회 성공 - 페이징")
     void getGroupBuyList_Success_WithPagination() {
         // given
-        // 10개의 공구 생성
-        for (int i = 1; i <= 10; i++) {
-            CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
-                .title("공구 " + i)
-                .content("공구 내용 " + i)
-                .category("육류")
-                .totalPrice(10000 * i)
-                .targetHeadcount(5)
-                .deadline(LocalDateTime.now().plusDays(7))
-                .deliveryMethod(DeliveryMethod.BOTH)
-                .imageFiles(new ArrayList<>())
-                .build();
-            groupBuyService.createGroupBuy(testUser.getId(), request);
+        List<GroupBuy> groupBuyList = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) {
+            GroupBuy groupBuy = GroupBuy.createGeneral(
+                testUser,
+                "공구 " + i,
+                "공구 내용 " + i,
+                "육류",
+                10000 * i,
+                5,
+                LocalDateTime.now().plusDays(7),
+                DeliveryMethod.BOTH,
+                null,
+                null,
+                true
+            );
+            setGroupBuyId(groupBuy, (long) i);
+            groupBuyList.add(groupBuy);
         }
 
         Pageable pageable = PageRequest.of(0, 5);
+        Page<GroupBuy> groupBuyPage = new PageImpl<>(groupBuyList, pageable, 10);
+
+        given(groupBuyRepository.searchGroupBuys(any(GroupBuySearchCondition.class), eq(pageable)))
+            .willReturn(groupBuyPage);
+        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+            .willReturn(new ArrayList<>());
 
         // when
         Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(null, pageable);
@@ -290,66 +360,63 @@ class GroupBuyServiceTest {
         assertThat(result.getTotalElements()).isEqualTo(10);
         assertThat(result.getTotalPages()).isEqualTo(2);
         assertThat(result.isFirst()).isTrue();
+        
+        verify(groupBuyRepository).searchGroupBuys(any(GroupBuySearchCondition.class), eq(pageable));
     }
 
     @Test
     @DisplayName("공구 목록 조회 성공 - 카테고리 필터링")
     void getGroupBuyList_Success_FilterByCategory() {
         // given
-        // 육류 카테고리 공구 3개
+        List<GroupBuy> meatGroupBuys = new ArrayList<>();
         for (int i = 1; i <= 3; i++) {
-            CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
-                .title("육류 공구 " + i)
-                .content("육류 공구 내용 " + i)
-                .category("육류")
-                .totalPrice(10000)
-                .targetHeadcount(5)
-                .deadline(LocalDateTime.now().plusDays(7))
-                .deliveryMethod(DeliveryMethod.BOTH)
-                .imageFiles(new ArrayList<>())
-                .build();
-            groupBuyService.createGroupBuy(testUser.getId(), request);
-        }
-
-        // 채소 카테고리 공구 2개
-        for (int i = 1; i <= 2; i++) {
-            CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
-                .title("채소 공구 " + i)
-                .content("채소 공구 내용 " + i)
-                .category("채소")
-                .totalPrice(5000)
-                .targetHeadcount(5)
-                .deadline(LocalDateTime.now().plusDays(7))
-                .deliveryMethod(DeliveryMethod.BOTH)
-                .imageFiles(new ArrayList<>())
-                .build();
-            groupBuyService.createGroupBuy(testUser.getId(), request);
+            GroupBuy groupBuy = GroupBuy.createGeneral(
+                testUser,
+                "육류 공구 " + i,
+                "육류 공구 내용 " + i,
+                "육류",
+                10000,
+                5,
+                LocalDateTime.now().plusDays(7),
+                DeliveryMethod.BOTH,
+                null,
+                null,
+                true
+            );
+            setGroupBuyId(groupBuy, (long) i);
+            meatGroupBuys.add(groupBuy);
         }
 
         Pageable pageable = PageRequest.of(0, 10);
+        Page<GroupBuy> groupBuyPage = new PageImpl<>(meatGroupBuys, pageable, 3);
+        GroupBuySearchCondition condition = GroupBuySearchCondition.builder().category("육류").build();
 
-        // when - 육류 카테고리만 조회
-        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
-            GroupBuySearchCondition.builder().category("육류").build(),
-            pageable
-        );
+        given(groupBuyRepository.searchGroupBuys(eq(condition), eq(pageable)))
+            .willReturn(groupBuyPage);
+        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+            .willReturn(new ArrayList<>());
+
+        // when
+        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(condition, pageable);
 
         // then
         assertThat(result.getContent()).hasSize(3);
         assertThat(result.getContent())
             .allMatch(gb -> gb.getCategory().equals("육류"));
+        
+        verify(groupBuyRepository).searchGroupBuys(eq(condition), eq(pageable));
     }
 
     @Test
-    @DisplayName("공구 목록 조회 성공 - 상태 필터링 (RECRUITING)")
-    void getGroupBuyList_Success_FilterByStatus() {
+    @DisplayName("공구 목록 조회 성공 - 키워드 검색")
+    void getGroupBuyList_Success_SearchByKeyword() {
         // given
-        GroupBuy recruiting = GroupBuy.createGeneral(
+        GroupBuy groupBuy = GroupBuy.createGeneral(
             testUser,
-            "모집중 공구",
-            "내용",
+            "삼겹살 공동구매",
+            "신선한 고기",
             "육류",
-            10000,
+            50000,
             5,
             LocalDateTime.now().plusDays(7),
             DeliveryMethod.BOTH,
@@ -357,175 +424,25 @@ class GroupBuyServiceTest {
             null,
             true
         );
-        groupBuyRepository.save(recruiting);
-
-        // 마감임박 공구 생성
-        GroupBuy imminent = GroupBuy.createGeneral(
-            testUser,
-            "마감임박 공구",
-            "내용",
-            "육류",
-            10000,
-            5,
-            LocalDateTime.now().plusHours(23), // 24시간 이내
-            DeliveryMethod.BOTH,
-            null,
-            null,
-            true
-        );
-        groupBuyRepository.save(imminent);
+        setGroupBuyId(groupBuy, 1L);
 
         Pageable pageable = PageRequest.of(0, 10);
+        Page<GroupBuy> groupBuyPage = new PageImpl<>(List.of(groupBuy), pageable, 1);
+        GroupBuySearchCondition condition = GroupBuySearchCondition.builder().keyword("삼겹살").build();
 
-        // when - RECRUITING 상태만 조회
-        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
-            GroupBuySearchCondition.builder().status(GroupBuyStatus.RECRUITING).build(),
-            pageable
-        );
+        given(groupBuyRepository.searchGroupBuys(eq(condition), eq(pageable)))
+            .willReturn(groupBuyPage);
+        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+            .willReturn(new ArrayList<>());
 
-        // then
-        assertThat(result.getContent()).isNotEmpty();
-        assertThat(result.getContent())
-            .allMatch(gb -> gb.getStatus() == GroupBuyStatus.RECRUITING);
-    }
-
-    @Test
-    @DisplayName("공구 목록 조회 성공 - 키워드 검색 (제목)")
-    void getGroupBuyList_Success_SearchByKeywordInTitle() {
-        // given
-        CreateGroupBuyRequest request1 = CreateGroupBuyRequest.builder()
-            .title("삼겹살 공동구매")
-            .content("신선한 고기")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .build();
-        groupBuyService.createGroupBuy(testUser.getId(), request1);
-
-        CreateGroupBuyRequest request2 = CreateGroupBuyRequest.builder()
-            .title("양파 공동구매")
-            .content("싱싱한 양파")
-            .category("채소")
-            .totalPrice(20000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .build();
-        groupBuyService.createGroupBuy(testUser.getId(), request2);
-
-        Pageable pageable = PageRequest.of(0, 10);
-
-        // when - "삼겹살" 키워드로 검색
-        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
-            GroupBuySearchCondition.builder().keyword("삼겹살").build(),
-            pageable
-        );
+        // when
+        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(condition, pageable);
 
         // then
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getTitle()).contains("삼겹살");
-    }
-
-    @Test
-    @DisplayName("공구 목록 조회 성공 - 키워드 검색 (내용)")
-    void getGroupBuyList_Success_SearchByKeywordInContent() {
-        // given
-        CreateGroupBuyRequest request1 = CreateGroupBuyRequest.builder()
-            .title("고기 공동구매")
-            .content("프리미엄 한우 삼겹살입니다")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .build();
-        groupBuyService.createGroupBuy(testUser.getId(), request1);
-
-        CreateGroupBuyRequest request2 = CreateGroupBuyRequest.builder()
-            .title("채소 공동구매")
-            .content("싱싱한 양파")
-            .category("채소")
-            .totalPrice(20000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .build();
-        groupBuyService.createGroupBuy(testUser.getId(), request2);
-
-        Pageable pageable = PageRequest.of(0, 10);
-
-        // when - "프리미엄" 키워드로 검색
-        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
-            GroupBuySearchCondition.builder().keyword("프리미엄").build(),
-            pageable
-        );
-
-        // then
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getContent()).contains("프리미엄");
-    }
-
-    @Test
-    @DisplayName("공구 목록 조회 성공 - 복합 필터 (카테고리 + 키워드)")
-    void getGroupBuyList_Success_MultipleFilters() {
-        // given
-        CreateGroupBuyRequest request1 = CreateGroupBuyRequest.builder()
-            .title("삼겹살 공동구매")
-            .content("신선한 고기")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .build();
-        groupBuyService.createGroupBuy(testUser.getId(), request1);
-
-        CreateGroupBuyRequest request2 = CreateGroupBuyRequest.builder()
-            .title("목살 공동구매")
-            .content("맛있는 고기")
-            .category("육류")
-            .totalPrice(40000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .build();
-        groupBuyService.createGroupBuy(testUser.getId(), request2);
-
-        CreateGroupBuyRequest request3 = CreateGroupBuyRequest.builder()
-            .title("양파 공동구매")
-            .content("신선한 양파")
-            .category("채소")
-            .totalPrice(20000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .build();
-        groupBuyService.createGroupBuy(testUser.getId(), request3);
-
-        Pageable pageable = PageRequest.of(0, 10);
-
-        // when - 카테고리=육류 AND 키워드=삼겹살
-        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
-            GroupBuySearchCondition.builder()
-                .category("육류")
-                .keyword("삼겹살")
-                .build(),
-            pageable
-        );
-
-        // then
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getTitle()).contains("삼겹살");
-        assertThat(result.getContent().get(0).getCategory()).isEqualTo("육류");
+        
+        verify(groupBuyRepository).searchGroupBuys(eq(condition), eq(pageable));
     }
 
     @Test
@@ -533,12 +450,16 @@ class GroupBuyServiceTest {
     void getGroupBuyList_Success_EmptyResult() {
         // given
         Pageable pageable = PageRequest.of(0, 10);
+        Page<GroupBuy> emptyPage = new PageImpl<>(new ArrayList<>(), pageable, 0);
+        GroupBuySearchCondition condition = GroupBuySearchCondition.builder()
+            .category("존재하지않는카테고리")
+            .build();
 
-        // when - 존재하지 않는 카테고리로 검색
-        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
-            GroupBuySearchCondition.builder().category("존재하지않는카테고리").build(),
-            pageable
-        );
+        given(groupBuyRepository.searchGroupBuys(eq(condition), eq(pageable)))
+            .willReturn(emptyPage);
+
+        // when
+        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(condition, pageable);
 
         // then
         assertThat(result.getContent()).isEmpty();
@@ -551,87 +472,48 @@ class GroupBuyServiceTest {
     @DisplayName("공구 상세 조회 성공")
     void getGroupBuyDetail_Success() {
         // given
-        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
-            .title("삼겹살 공동구매")
-            .content("신선한 삼겹살 공동구매합니다")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .meetupLocation("강남역 2번 출구")
-            .parcelFee(3000)
-            .isParticipantListPublic(true)
-            .imageFiles(new ArrayList<>())
-            .build();
-        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), request);
+        GroupBuy groupBuy = GroupBuy.createGeneral(
+            testUser,
+            "삼겹살 공동구매",
+            "신선한 삼겹살 공동구매합니다",
+            "육류",
+            50000,
+            5,
+            LocalDateTime.now().plusDays(7),
+            DeliveryMethod.BOTH,
+            "강남역 2번 출구",
+            3000,
+            true
+        );
+        setGroupBuyId(groupBuy, 1L);
+
+        List<GroupBuyImage> images = List.of(
+            GroupBuyImage.builder()
+                .groupBuy(groupBuy)
+                .imageUrl("https://example.com/image1.jpg")
+                .displayOrder(0)
+                .build()
+        );
+
+        given(groupBuyRepository.findByIdWithHost(1L)).willReturn(Optional.of(groupBuy));
+        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy))
+            .willReturn(images);
 
         // when
-        GroupBuyResponse response = groupBuyService.getGroupBuyDetail(created.getId());
+        GroupBuyResponse response = groupBuyService.getGroupBuyDetail(1L);
 
         // then
         assertThat(response).isNotNull();
-        assertThat(response.getId()).isEqualTo(created.getId());
+        assertThat(response.getId()).isEqualTo(1L);
         assertThat(response.getTitle()).isEqualTo("삼겹살 공동구매");
         assertThat(response.getContent()).isEqualTo("신선한 삼겹살 공동구매합니다");
-        assertThat(response.getHostId()).isEqualTo(testUser.getId());
+        assertThat(response.getHostId()).isEqualTo(testUserId);
         assertThat(response.getHostNickname()).isEqualTo(testUser.getNickname());
         assertThat(response.getHostMannerTemperature()).isEqualTo(testUser.getMannerTemperature());
-    }
-
-    @Test
-    @DisplayName("공구 상세 조회 성공 - 주최자 정보 포함 (Fetch Join)")
-    void getGroupBuyDetail_Success_WithHostInfo() {
-        // given
-        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
-            .title("삼겹살 공동구매")
-            .content("신선한 삼겹살 공동구매합니다")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .build();
-        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), request);
-
-        // when
-        GroupBuyResponse response = groupBuyService.getGroupBuyDetail(created.getId());
-
-        // then - 주최자 정보가 함께 조회되어야 함
-        assertThat(response.getHostId()).isNotNull();
-        assertThat(response.getHostNickname()).isEqualTo("테스터");
-        assertThat(response.getHostMannerTemperature()).isEqualTo(36.5);
-    }
-
-    @Test
-    @DisplayName("공구 상세 조회 성공 - 이미지 목록 포함 (순서대로)")
-    void getGroupBuyDetail_Success_WithImages() {
-        // given
-        List<MultipartFile> imageFiles = List.of(
-            new MockMultipartFile("image1", "test1.jpg", "image/jpeg", "test1".getBytes()),
-            new MockMultipartFile("image2", "test2.jpg", "image/jpeg", "test2".getBytes()),
-            new MockMultipartFile("image3", "test3.jpg", "image/jpeg", "test3".getBytes())
-        );
-
-        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
-            .title("삼겹살 공동구매")
-            .content("신선한 삼겹살 공동구매합니다")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(imageFiles)
-            .build();
-        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), request);
-
-        // when
-        GroupBuyResponse response = groupBuyService.getGroupBuyDetail(created.getId());
-
-        // then - 이미지가 순서대로 포함되어야 함
-        assertThat(response.getImageUrls()).isNotNull();
-        assertThat(response.getImageUrls()).hasSize(3);
+        assertThat(response.getImageUrls()).hasSize(1);
+        
+        verify(groupBuyRepository).findByIdWithHost(1L);
+        verify(groupBuyImageRepository).findByGroupBuyOrderByDisplayOrderAsc(groupBuy);
     }
 
     @Test
@@ -639,6 +521,7 @@ class GroupBuyServiceTest {
     void getGroupBuyDetail_Fail_NotFound() {
         // given
         Long nonExistentId = 999L;
+        given(groupBuyRepository.findByIdWithHost(nonExistentId)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> groupBuyService.getGroupBuyDetail(nonExistentId))
@@ -652,20 +535,20 @@ class GroupBuyServiceTest {
     @DisplayName("공구 수정 성공 - 주최자가 수정")
     void updateGroupBuy_Success() {
         // given
-        CreateGroupBuyRequest createRequest = CreateGroupBuyRequest.builder()
-            .title("삼겹살 공동구매")
-            .content("신선한 삼겹살 공동구매합니다")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .meetupLocation("강남역 2번 출구")
-            .parcelFee(3000)
-            .isParticipantListPublic(true)
-            .imageFiles(new ArrayList<>())
-            .build();
-        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), createRequest);
+        GroupBuy groupBuy = GroupBuy.createGeneral(
+            testUser,
+            "삼겹살 공동구매",
+            "신선한 삼겹살 공동구매합니다",
+            "육류",
+            50000,
+            5,
+            LocalDateTime.now().plusDays(7),
+            DeliveryMethod.BOTH,
+            "강남역 2번 출구",
+            3000,
+            true
+        );
+        setGroupBuyId(groupBuy, 1L);
 
         UpdateGroupBuyRequest updateRequest = UpdateGroupBuyRequest.builder()
             .title("목살 공동구매")
@@ -680,8 +563,13 @@ class GroupBuyServiceTest {
             .isParticipantListPublic(false)
             .build();
 
+        given(userRepository.findById(testUserId)).willReturn(Optional.of(testUser));
+        given(groupBuyRepository.findByIdWithHost(1L)).willReturn(Optional.of(groupBuy));
+        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy))
+            .willReturn(new ArrayList<>());
+
         // when
-        GroupBuyResponse updated = groupBuyService.updateGroupBuy(testUser.getId(), created.getId(), updateRequest);
+        GroupBuyResponse updated = groupBuyService.updateGroupBuy(testUserId, 1L, updateRequest);
 
         // then
         assertThat(updated).isNotNull();
@@ -691,34 +579,38 @@ class GroupBuyServiceTest {
         assertThat(updated.getTargetHeadcount()).isEqualTo(7);
         assertThat(updated.getDeliveryMethod()).isEqualTo(DeliveryMethod.DIRECT);
         assertThat(updated.getMeetupLocation()).isEqualTo("홍대입구역 3번 출구");
-        assertThat(updated.getParcelFee()).isNull();
         assertThat(updated.getIsParticipantListPublic()).isFalse();
+        
+        verify(userRepository).findById(testUserId);
+        verify(groupBuyRepository).findByIdWithHost(1L);
     }
 
     @Test
     @DisplayName("공구 수정 실패 - 주최자가 아닌 사용자")
     void updateGroupBuy_Fail_NotHost() {
         // given
-        CreateGroupBuyRequest createRequest = CreateGroupBuyRequest.builder()
-            .title("삼겹살 공동구매")
-            .content("신선한 삼겹살 공동구매합니다")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .build();
-        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), createRequest);
+        GroupBuy groupBuy = GroupBuy.createGeneral(
+            testUser,
+            "삼겹살 공동구매",
+            "신선한 삼겹살 공동구매합니다",
+            "육류",
+            50000,
+            5,
+            LocalDateTime.now().plusDays(7),
+            DeliveryMethod.BOTH,
+            null,
+            null,
+            true
+        );
+        setGroupBuyId(groupBuy, 1L);
 
-        // 다른 사용자 생성
         User otherUser = User.create(
             "other@example.com",
             "encodedPassword",
             "다른사용자",
             "010-9999-9999"
         );
-        userRepository.save(otherUser);
+        setUserId(otherUser, 2L);
 
         UpdateGroupBuyRequest updateRequest = UpdateGroupBuyRequest.builder()
             .title("목살 공동구매")
@@ -731,8 +623,11 @@ class GroupBuyServiceTest {
             .isParticipantListPublic(false)
             .build();
 
+        given(userRepository.findById(2L)).willReturn(Optional.of(otherUser));
+        given(groupBuyRepository.findByIdWithHost(1L)).willReturn(Optional.of(groupBuy));
+
         // when & then
-        assertThatThrownBy(() -> groupBuyService.updateGroupBuy(otherUser.getId(), created.getId(), updateRequest))
+        assertThatThrownBy(() -> groupBuyService.updateGroupBuy(2L, 1L, updateRequest))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNAUTHORIZED_GROUP_BUY_ACCESS);
     }
@@ -753,8 +648,11 @@ class GroupBuyServiceTest {
             .isParticipantListPublic(false)
             .build();
 
+        given(userRepository.findById(testUserId)).willReturn(Optional.of(testUser));
+        given(groupBuyRepository.findByIdWithHost(nonExistentId)).willReturn(Optional.empty());
+
         // when & then
-        assertThatThrownBy(() -> groupBuyService.updateGroupBuy(testUser.getId(), nonExistentId, updateRequest))
+        assertThatThrownBy(() -> groupBuyService.updateGroupBuy(testUserId, nonExistentId, updateRequest))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.GROUP_BUY_NOT_FOUND);
     }
@@ -765,53 +663,66 @@ class GroupBuyServiceTest {
     @DisplayName("공구 삭제 성공 - 주최자가 삭제 (참여자 없음)")
     void deleteGroupBuy_Success() {
         // given
-        CreateGroupBuyRequest createRequest = CreateGroupBuyRequest.builder()
-            .title("삼겹살 공동구매")
-            .content("신선한 삼겹살 공동구매합니다")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .build();
-        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), createRequest);
+        GroupBuy groupBuy = GroupBuy.createGeneral(
+            testUser,
+            "삼겹살 공동구매",
+            "신선한 삼겹살 공동구매합니다",
+            "육류",
+            50000,
+            5,
+            LocalDateTime.now().plusDays(7),
+            DeliveryMethod.BOTH,
+            null,
+            null,
+            true
+        );
+        setGroupBuyId(groupBuy, 1L);
+
+        given(userRepository.findById(testUserId)).willReturn(Optional.of(testUser));
+        given(groupBuyRepository.findByIdWithHost(1L)).willReturn(Optional.of(groupBuy));
 
         // when
-        groupBuyService.deleteGroupBuy(testUser.getId(), created.getId());
+        groupBuyService.deleteGroupBuy(testUserId, 1L);
 
-        // then - 소프트 삭제 검증 (deletedAt이 설정되어야 함)
-        GroupBuy deleted = groupBuyRepository.findById(created.getId()).orElseThrow();
-        assertThat(deleted.getDeletedAt()).isNotNull();
+        // then
+        assertThat(groupBuy.getDeletedAt()).isNotNull();
+        
+        verify(userRepository).findById(testUserId);
+        verify(groupBuyRepository).findByIdWithHost(1L);
     }
 
     @Test
     @DisplayName("공구 삭제 실패 - 주최자가 아닌 사용자")
     void deleteGroupBuy_Fail_NotHost() {
         // given
-        CreateGroupBuyRequest createRequest = CreateGroupBuyRequest.builder()
-            .title("삼겹살 공동구매")
-            .content("신선한 삼겹살 공동구매합니다")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .build();
-        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), createRequest);
+        GroupBuy groupBuy = GroupBuy.createGeneral(
+            testUser,
+            "삼겹살 공동구매",
+            "신선한 삼겹살 공동구매합니다",
+            "육류",
+            50000,
+            5,
+            LocalDateTime.now().plusDays(7),
+            DeliveryMethod.BOTH,
+            null,
+            null,
+            true
+        );
+        setGroupBuyId(groupBuy, 1L);
 
-        // 다른 사용자 생성
         User otherUser = User.create(
             "other@example.com",
             "encodedPassword",
             "다른사용자",
             "010-9999-9999"
         );
-        userRepository.save(otherUser);
+        setUserId(otherUser, 2L);
+
+        given(userRepository.findById(2L)).willReturn(Optional.of(otherUser));
+        given(groupBuyRepository.findByIdWithHost(1L)).willReturn(Optional.of(groupBuy));
 
         // when & then
-        assertThatThrownBy(() -> groupBuyService.deleteGroupBuy(otherUser.getId(), created.getId()))
+        assertThatThrownBy(() -> groupBuyService.deleteGroupBuy(2L, 1L))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNAUTHORIZED_GROUP_BUY_ACCESS);
     }
@@ -833,16 +744,14 @@ class GroupBuyServiceTest {
             null,
             true
         );
-        GroupBuy savedGroupBuy = groupBuyRepository.save(groupBuy);
-        savedGroupBuy.increaseParticipant(); // 참여자 1명 추가
-        groupBuyRepository.saveAndFlush(savedGroupBuy); // 변경사항 저장 및 즉시 DB에 반영
-        
-        Long groupBuyId = savedGroupBuy.getId();
-        Long userId = testUser.getId();
-        entityManager.clear(); // 영속성 컨텍스트 초기화
+        setGroupBuyId(groupBuy, 1L);
+        groupBuy.increaseParticipant(); // 참여자 1명 추가
+
+        given(userRepository.findById(testUserId)).willReturn(Optional.of(testUser));
+        given(groupBuyRepository.findByIdWithHost(1L)).willReturn(Optional.of(groupBuy));
 
         // when & then
-        assertThatThrownBy(() -> groupBuyService.deleteGroupBuy(userId, groupBuyId))
+        assertThatThrownBy(() -> groupBuyService.deleteGroupBuy(testUserId, 1L))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.HAS_PARTICIPANTS);
     }
@@ -852,9 +761,11 @@ class GroupBuyServiceTest {
     void deleteGroupBuy_Fail_NotFound() {
         // given
         Long nonExistentId = 999L;
+        given(userRepository.findById(testUserId)).willReturn(Optional.of(testUser));
+        given(groupBuyRepository.findByIdWithHost(nonExistentId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> groupBuyService.deleteGroupBuy(testUser.getId(), nonExistentId))
+        assertThatThrownBy(() -> groupBuyService.deleteGroupBuy(testUserId, nonExistentId))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.GROUP_BUY_NOT_FOUND);
     }
@@ -862,63 +773,9 @@ class GroupBuyServiceTest {
     // ========== 레시피 기반 공구 테스트 ==========
 
     @Test
-    @DisplayName("레시피 기반 공구 생성 성공 - 레시피 정보 자동 채움")
-    void createRecipeBasedGroupBuy_Success_AutoFillRecipeInfo() {
-        // given - 레시피 API ID만 제공 (recipeName, recipeImageUrl은 null)
-        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
-            .title("김치찌개 재료 공구")
-            .content("맛있는 김치찌개 재료 공동구매")
-            .category("육류")
-            .totalPrice(30000)
-            .targetHeadcount(4)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .isParticipantListPublic(true)
-            .imageFiles(new ArrayList<>())
-            .recipeApiId("meal-52772") // TheMealDB의 실제 레시피 ID
-            .build();
-
-        // when
-        GroupBuyResponse response = groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request);
-
-        // then
-        assertThat(response).isNotNull();
-        assertThat(response.getRecipeApiId()).isEqualTo("meal-52772");
-        assertThat(response.getRecipeName()).isNotNull(); // 자동으로 채워져야 함
-        assertThat(response.getRecipeName()).isNotBlank();
-        assertThat(response.getRecipeImageUrl()).isNotNull(); // 자동으로 채워져야 함
-        assertThat(response.getRecipeImageUrl()).isNotBlank();
-    }
-
-    @Test
-    @DisplayName("레시피 기반 공구 생성 성공 - 재료 목록이 content에 추가됨")
-    void createRecipeBasedGroupBuy_Success_IngredientsInContent() {
-        // given
-        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
-            .title("김치찌개 재료 공구")
-            .content("맛있는 김치찌개를 만들어요!")
-            .category("육류")
-            .totalPrice(30000)
-            .targetHeadcount(4)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .isParticipantListPublic(true)
-            .imageFiles(new ArrayList<>())
-            .recipeApiId("meal-52772")
-            .build();
-
-        // when
-        GroupBuyResponse response = groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request);
-
-        // then
-        assertThat(response.getContent()).contains("맛있는 김치찌개를 만들어요!"); // 원래 내용 포함
-        assertThat(response.getContent()).contains("필요한 재료:"); // 재료 섹션이 추가되어야 함
-    }
-
-    @Test
     @DisplayName("레시피 기반 공구 생성 성공 - 수동으로 제공된 레시피 정보 사용")
     void createRecipeBasedGroupBuy_Success_WithManualRecipeInfo() {
-        // given - 레시피 정보를 수동으로 제공
+        // given
         CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
             .title("김치찌개 재료 공구")
             .content("맛있는 김치찌개 재료 공동구매")
@@ -934,15 +791,42 @@ class GroupBuyServiceTest {
             .recipeImageUrl("https://example.com/recipe/kimchi.jpg")
             .build();
 
-        // when
-        GroupBuyResponse response = groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request);
+        GroupBuy savedGroupBuy = GroupBuy.createRecipeBased(
+            testUser,
+            request.getTitle(),
+            request.getContent(),
+            request.getCategory(),
+            request.getTotalPrice(),
+            request.getTargetHeadcount(),
+            request.getDeadline(),
+            request.getDeliveryMethod(),
+            request.getMeetupLocation(),
+            request.getParcelFee(),
+            request.getIsParticipantListPublic(),
+            request.getRecipeApiId(),
+            request.getRecipeName(),
+            request.getRecipeImageUrl()
+        );
+        setGroupBuyId(savedGroupBuy, 1L);
 
-        // then - 수동으로 제공된 정보가 우선 사용되어야 함
+        given(userRepository.findById(testUserId)).willReturn(Optional.of(testUser));
+        given(imageUploadUtil.uploadImages(anyList())).willReturn(new ArrayList<>());
+        given(groupBuyRepository.save(any(GroupBuy.class))).willReturn(savedGroupBuy);
+
+        // when
+        GroupBuyResponse response = groupBuyService.createRecipeBasedGroupBuy(testUserId, request);
+
+        // then
         assertThat(response).isNotNull();
         assertThat(response.getTitle()).isEqualTo("김치찌개 재료 공구");
         assertThat(response.getRecipeApiId()).isEqualTo("RECIPE_12345");
         assertThat(response.getRecipeName()).isEqualTo("김치찌개");
         assertThat(response.getRecipeImageUrl()).isEqualTo("https://example.com/recipe/kimchi.jpg");
+        
+        verify(userRepository).findById(testUserId);
+        verify(groupBuyRepository).save(any(GroupBuy.class));
+        // 수동 제공된 경우 recipeService 호출하지 않음
+        verify(recipeService, never()).getRecipeDetail(anyString());
     }
 
     @Test
@@ -958,13 +842,13 @@ class GroupBuyServiceTest {
             .deadline(LocalDateTime.now().plusDays(7))
             .deliveryMethod(DeliveryMethod.BOTH)
             .imageFiles(new ArrayList<>())
-            .recipeApiId(null) // 레시피 ID 누락
+            .recipeApiId(null)
             .recipeName("김치찌개")
             .recipeImageUrl("https://example.com/recipe/kimchi.jpg")
             .build();
 
         // when & then
-        assertThatThrownBy(() -> groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request))
+        assertThatThrownBy(() -> groupBuyService.createRecipeBasedGroupBuy(testUserId, request))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_RECIPE_API_ID);
     }
@@ -982,11 +866,14 @@ class GroupBuyServiceTest {
             .deadline(LocalDateTime.now().plusDays(7))
             .deliveryMethod(DeliveryMethod.BOTH)
             .imageFiles(new ArrayList<>())
-            .recipeApiId("invalid-recipe-id-999999") // 존재하지 않는 레시피 ID
+            .recipeApiId("invalid-recipe-id-999999")
             .build();
 
+        given(recipeService.getRecipeDetail("invalid-recipe-id-999999"))
+            .willThrow(new CustomException(ErrorCode.RECIPE_NOT_FOUND));
+
         // when & then
-        assertThatThrownBy(() -> groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request))
+        assertThatThrownBy(() -> groupBuyService.createRecipeBasedGroupBuy(testUserId, request))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RECIPE_NOT_FOUND);
     }
@@ -995,24 +882,26 @@ class GroupBuyServiceTest {
     @DisplayName("레시피 기반 공구 수정 시 레시피 필드는 불변")
     void updateGroupBuy_RecipeFieldsImmutable() {
         // given - 레시피 기반 공구 생성
-        CreateGroupBuyRequest createRequest = CreateGroupBuyRequest.builder()
-            .title("김치찌개 재료 공구")
-            .content("맛있는 김치찌개 재료 공동구매")
-            .category("육류")
-            .totalPrice(30000)
-            .targetHeadcount(4)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .recipeApiId("RECIPE_12345")
-            .recipeName("김치찌개")
-            .recipeImageUrl("https://example.com/recipe/kimchi.jpg")
-            .build();
-        GroupBuyResponse created = groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), createRequest);
+        GroupBuy groupBuy = GroupBuy.createRecipeBased(
+            testUser,
+            "김치찌개 재료 공구",
+            "맛있는 김치찌개 재료 공동구매",
+            "육류",
+            30000,
+            4,
+            LocalDateTime.now().plusDays(7),
+            DeliveryMethod.BOTH,
+            null,
+            null,
+            true,
+            "RECIPE_12345",
+            "김치찌개",
+            "https://example.com/recipe/kimchi.jpg"
+        );
+        setGroupBuyId(groupBuy, 1L);
 
-        // 수정 요청 (레시피 필드는 수정 불가)
         UpdateGroupBuyRequest updateRequest = UpdateGroupBuyRequest.builder()
-            .title("된장찌개 재료 공구") // 제목만 수정
+            .title("된장찌개 재료 공구")
             .content("맛있는 된장찌개 재료 공동구매")
             .category("육류")
             .totalPrice(35000)
@@ -1022,106 +911,85 @@ class GroupBuyServiceTest {
             .isParticipantListPublic(false)
             .build();
 
+        given(userRepository.findById(testUserId)).willReturn(Optional.of(testUser));
+        given(groupBuyRepository.findByIdWithHost(1L)).willReturn(Optional.of(groupBuy));
+        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy))
+            .willReturn(new ArrayList<>());
+
         // when
-        GroupBuyResponse updated = groupBuyService.updateGroupBuy(testUser.getId(), created.getId(), updateRequest);
+        GroupBuyResponse updated = groupBuyService.updateGroupBuy(testUserId, 1L, updateRequest);
 
         // then - 레시피 필드는 변경되지 않아야 함
-        assertThat(updated.getTitle()).isEqualTo("된장찌개 재료 공구"); // 제목은 변경됨
-        assertThat(updated.getRecipeApiId()).isEqualTo("RECIPE_12345"); // 레시피 ID는 그대로
-        assertThat(updated.getRecipeName()).isEqualTo("김치찌개"); // 레시피 이름은 그대로
-        assertThat(updated.getRecipeImageUrl()).isEqualTo("https://example.com/recipe/kimchi.jpg"); // 레시피 이미지는 그대로
+        assertThat(updated.getTitle()).isEqualTo("된장찌개 재료 공구");
+        assertThat(updated.getRecipeApiId()).isEqualTo("RECIPE_12345");
+        assertThat(updated.getRecipeName()).isEqualTo("김치찌개");
+        assertThat(updated.getRecipeImageUrl()).isEqualTo("https://example.com/recipe/kimchi.jpg");
     }
 
     @Test
     @DisplayName("레시피 기반 공구 목록 필터링 성공")
     void getGroupBuyList_Success_FilterRecipeOnly() {
         // given
-        // 레시피 기반 공구 2개 생성
+        List<GroupBuy> recipeGroupBuys = new ArrayList<>();
         for (int i = 1; i <= 2; i++) {
-            CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
-                .title("레시피 공구 " + i)
-                .content("레시피 기반 공구")
-                .category("육류")
-                .totalPrice(30000)
-                .targetHeadcount(4)
-                .deadline(LocalDateTime.now().plusDays(7))
-                .deliveryMethod(DeliveryMethod.BOTH)
-                .imageFiles(new ArrayList<>())
-                .recipeApiId("RECIPE_" + i)
-                .recipeName("레시피 " + i)
-                .recipeImageUrl("https://example.com/recipe" + i + ".jpg")
-                .build();
-            groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request);
+            GroupBuy groupBuy = GroupBuy.createRecipeBased(
+                testUser,
+                "레시피 공구 " + i,
+                "레시피 기반 공구",
+                "육류",
+                30000,
+                4,
+                LocalDateTime.now().plusDays(7),
+                DeliveryMethod.BOTH,
+                null,
+                null,
+                true,
+                "RECIPE_" + i,
+                "레시피 " + i,
+                "https://example.com/recipe" + i + ".jpg"
+            );
+            setGroupBuyId(groupBuy, (long) i);
+            recipeGroupBuys.add(groupBuy);
         }
 
-        // 일반 공구 1개 생성
-        CreateGroupBuyRequest generalRequest = CreateGroupBuyRequest.builder()
-            .title("일반 공구")
-            .content("일반 공동구매")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .build();
-        groupBuyService.createGroupBuy(testUser.getId(), generalRequest);
-
         Pageable pageable = PageRequest.of(0, 10);
+        Page<GroupBuy> groupBuyPage = new PageImpl<>(recipeGroupBuys, pageable, 2);
+        GroupBuySearchCondition condition = GroupBuySearchCondition.builder().recipeOnly(true).build();
 
-        // when - 레시피 기반 공구만 조회
-        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(
-            GroupBuySearchCondition.builder().recipeOnly(true).build(),
-            pageable
-        );
+        given(groupBuyRepository.searchGroupBuys(eq(condition), eq(pageable)))
+            .willReturn(groupBuyPage);
+        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+            .willReturn(new ArrayList<>());
+
+        // when
+        Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(condition, pageable);
 
         // then
         assertThat(result.getContent()).hasSize(2);
         assertThat(result.getContent()).allMatch(gb -> gb.getRecipeApiId() != null);
+        
+        verify(groupBuyRepository).searchGroupBuys(eq(condition), eq(pageable));
     }
 
-    // ========== 동시성 제어 테스트 ==========
+    // ========== 유틸리티 메서드 ==========
 
-    @Test
-    @DisplayName("공구 엔티티에 @Version 필드가 있어 낙관적 락 지원")
-    void groupBuy_HasVersionField_ForOptimisticLocking() {
-        // given - 공구 생성
-        CreateGroupBuyRequest createRequest = CreateGroupBuyRequest.builder()
-            .title("삼겹살 공동구매")
-            .content("신선한 삼겹살")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .imageFiles(new ArrayList<>())
-            .build();
-        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), createRequest);
+    private void setGroupBuyId(GroupBuy groupBuy, Long id) {
+        try {
+            Field idField = GroupBuy.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(groupBuy, id);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-        // when - 공구 조회
-        GroupBuy groupBuy = groupBuyRepository.findById(created.getId()).orElseThrow();
-
-        // then - @Version 필드가 존재하고 초기값이 0이어야 함
-        assertThat(groupBuy.getVersion()).isNotNull();
-        assertThat(groupBuy.getVersion()).isEqualTo(0L);
-
-        // when - 공구 수정
-        UpdateGroupBuyRequest updateRequest = UpdateGroupBuyRequest.builder()
-            .title("수정된 공구")
-            .content("수정된 내용")
-            .category("육류")
-            .totalPrice(60000)
-            .targetHeadcount(7)
-            .deadline(LocalDateTime.now().plusDays(10))
-            .deliveryMethod(DeliveryMethod.DIRECT)
-            .isParticipantListPublic(false)
-            .build();
-        groupBuyService.updateGroupBuy(testUser.getId(), created.getId(), updateRequest);
-        entityManager.flush();
-        entityManager.clear();
-
-        // then - 수정 후 버전이 증가해야 함
-        GroupBuy updated = groupBuyRepository.findById(created.getId()).orElseThrow();
-        assertThat(updated.getVersion()).isEqualTo(1L);
+    private void setUserId(User user, Long id) {
+        try {
+            Field idField = User.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(user, id);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

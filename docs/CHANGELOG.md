@@ -168,10 +168,82 @@ POST /group-purchases/{id}/participate/cancel
 
 ---
 
+## [2025-11-01] 테스트 슬라이스 테스트로 전환 완료
+
+### 처리 항목
+
+#### 1. ✅ TestSecurityConfig 생성
+- **변경 파일**:
+  - `TestSecurityConfig.java` (신규 생성):
+    - `@TestConfiguration` 어노테이션으로 테스트 전용 설정
+    - `SecurityFilterChain` 빈 생성, 모든 엔드포인트 permitAll 설정
+    - CSRF 비활성화 (테스트 편의성)
+- **목적**: `@WebMvcTest`에서 Security 인증 없이 컨트롤러 로직만 테스트
+
+#### 2. ✅ Controller 테스트 리팩터링 (4개 파일)
+- **변경 파일**:
+  - `GroupBuyControllerTest.java`
+  - `AuthControllerTest.java`
+  - `UserControllerTest.java`
+  - `RecipeControllerTest.java`
+  
+- **변경 사항**:
+  - `@SpringBootTest` + `@AutoConfigureMockMvc` → `@WebMvcTest(ControllerName.class)` 전환
+  - `@Import(TestSecurityConfig.class)` 추가
+  - `@MockBean` → `@MockitoBean` 변경 (Spring Boot 3.4.0+ deprecation 대응)
+  - `@MockitoBean PasswordEncoder` 제거 (불필요)
+  - `@MockitoBean CustomUserDetailsService` 추가
+  - `.with(user())` 제거 (TestSecurityConfig로 인증 처리, `@WithMockUser`만 사용)
+
+#### 3. ✅ GroupBuyControllerTest 버그 수정
+- **문제**: `createGroupBuy_FormSubmit_Success` 테스트 실패 (500 NullPointerException)
+- **원인**: `User.create()` 메서드가 id=null인 User 객체 생성 → `user.getId()` 호출 시 null 전달
+- **해결**: 
+  ```java
+  // Before
+  User mockUser = User.create("test@example.com", "password", "테스터", "010-1234-5678");
+  
+  // After
+  User mockUser = User.builder()
+      .id(1L)
+      .email("test@example.com")
+      .password("password")
+      .nickname("테스터")
+      .phoneNumber("010-1234-5678")
+      .role(UserRole.USER)
+      .build();
+  ```
+
+### 효과
+- ✅ Controller 테스트 실행 속도 대폭 향상 (전체 Context 로딩 제거)
+- ✅ MVC 레이어만 로딩하여 테스트 격리성 향상
+- ✅ Spring Boot 3.4.0+ deprecation 경고 제거
+- ✅ 모든 테스트 통과 (174 tests, 100% success)
+- ✅ TDD 사이클 단축 (빠른 피드백)
+
+### 3. Service 테스트 단위 테스트로 전환
+- **현황**: Service 테스트가 `@SpringBootTest`로 전체 Context 로딩 (무거움)
+- **문제점**:
+    - 전체 ApplicationContext 로딩, 실제 DB 연동 → 느림
+    - TDD 사이클이 느려짐
+- **개선 방안**:
+    - `@ExtendWith(MockitoExtension.class)` + `@Mock` 사용
+    - Repository와 의존성을 Mock으로 주입
+    - Context 로딩 없이 순수 비즈니스 로직만 테스트
+- **장점**:
+    - 테스트 실행 속도 5~10배 향상
+    - Mock을 통한 의존성 제어로 테스트 격리성 향상
+    - TDD 사이클 단축 (빠른 피드백)
+- **처리 시점**: Phase 1 완료 전
+- **예상 시간**: 3-4시간
+
+---
+
 ## 작업 이력 요약
 
 | 날짜 | 작업 항목 | 우선순위 | 소요 시간 |
 |------|----------|----------|-----------|
+| 2025-11-01 | Controller 테스트 슬라이스 테스트 전환 | 🟡 MEDIUM | 1.5시간 |
 | 2025-10-31 | GroupBuyController Form-Based 리팩터링 | 🔴 HIGH | 1시간 |
 | 2025-10-31 | Controller 아키텍처 htmx 철학 정렬 리팩터링 | 🔴 HIGH | 2시간 |
 | 2025-10-31 | GroupBuy 도메인 검증 로직 및 예외 처리 개선 | 🔴 HIGH | 1.5시간 |
@@ -179,7 +251,7 @@ POST /group-purchases/{id}/participate/cancel
 | 2025-10-31 | GroupBuy 비즈니스 로직 예외 처리 표준화 | 🟡 MEDIUM | 20분 |
 | 2025-10-31 | UserService DTO 변환 로직 중복 제거 | 🟡 MEDIUM | 20분 |
 
-**총 소요 시간**: 약 5.5시간
+**총 소요 시간**: 약 7시간
 
 ---
 

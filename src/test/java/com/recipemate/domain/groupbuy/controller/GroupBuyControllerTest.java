@@ -1,94 +1,74 @@
 package com.recipemate.domain.groupbuy.controller;
 
-import com.recipemate.domain.groupbuy.dto.CreateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
-import com.recipemate.domain.groupbuy.dto.UpdateGroupBuyRequest;
+import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
 import com.recipemate.domain.groupbuy.service.GroupBuyService;
 import com.recipemate.domain.groupbuy.service.ParticipationService;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.DeliveryMethod;
-import org.junit.jupiter.api.BeforeEach;
+import com.recipemate.global.common.GroupBuyStatus;
+import com.recipemate.global.config.TestSecurityConfig;
+import com.recipemate.global.exception.CustomException;
+import com.recipemate.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
+@WebMvcTest(GroupBuyController.class)
+@Import(TestSecurityConfig.class)
 class GroupBuyControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
+    @MockitoBean
     private GroupBuyService groupBuyService;
 
-    @Autowired
+    @MockitoBean
     private ParticipationService participationService;
 
-    @Autowired
+    @MockitoBean
     private UserRepository userRepository;
 
-    private User testUser;
-    private User participantUser;
-    private GroupBuyResponse testGroupBuy;
-
-    @BeforeEach
-    void setUp() {
-        // 테스트 사용자 생성 (공구 주최자)
-        testUser = User.create(
-            "test@example.com",
-            "encodedPassword",
-            "테스터",
-            "010-1234-5678"
-        );
-        userRepository.save(testUser);
-
-        // 테스트 참여자 생성
-        participantUser = User.create(
-            "participant@example.com",
-            "encodedPassword",
-            "참여자",
-            "010-9876-5432"
-        );
-        userRepository.save(participantUser);
-
-        // 테스트용 공구 생성
-        CreateGroupBuyRequest createRequest = CreateGroupBuyRequest.builder()
-            .title("삼겹살 공동구매")
-            .content("신선한 삼겹살 공동구매합니다")
-            .category("육류")
-            .totalPrice(50000)
-            .targetHeadcount(5)
-            .deadline(LocalDateTime.now().plusDays(7))
-            .deliveryMethod(DeliveryMethod.BOTH)
-            .meetupLocation("강남역 2번 출구")
-            .parcelFee(3000)
-            .isParticipantListPublic(true)
-            .imageFiles(new ArrayList<>())
-            .build();
-        testGroupBuy = groupBuyService.createGroupBuy(testUser.getId(), createRequest);
-    }
+    @MockitoBean
+    private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+    
+    @MockitoBean
+    private com.recipemate.domain.user.service.CustomUserDetailsService customUserDetailsService;
 
     // ========== 페이지 렌더링 테스트 ==========
 
     @Test
     @DisplayName("공구 목록 페이지 렌더링 성공")
     void listPage_Success() throws Exception {
+        // given
+        Page<GroupBuyResponse> mockPage = new PageImpl<>(Collections.emptyList());
+        given(groupBuyService.getGroupBuyList(any(GroupBuySearchCondition.class), any(Pageable.class)))
+            .willReturn(mockPage);
+
+        // when & then
         mockMvc.perform(get("/group-purchases/list"))
             .andExpect(status().isOk())
             .andExpect(view().name("group-purchases/list"))
@@ -99,12 +79,29 @@ class GroupBuyControllerTest {
     @Test
     @DisplayName("공구 상세 페이지 렌더링 성공")
     void detailPage_Success() throws Exception {
-        mockMvc.perform(get("/group-purchases/" + testGroupBuy.getId()))
+        // given
+        Long groupBuyId = 1L;
+        GroupBuyResponse mockResponse = GroupBuyResponse.builder()
+            .id(groupBuyId)
+            .title("테스트 공구")
+            .content("테스트 내용")
+            .category("육류")
+            .totalPrice(50000)
+            .currentHeadcount(1)
+            .targetHeadcount(5)
+            .status(GroupBuyStatus.RECRUITING)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .build();
+        
+        given(groupBuyService.getGroupBuyDetail(groupBuyId)).willReturn(mockResponse);
+
+        // when & then
+        mockMvc.perform(get("/group-purchases/" + groupBuyId))
             .andExpect(status().isOk())
             .andExpect(view().name("group-purchases/detail"))
             .andExpect(model().attributeExists("groupBuy"))
-            .andExpect(model().attribute("groupBuy", 
-                org.hamcrest.Matchers.hasProperty("id", org.hamcrest.Matchers.equalTo(testGroupBuy.getId()))));
+            .andExpect(model().attribute("groupBuy", mockResponse));
     }
 
     @Test
@@ -120,7 +117,17 @@ class GroupBuyControllerTest {
     @DisplayName("공구 수정 페이지 렌더링 성공")
     @WithMockUser
     void editPage_Success() throws Exception {
-        mockMvc.perform(get("/group-purchases/" + testGroupBuy.getId() + "/edit"))
+        // given
+        Long groupBuyId = 1L;
+        GroupBuyResponse mockResponse = GroupBuyResponse.builder()
+            .id(groupBuyId)
+            .title("테스트 공구")
+            .build();
+        
+        given(groupBuyService.getGroupBuyDetail(groupBuyId)).willReturn(mockResponse);
+
+        // when & then
+        mockMvc.perform(get("/group-purchases/" + groupBuyId + "/edit"))
             .andExpect(status().isOk())
             .andExpect(view().name("group-purchases/form"))
             .andExpect(model().attributeExists("groupBuy"));
@@ -132,6 +139,24 @@ class GroupBuyControllerTest {
     @DisplayName("공구 생성 폼 제출 성공")
     @WithMockUser(username = "test@example.com")
     void createGroupBuy_FormSubmit_Success() throws Exception {
+        // given
+        User mockUser = User.builder()
+            .id(1L)
+            .email("test@example.com")
+            .password("password")
+            .nickname("테스터")
+            .phoneNumber("010-1234-5678")
+            .role(com.recipemate.global.common.UserRole.USER)
+            .build();
+        GroupBuyResponse mockResponse = GroupBuyResponse.builder()
+            .id(1L)
+            .title("양파 공동구매")
+            .build();
+        
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+        given(groupBuyService.createGroupBuy(any(), any())).willReturn(mockResponse);
+
+        // when & then
         mockMvc.perform(post("/group-purchases")
                 .with(csrf())
                 .param("title", "양파 공동구매")
@@ -145,7 +170,7 @@ class GroupBuyControllerTest {
                 .param("parcelFee", "2500")
                 .param("isParticipantListPublic", "true"))
             .andExpect(status().is3xxRedirection())
-            .andExpect(redirectedUrlPattern("/group-purchases/*"))
+            .andExpect(redirectedUrl("/group-purchases/1"))
             .andExpect(flash().attributeExists("successMessage"));
     }
 
@@ -153,7 +178,14 @@ class GroupBuyControllerTest {
     @DisplayName("공구 수정 폼 제출 성공")
     @WithMockUser(username = "test@example.com")
     void updateGroupBuy_FormSubmit_Success() throws Exception {
-        mockMvc.perform(post("/group-purchases/" + testGroupBuy.getId())
+        // given
+        Long groupBuyId = 1L;
+        User mockUser = User.create("test@example.com", "password", "테스터", "010-1234-5678");
+        
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+
+        // when & then
+        mockMvc.perform(post("/group-purchases/" + groupBuyId)
                 .with(csrf())
                 .param("title", "목살 공동구매")
                 .param("content", "수정된 내용입니다")
@@ -165,7 +197,7 @@ class GroupBuyControllerTest {
                 .param("meetupLocation", "홍대입구역 3번 출구")
                 .param("isParticipantListPublic", "false"))
             .andExpect(status().is3xxRedirection())
-            .andExpect(redirectedUrl("/group-purchases/" + testGroupBuy.getId()))
+            .andExpect(redirectedUrl("/group-purchases/" + groupBuyId))
             .andExpect(flash().attributeExists("successMessage"));
     }
 
@@ -173,7 +205,14 @@ class GroupBuyControllerTest {
     @DisplayName("공구 삭제 폼 제출 성공")
     @WithMockUser(username = "test@example.com")
     void deleteGroupBuy_FormSubmit_Success() throws Exception {
-        mockMvc.perform(post("/group-purchases/" + testGroupBuy.getId() + "/delete")
+        // given
+        Long groupBuyId = 1L;
+        User mockUser = User.create("test@example.com", "password", "테스터", "010-1234-5678");
+        
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+
+        // when & then
+        mockMvc.perform(post("/group-purchases/" + groupBuyId + "/delete")
                 .with(csrf()))
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/group-purchases/list"))
@@ -184,12 +223,19 @@ class GroupBuyControllerTest {
     @DisplayName("공구 참여 폼 제출 성공")
     @WithMockUser(username = "participant@example.com")
     void participate_FormSubmit_Success() throws Exception {
-        mockMvc.perform(post("/group-purchases/" + testGroupBuy.getId() + "/participate")
+        // given
+        Long groupBuyId = 1L;
+        User mockUser = User.create("participant@example.com", "password", "참여자", "010-9876-5432");
+        
+        given(userRepository.findByEmail("participant@example.com")).willReturn(Optional.of(mockUser));
+
+        // when & then
+        mockMvc.perform(post("/group-purchases/" + groupBuyId + "/participate")
                 .with(csrf())
                 .param("quantity", "1")
                 .param("deliveryMethod", "DIRECT"))
             .andExpect(status().is3xxRedirection())
-            .andExpect(redirectedUrl("/group-purchases/" + testGroupBuy.getId()))
+            .andExpect(redirectedUrl("/group-purchases/" + groupBuyId))
             .andExpect(flash().attributeExists("successMessage"));
     }
 
@@ -197,19 +243,17 @@ class GroupBuyControllerTest {
     @DisplayName("공구 참여 취소 폼 제출 성공")
     @WithMockUser(username = "participant@example.com")
     void cancelParticipation_FormSubmit_Success() throws Exception {
-        // given - 먼저 참여
-        com.recipemate.domain.groupbuy.dto.ParticipateRequest request = 
-            com.recipemate.domain.groupbuy.dto.ParticipateRequest.builder()
-                .selectedDeliveryMethod(DeliveryMethod.DIRECT)
-                .quantity(1)
-                .build();
-        participationService.participate(participantUser.getId(), testGroupBuy.getId(), request);
+        // given
+        Long groupBuyId = 1L;
+        User mockUser = User.create("participant@example.com", "password", "참여자", "010-9876-5432");
+        
+        given(userRepository.findByEmail("participant@example.com")).willReturn(Optional.of(mockUser));
 
         // when & then
-        mockMvc.perform(post("/group-purchases/" + testGroupBuy.getId() + "/participate/cancel")
+        mockMvc.perform(post("/group-purchases/" + groupBuyId + "/participate/cancel")
                 .with(csrf()))
             .andExpect(status().is3xxRedirection())
-            .andExpect(redirectedUrl("/group-purchases/" + testGroupBuy.getId()))
+            .andExpect(redirectedUrl("/group-purchases/" + groupBuyId))
             .andExpect(flash().attributeExists("successMessage"));
     }
 
@@ -218,7 +262,13 @@ class GroupBuyControllerTest {
     @Test
     @DisplayName("존재하지 않는 공구 상세 페이지 조회 실패")
     void detailPage_NotFound() throws Exception {
-        mockMvc.perform(get("/group-purchases/999999"))
+        // given
+        Long nonExistentId = 999999L;
+        given(groupBuyService.getGroupBuyDetail(nonExistentId))
+            .willThrow(new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
+
+        // when & then
+        mockMvc.perform(get("/group-purchases/" + nonExistentId))
             .andExpect(status().isNotFound());
     }
 
@@ -226,6 +276,13 @@ class GroupBuyControllerTest {
     @DisplayName("공구 생성 폼 제출 실패 - 잘못된 데이터")
     @WithMockUser(username = "test@example.com")
     void createGroupBuy_FormSubmit_InvalidData() throws Exception {
+        // given
+        User mockUser = User.create("test@example.com", "password", "테스터", "010-1234-5678");
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+        given(groupBuyService.createGroupBuy(anyLong(), any()))
+            .willThrow(new CustomException(ErrorCode.INVALID_INPUT_VALUE));
+
+        // when & then
         mockMvc.perform(post("/group-purchases")
                 .with(csrf())
                 .param("title", "") // 빈 제목
@@ -240,3 +297,4 @@ class GroupBuyControllerTest {
             .andExpect(flash().attributeExists("errorMessage"));
     }
 }
+

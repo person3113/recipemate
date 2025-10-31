@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 식품안전나라 API 클라이언트 테스트
- * TDD Red 단계: 실패하는 테스트 먼저 작성
  */
 @SpringBootTest
 @TestPropertySource(properties = {

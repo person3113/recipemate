@@ -31,13 +31,14 @@ import java.util.Optional;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(GroupBuyController.class)
-@Import(TestSecurityConfig.class)
+@Import({TestSecurityConfig.class, com.recipemate.global.exception.MvcExceptionHandler.class})
 class GroupBuyControllerTest {
 
     @Autowired
@@ -48,6 +49,9 @@ class GroupBuyControllerTest {
 
     @MockitoBean
     private ParticipationService participationService;
+
+    @MockitoBean
+    private com.recipemate.domain.wishlist.service.WishlistService wishlistService;
 
     @MockitoBean
     private UserRepository userRepository;
@@ -294,6 +298,86 @@ class GroupBuyControllerTest {
                 .param("deliveryMethod", "BOTH"))
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/group-purchases/new"))
+            .andExpect(flash().attributeExists("errorMessage"));
+    }
+
+    // ========== 찜 기능 테스트 ==========
+
+    @Test
+    @DisplayName("공구 찜하기 폼 제출 성공")
+    @WithMockUser(username = "user@example.com")
+    void addWishlist_FormSubmit_Success() throws Exception {
+        // given
+        Long groupBuyId = 1L;
+        User mockUser = User.create("user@example.com", "password", "사용자", "010-1111-2222");
+        
+        given(userRepository.findByEmail("user@example.com")).willReturn(Optional.of(mockUser));
+
+        // when & then
+        mockMvc.perform(post("/group-purchases/" + groupBuyId + "/bookmarks")
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/group-purchases/" + groupBuyId))
+            .andExpect(flash().attributeExists("successMessage"));
+    }
+
+    @Test
+    @DisplayName("공구 찜하기 실패 - 이미 찜한 공구")
+    @WithMockUser(username = "user@example.com")
+    void addWishlist_FormSubmit_AlreadyExists() throws Exception {
+        // given
+        Long groupBuyId = 1L;
+        User mockUser = User.create("user@example.com", "password", "사용자", "010-1111-2222");
+        
+        given(userRepository.findByEmail("user@example.com")).willReturn(Optional.of(mockUser));
+        doThrow(new CustomException(ErrorCode.WISHLIST_ALREADY_EXISTS))
+            .when(wishlistService).addWishlist(any(), anyLong());
+
+        // when & then
+        mockMvc.perform(post("/group-purchases/" + groupBuyId + "/bookmarks")
+                .with(csrf())
+                .header("Referer", "http://localhost/group-purchases/" + groupBuyId))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/group-purchases/" + groupBuyId))
+            .andExpect(flash().attributeExists("errorMessage"));
+    }
+
+    @Test
+    @DisplayName("공구 찜 취소 폼 제출 성공")
+    @WithMockUser(username = "user@example.com")
+    void removeWishlist_FormSubmit_Success() throws Exception {
+        // given
+        Long groupBuyId = 1L;
+        User mockUser = User.create("user@example.com", "password", "사용자", "010-1111-2222");
+        
+        given(userRepository.findByEmail("user@example.com")).willReturn(Optional.of(mockUser));
+
+        // when & then
+        mockMvc.perform(post("/group-purchases/" + groupBuyId + "/bookmarks/cancel")
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/group-purchases/" + groupBuyId))
+            .andExpect(flash().attributeExists("successMessage"));
+    }
+
+    @Test
+    @DisplayName("공구 찜 취소 실패 - 찜하지 않은 공구")
+    @WithMockUser(username = "user@example.com")
+    void removeWishlist_FormSubmit_NotFound() throws Exception {
+        // given
+        Long groupBuyId = 1L;
+        User mockUser = User.create("user@example.com", "password", "사용자", "010-1111-2222");
+        
+        given(userRepository.findByEmail("user@example.com")).willReturn(Optional.of(mockUser));
+        doThrow(new CustomException(ErrorCode.WISHLIST_NOT_FOUND))
+            .when(wishlistService).removeWishlist(any(), anyLong());
+
+        // when & then
+        mockMvc.perform(post("/group-purchases/" + groupBuyId + "/bookmarks/cancel")
+                .with(csrf())
+                .header("Referer", "http://localhost/group-purchases/" + groupBuyId))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/group-purchases/" + groupBuyId))
             .andExpect(flash().attributeExists("errorMessage"));
     }
 }

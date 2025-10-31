@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
-@Import(TestSecurityConfig.class)
+@Import({TestSecurityConfig.class, com.recipemate.global.exception.MvcExceptionHandler.class})
 class AuthControllerTest {
 
     @Autowired
@@ -99,7 +99,7 @@ class AuthControllerTest {
                         .param("phoneNumber", "010-9999-9999"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/auth/signup"))
-                .andExpect(flash().attributeExists("error"));
+                .andExpect(flash().attributeExists("errorMessage"));
     }
 
     @Test

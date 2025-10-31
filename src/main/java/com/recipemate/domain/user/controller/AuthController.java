@@ -45,18 +45,9 @@ public class AuthController {
     public String signup(
             @Valid @ModelAttribute SignupRequest request,
             RedirectAttributes redirectAttributes) {
-        try {
-            userService.signup(request);
-            redirectAttributes.addFlashAttribute("message", "회원가입이 완료되었습니다. 로그인해주세요.");
-            return "redirect:/auth/login";
-        } catch (CustomException e) {
-            if (e.getErrorCode() == ErrorCode.DUPLICATE_EMAIL) {
-                redirectAttributes.addFlashAttribute("error", "이미 사용 중인 이메일입니다.");
-            } else {
-                redirectAttributes.addFlashAttribute("error", "회원가입에 실패했습니다.");
-            }
-            return "redirect:/auth/signup";
-        }
+        userService.signup(request);
+        redirectAttributes.addFlashAttribute("message", "회원가입이 완료되었습니다. 로그인해주세요.");
+        return "redirect:/auth/login";
     }
 
     /**

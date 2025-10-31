@@ -35,6 +35,9 @@ public enum ErrorCode {
     
     RECIPE_NOT_FOUND(HttpStatus.NOT_FOUND, "RECIPE-001", "레시피를 찾을 수 없습니다."),
     
+    WISHLIST_ALREADY_EXISTS(HttpStatus.CONFLICT, "WISHLIST-001", "이미 찜한 공동구매입니다."),
+    WISHLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "WISHLIST-002", "찜 내역을 찾을 수 없습니다."),
+    
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST-001", "게시글을 찾을 수 없습니다."),
     UNAUTHORIZED_POST_ACCESS(HttpStatus.FORBIDDEN, "POST-002", "게시글 접근 권한이 없습니다."),
     

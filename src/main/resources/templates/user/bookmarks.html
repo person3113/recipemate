@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>내 찜 목록</title>
+</head>
+<body>
+    <h1>내 찜 목록</h1>
+    
+    <div th:if="${successMessage}" class="alert alert-success">
+        <p th:text="${successMessage}"></p>
+    </div>
+    
+    <div th:if="${errorMessage}" class="alert alert-danger">
+        <p th:text="${errorMessage}"></p>
+    </div>
+    
+    <div th:if="${wishlists != null and wishlists.hasContent()}">
+        <div th:each="wishlist : ${wishlists.content}" class="wishlist-item">
+            <h3 th:text="${wishlist.title}"></h3>
+            <p>카테고리: <span th:text="${wishlist.category}"></span></p>
+            <p>총 금액: <span th:text="${wishlist.totalPrice}"></span>원</p>
+            <p>모집 현황: <span th:text="${wishlist.currentHeadcount} + '/' + ${wishlist.targetHeadcount}"></span>명</p>
+            <p>마감일: <span th:text="${wishlist.deadline}"></span></p>
+            <p>상태: <span th:text="${wishlist.status}"></span></p>
+            <p>주최자: <span th:text="${wishlist.hostNickname}"></span></p>
+            <p>찜한 날짜: <span th:text="${wishlist.wishedAt}"></span></p>
+            
+            <a th:href="@{/group-purchases/{id}(id=${wishlist.groupBuyId})}">상세보기</a>
+            
+            <form th:action="@{/group-purchases/{id}/bookmarks/cancel(id=${wishlist.groupBuyId})}" method="post" style="display:inline;">
+                <button type="submit">찜 취소</button>
+            </form>
+        </div>
+        
+        <!-- 페이지네이션 -->
+        <div th:if="${wishlists.totalPages > 1}">
+            <a th:if="${wishlists.hasPrevious()}" 
+               th:href="@{/users/me/bookmarks(page=${wishlists.number - 1})}">이전</a>
+            <span th:text="${wishlists.number + 1} + '/' + ${wishlists.totalPages}"></span>
+            <a th:if="${wishlists.hasNext()}" 
+               th:href="@{/users/me/bookmarks(page=${wishlists.number + 1})}">다음</a>
+        </div>
+    </div>
+    
+    <div th:if="${wishlists == null or !wishlists.hasContent()}">
+        <p>찜한 공구가 없습니다.</p>
+    </div>
+    
+    <a th:href="@{/users/me}">마이페이지로 돌아가기</a>
+</body>
+</html>

@@ -3,11 +3,19 @@ package com.recipemate.domain.user.controller;
 import com.recipemate.domain.user.dto.ChangePasswordRequest;
 import com.recipemate.domain.user.dto.UpdateProfileRequest;
 import com.recipemate.domain.user.dto.UserResponse;
+import com.recipemate.domain.user.entity.User;
+import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.domain.user.service.UserService;
+import com.recipemate.domain.wishlist.dto.WishlistResponse;
+import com.recipemate.domain.wishlist.service.WishlistService;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -21,6 +29,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class UserController {
 
     private final UserService userService;
+    private final WishlistService wishlistService;
+    private final UserRepository userRepository;
 
     /**
      * 마이페이지 렌더링
@@ -42,14 +52,9 @@ public class UserController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @ModelAttribute UpdateProfileRequest request,
             RedirectAttributes redirectAttributes) {
-        try {
-            userService.updateProfile(userDetails.getUsername(), request);
-            redirectAttributes.addFlashAttribute("message", "프로필이 수정되었습니다.");
-            return "redirect:/users/me";
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "프로필 수정에 실패했습니다.");
-            return "redirect:/users/me";
-        }
+        userService.updateProfile(userDetails.getUsername(), request);
+        redirectAttributes.addFlashAttribute("message", "프로필이 수정되었습니다.");
+        return "redirect:/users/me";
     }
 
     /**
@@ -61,18 +66,26 @@ public class UserController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @ModelAttribute ChangePasswordRequest request,
             RedirectAttributes redirectAttributes) {
-        try {
-            userService.changePassword(userDetails.getUsername(), request);
-            redirectAttributes.addFlashAttribute("message", "비밀번호가 변경되었습니다.");
-            return "redirect:/users/me";
-        } catch (CustomException e) {
-            if (e.getErrorCode() == ErrorCode.INVALID_PASSWORD) {
-                redirectAttributes.addFlashAttribute("error", "현재 비밀번호가 일치하지 않습니다.");
-            } else {
-                redirectAttributes.addFlashAttribute("error", "비밀번호 변경에 실패했습니다.");
-            }
-            return "redirect:/users/me";
-        }
+        userService.changePassword(userDetails.getUsername(), request);
+        redirectAttributes.addFlashAttribute("message", "비밀번호가 변경되었습니다.");
+        return "redirect:/users/me";
+    }
+    
+    /**
+     * 내 찜 목록 페이지 렌더링
+     * GET /users/me/bookmarks
+     */
+    @GetMapping("/me/bookmarks")
+    public String myWishlistPage(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PageableDefault(size = 20, sort = "wishedAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Model model) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        Page<WishlistResponse> wishlists = wishlistService.getMyWishlist(user.getId(), pageable);
+        model.addAttribute("wishlists", wishlists);
+        return "user/bookmarks";
     }
     
     // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========

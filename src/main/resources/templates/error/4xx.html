@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base}">
+<head>
+    <title>오류가 발생했습니다</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <h1 class="display-1 text-danger" th:text="${status}">400</h1>
+                        <h2 class="mb-4" th:text="${error}">Bad Request</h2>
+                        <p class="lead mb-4" th:text="${message}">요청을 처리할 수 없습니다.</p>
+                        
+                        <div class="mt-4">
+                            <a href="javascript:history.back()" class="btn btn-secondary me-2">
+                                <i class="bi bi-arrow-left"></i> 이전 페이지
+                            </a>
+                            <a href="/" class="btn btn-primary">
+                                <i class="bi bi-house"></i> 홈으로
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

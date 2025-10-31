@@ -1,7 +1,13 @@
 package com.recipemate.domain.user.controller;
 
 import com.recipemate.domain.user.dto.UserResponse;
+import com.recipemate.domain.user.entity.User;
+import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.domain.user.service.UserService;
+import com.recipemate.domain.wishlist.dto.WishlistResponse;
+import com.recipemate.domain.wishlist.service.WishlistService;
+import com.recipemate.global.common.DeliveryMethod;
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.config.TestSecurityConfig;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
@@ -10,10 +16,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -24,7 +37,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserController.class)
-@Import(TestSecurityConfig.class)
+@Import({TestSecurityConfig.class, com.recipemate.global.exception.MvcExceptionHandler.class})
 class UserControllerTest {
 
     @Autowired
@@ -35,6 +48,12 @@ class UserControllerTest {
 
     @MockitoBean
     private UserService userService;
+    
+    @MockitoBean
+    private WishlistService wishlistService;
+    
+    @MockitoBean
+    private UserRepository userRepository;
     
     @MockitoBean
     private com.recipemate.domain.user.service.CustomUserDetailsService customUserDetailsService;
@@ -114,7 +133,60 @@ class UserControllerTest {
                         .param("newPassword", "newPassword456"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/users/me"))
-                .andExpect(flash().attributeExists("error"));
+                .andExpect(flash().attribute("errorMessage", ErrorCode.INVALID_PASSWORD.getMessage()));
+    }
+
+    // ========== 찜 목록 조회 테스트 ==========
+
+    @Test
+    @DisplayName("내 찜 목록 페이지 렌더링 성공")
+    @WithMockUser(username = "test@example.com")
+    void myWishlistPage_Success() throws Exception {
+        // given
+        User mockUser = User.create("test@example.com", "password", "테스트유저", "010-1234-5678");
+        WishlistResponse mockWishlist = WishlistResponse.builder()
+            .wishlistId(1L)
+            .wishedAt(LocalDateTime.now())
+            .groupBuyId(1L)
+            .title("양파 공동구매")
+            .category("채소")
+            .totalPrice(20000)
+            .targetHeadcount(5)
+            .currentHeadcount(3)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .status(GroupBuyStatus.RECRUITING)
+            .hostId(2L)
+            .hostNickname("주최자")
+            .build();
+        Page<WishlistResponse> mockPage = new PageImpl<>(Collections.singletonList(mockWishlist));
+        
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+        given(wishlistService.getMyWishlist(any(), any(Pageable.class))).willReturn(mockPage);
+
+        // when & then
+        mockMvc.perform(get("/users/me/bookmarks"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("user/bookmarks"))
+                .andExpect(model().attributeExists("wishlists"));
+    }
+
+    @Test
+    @DisplayName("내 찜 목록 페이지 렌더링 - 빈 목록")
+    @WithMockUser(username = "test@example.com")
+    void myWishlistPage_EmptyList() throws Exception {
+        // given
+        User mockUser = User.create("test@example.com", "password", "테스트유저", "010-1234-5678");
+        Page<WishlistResponse> emptyPage = new PageImpl<>(Collections.emptyList());
+        
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+        given(wishlistService.getMyWishlist(any(), any(Pageable.class))).willReturn(emptyPage);
+
+        // when & then
+        mockMvc.perform(get("/users/me/bookmarks"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("user/bookmarks"))
+                .andExpect(model().attributeExists("wishlists"));
     }
 }
 

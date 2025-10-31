@@ -9,6 +9,8 @@ import com.recipemate.domain.groupbuy.service.GroupBuyService;
 import com.recipemate.domain.groupbuy.service.ParticipationService;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
+import com.recipemate.domain.wishlist.service.WishlistService;
+import com.recipemate.global.common.ApiResponse;
 import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
@@ -34,6 +36,7 @@ public class GroupBuyController {
 
     private final GroupBuyService groupBuyService;
     private final ParticipationService participationService;
+    private final WishlistService wishlistService;
     private final UserRepository userRepository;
 
     // ========== 페이지 렌더링 엔드포인트 ==========
@@ -111,17 +114,12 @@ public class GroupBuyController {
             return "redirect:/group-purchases/new";
         }
         
-        try {
-            User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-            
-            GroupBuyResponse response = groupBuyService.createGroupBuy(user.getId(), request);
-            redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 생성되었습니다.");
-            return "redirect:/group-purchases/" + response.getId();
-        } catch (CustomException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
-            return "redirect:/group-purchases/new";
-        }
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        GroupBuyResponse response = groupBuyService.createGroupBuy(user.getId(), request);
+        redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 생성되었습니다.");
+        return "redirect:/group-purchases/" + response.getId();
     }
 
     /**
@@ -141,17 +139,12 @@ public class GroupBuyController {
             return "redirect:/group-purchases/new";
         }
         
-        try {
-            User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-            
-            GroupBuyResponse response = groupBuyService.createRecipeBasedGroupBuy(user.getId(), request);
-            redirectAttributes.addFlashAttribute("successMessage", "레시피 기반 공동구매가 성공적으로 생성되었습니다.");
-            return "redirect:/group-purchases/" + response.getId();
-        } catch (CustomException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
-            return "redirect:/group-purchases/new";
-        }
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        GroupBuyResponse response = groupBuyService.createRecipeBasedGroupBuy(user.getId(), request);
+        redirectAttributes.addFlashAttribute("successMessage", "레시피 기반 공동구매가 성공적으로 생성되었습니다.");
+        return "redirect:/group-purchases/" + response.getId();
     }
 
     /**
@@ -172,17 +165,12 @@ public class GroupBuyController {
             return "redirect:/group-purchases/" + purchaseId + "/edit";
         }
         
-        try {
-            User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-            
-            groupBuyService.updateGroupBuy(user.getId(), purchaseId, request);
-            redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 수정되었습니다.");
-            return "redirect:/group-purchases/" + purchaseId;
-        } catch (CustomException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
-            return "redirect:/group-purchases/" + purchaseId + "/edit";
-        }
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        groupBuyService.updateGroupBuy(user.getId(), purchaseId, request);
+        redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 수정되었습니다.");
+        return "redirect:/group-purchases/" + purchaseId;
     }
 
     /**
@@ -194,17 +182,12 @@ public class GroupBuyController {
         @PathVariable Long purchaseId,
         RedirectAttributes redirectAttributes
     ) {
-        try {
-            User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-            
-            groupBuyService.deleteGroupBuy(user.getId(), purchaseId);
-            redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 삭제되었습니다.");
-            return "redirect:/group-purchases/list";
-        } catch (CustomException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
-            return "redirect:/group-purchases/" + purchaseId;
-        }
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        groupBuyService.deleteGroupBuy(user.getId(), purchaseId);
+        redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 삭제되었습니다.");
+        return "redirect:/group-purchases/list";
     }
 
     /**
@@ -218,21 +201,16 @@ public class GroupBuyController {
         @RequestParam DeliveryMethod deliveryMethod,
         RedirectAttributes redirectAttributes
     ) {
-        try {
-            User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-            
-            ParticipateRequest request = ParticipateRequest.builder()
-                .selectedDeliveryMethod(deliveryMethod)
-                .quantity(quantity)
-                .build();
-            participationService.participate(user.getId(), purchaseId, request);
-            redirectAttributes.addFlashAttribute("successMessage", "공동구매에 성공적으로 참여했습니다.");
-            return "redirect:/group-purchases/" + purchaseId;
-        } catch (CustomException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
-            return "redirect:/group-purchases/" + purchaseId;
-        }
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        ParticipateRequest request = ParticipateRequest.builder()
+            .selectedDeliveryMethod(deliveryMethod)
+            .quantity(quantity)
+            .build();
+        participationService.participate(user.getId(), purchaseId, request);
+        redirectAttributes.addFlashAttribute("successMessage", "공동구매에 성공적으로 참여했습니다.");
+        return "redirect:/group-purchases/" + purchaseId;
     }
 
     /**
@@ -244,17 +222,46 @@ public class GroupBuyController {
         @PathVariable Long purchaseId,
         RedirectAttributes redirectAttributes
     ) {
-        try {
-            User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-            
-            participationService.cancelParticipation(user.getId(), purchaseId);
-            redirectAttributes.addFlashAttribute("successMessage", "공동구매 참여가 취소되었습니다.");
-            return "redirect:/group-purchases/" + purchaseId;
-        } catch (CustomException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
-            return "redirect:/group-purchases/" + purchaseId;
-        }
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        participationService.cancelParticipation(user.getId(), purchaseId);
+        redirectAttributes.addFlashAttribute("successMessage", "공동구매 참여가 취소되었습니다.");
+        return "redirect:/group-purchases/" + purchaseId;
+    }
+    
+    /**
+     * 공구 찜하기 폼 제출
+     */
+    @PostMapping("/{purchaseId}/bookmarks")
+    public String addWishlist(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @PathVariable Long purchaseId,
+        RedirectAttributes redirectAttributes
+    ) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        wishlistService.addWishlist(user.getId(), purchaseId);
+        redirectAttributes.addFlashAttribute("successMessage", "찜 목록에 추가되었습니다.");
+        return "redirect:/group-purchases/{purchaseId}";
+    }
+    
+    /**
+     * 공구 찜 취소 폼 제출
+     */
+    @PostMapping("/{purchaseId}/bookmarks/cancel")
+    public String removeWishlist(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @PathVariable Long purchaseId,
+        RedirectAttributes redirectAttributes
+    ) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        wishlistService.removeWishlist(user.getId(), purchaseId);
+        redirectAttributes.addFlashAttribute("successMessage", "찜 목록에서 제거되었습니다.");
+        return "redirect:/group-purchases/{purchaseId}";
     }
     
     // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========

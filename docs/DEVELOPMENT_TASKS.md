@@ -436,20 +436,20 @@
   - `findByUserIdAndGroupBuyId(Long userId, Long groupBuyId)`
   - `findByUserIdOrderByWishedAtDesc(Long userId, Pageable pageable)`
 
-#### [ ] Task 2-3-2: 찜하기/취소 기능
-- [ ] 테스트 작성
+#### [x] Task 2-3-2: 찜하기/취소 기능
+- [x] 테스트 작성
   - 찜 추가 성공
   - 중복 찜 방지
   - 찜 취소 성공
-- [ ] WishlistService 구현
+- [x] WishlistService 구현
   - `addWishlist(Long userId, Long purchaseId)`
   - `removeWishlist(Long userId, Long purchaseId)`
-- [ ] GroupBuyController 구현
+- [x] GroupBuyController 구현
   - `POST /group-purchases/{purchaseId}/bookmarks`
   - `DELETE /group-purchases/{purchaseId}/bookmarks`
 
-#### [ ] Task 2-3-3: 찜 목록 조회
-- [ ] UserController 구현
+#### [x] Task 2-3-3: 찜 목록 조회
+- [x] UserController 구현
   - `GET /users/me/bookmarks`
 
 ---

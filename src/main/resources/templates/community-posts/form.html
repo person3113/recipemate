@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${post != null ? '게시글 수정' : '게시글 작성'}">게시글 작성 - RecipeMate</title>
+</head>
+<body>
+    <h1 th:text="${post != null ? '게시글 수정' : '게시글 작성'}">게시글 작성</h1>
+    
+    <!-- Flash Messages -->
+    <div th:if="${successMessage}" class="alert alert-success">
+        <p th:text="${successMessage}"></p>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-error">
+        <p th:text="${errorMessage}"></p>
+    </div>
+    
+    <!-- Post Form -->
+    <form method="post" th:action="${post != null ? '/community-posts/' + post.id : '/community-posts'}">
+        <div>
+            <label for="title">제목</label>
+            <input type="text" id="title" name="title" th:value="${post?.title}" required>
+        </div>
+        
+        <div>
+            <label for="content">내용</label>
+            <textarea id="content" name="content" th:text="${post?.content}" required></textarea>
+        </div>
+        
+        <div>
+            <label for="category">카테고리</label>
+            <select id="category" name="category">
+                <option value="FREE" th:selected="${post?.category?.name() == 'FREE'}">자유</option>
+                <option value="TIPS" th:selected="${post?.category?.name() == 'TIPS'}">팁 공유</option>
+                <option value="REVIEW" th:selected="${post?.category?.name() == 'REVIEW'}">후기</option>
+                <option value="QUESTION" th:selected="${post?.category?.name() == 'QUESTION'}">질문</option>
+            </select>
+        </div>
+        
+        <button type="submit" th:text="${post != null ? '수정' : '작성'}">작성</button>
+        <a href="/community-posts/list">취소</a>
+    </form>
+</body>
+</html>

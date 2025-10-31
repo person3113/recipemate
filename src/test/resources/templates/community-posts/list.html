@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>커뮤니티 게시글 목록 - RecipeMate</title>
+</head>
+<body>
+    <h1>커뮤니티 게시글 목록</h1>
+    
+    <!-- Flash Messages -->
+    <div th:if="${successMessage}" class="alert alert-success">
+        <p th:text="${successMessage}"></p>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-error">
+        <p th:text="${errorMessage}"></p>
+    </div>
+    
+    <!-- Create Button -->
+    <a href="/community-posts/new">새 게시글 작성</a>
+    
+    <!-- Post List Placeholder -->
+    <div>
+        <p>게시글 목록이 여기에 표시됩니다.</p>
+    </div>
+</body>
+</html>

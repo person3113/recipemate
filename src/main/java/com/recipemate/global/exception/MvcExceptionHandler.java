@@ -36,8 +36,8 @@ public class MvcExceptionHandler {
             redirectAttributes.addFlashAttribute("errorMessage", errorCode.getMessage());
             redirectAttributes.addFlashAttribute("errorCode", errorCode.getCode());
 
-            // 요청 URI에서 리다이렉트 경로 결정
-            String refererPath = determineRedirectPath(request);
+            // 요청 URI와 에러 타입에서 리다이렉트 경로 결정
+            String refererPath = determineRedirectPath(request, errorCode);
             return "redirect:" + refererPath;
         }
 
@@ -71,7 +71,7 @@ public class MvcExceptionHandler {
             redirectAttributes.addFlashAttribute("errorMessage", errorMessage);
             redirectAttributes.addFlashAttribute("errorCode", "VALIDATION-001");
 
-            String refererPath = determineRedirectPath(request);
+            String refererPath = determineRedirectPath(request, null);
             return "redirect:" + refererPath;
         }
 
@@ -97,10 +97,23 @@ public class MvcExceptionHandler {
     }
 
     /**
-     * 요청 URI를 기반으로 리다이렉트 경로 결정
+     * 요청 URI와 에러 타입을 기반으로 리다이렉트 경로 결정
      */
-    private String determineRedirectPath(HttpServletRequest request) {
+    private String determineRedirectPath(HttpServletRequest request, ErrorCode errorCode) {
         String path = request.getRequestURI();
+
+        // 특정 에러 타입에 따른 리다이렉트 처리
+        if (errorCode != null) {
+            // POST_NOT_FOUND: 존재하지 않는 게시글 - 목록으로 리다이렉트
+            if (errorCode == ErrorCode.POST_NOT_FOUND && path.contains("/community-posts")) {
+                return "/community-posts/list";
+            }
+            
+            // GROUP_BUY_NOT_FOUND: 존재하지 않는 공동구매 - 목록으로 리다이렉트
+            if (errorCode == ErrorCode.GROUP_BUY_NOT_FOUND && path.contains("/group-purchases")) {
+                return "/group-purchases/list";
+            }
+        }
 
         // /auth/signup
         if (path.contains("/auth/signup")) {
@@ -138,8 +151,34 @@ public class MvcExceptionHandler {
             return "/group-purchases/new";
         }
 
-        // 기본: 목록 페이지
-        return "/group-purchases/list";
+        // /community-posts/{postId}/... 패턴
+        if (path.matches(".*/community-posts/\\d+/.*")) {
+            String postId = path.replaceAll(".*/community-posts/(\\d+)/.*", "$1");
+            return "/community-posts/" + postId;
+        }
+
+        // /community-posts/{postId}
+        if (path.matches(".*/community-posts/\\d+")) {
+            return path;
+        }
+
+        // /community-posts/new
+        if (path.contains("/community-posts/new")) {
+            return "/community-posts/new";
+        }
+
+        // /community-posts 관련 경로 (POST /community-posts - 게시글 생성)
+        if (path.contains("/community-posts")) {
+            return "/community-posts/new";
+        }
+
+        // /group-purchases 관련 경로
+        if (path.contains("/group-purchases")) {
+            return "/group-purchases/list";
+        }
+
+        // 기본: 홈 페이지
+        return "/";
     }
 
     /**

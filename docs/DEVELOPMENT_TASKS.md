@@ -476,20 +476,20 @@
   - 최대 5장 제한 (Application Layer)
 - [x] PostImageRepository 작성
 
-#### [ ] Task 3-1-3: 게시글 CRUD 기능
-- [ ] 테스트 작성
+#### [x] Task 3-1-3: 게시글 CRUD 기능
+- [x] 테스트 작성
   - 게시글 작성/조회/수정/삭제
   - 작성자만 수정/삭제 가능
-- [ ] PostService 구현
+- [x] PostService 구현
   - `createPost(Long userId, CreatePostRequest dto)`
   - `getPostDetail(Long postId)`
   - `updatePost(Long userId, Long postId, UpdatePostRequest dto)`
   - `deletePost(Long userId, Long postId)`
-- [ ] PostController 구현
+- [x] PostController 구현
   - `POST /community-posts`
   - `GET /community-posts/{postId}`
-  - `PUT /community-posts/{postId}`
-  - `DELETE /community-posts/{postId}`
+  - `POST /community-posts/{postId}` (수정)
+  - `POST /community-posts/{postId}/delete` (삭제)
 
 #### [ ] Task 3-1-4: 게시글 목록 조회 및 검색
 - [ ] PostService 구현

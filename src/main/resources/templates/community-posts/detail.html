@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>게시글 상세 - RecipeMate</title>
+</head>
+<body>
+    <h1>게시글 상세</h1>
+    
+    <!-- Flash Messages -->
+    <div th:if="${successMessage}" class="alert alert-success">
+        <p th:text="${successMessage}"></p>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-error">
+        <p th:text="${errorMessage}"></p>
+    </div>
+    
+    <!-- Post Detail -->
+    <div th:if="${post}">
+        <h2 th:text="${post.title}">게시글 제목</h2>
+        <p>작성자: <span th:text="${post.authorNickname}"></span></p>
+        <p>카테고리: <span th:text="${post.category}"></span></p>
+        <p>조회수: <span th:text="${post.viewCount}"></span></p>
+        <p>작성일: <span th:text="${post.createdAt}"></span></p>
+        <div th:text="${post.content}">게시글 내용</div>
+        
+        <!-- Actions -->
+        <a th:href="@{/community-posts/{id}/edit(id=${post.id})}">수정</a>
+        <form method="post" th:action="@{/community-posts/{id}/delete(id=${post.id})}" style="display: inline;">
+            <button type="submit">삭제</button>
+        </form>
+    </div>
+    
+    <a href="/community-posts/list">목록으로</a>
+</body>
+</html>

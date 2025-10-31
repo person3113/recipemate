@@ -862,9 +862,63 @@ class GroupBuyServiceTest {
     // ========== 레시피 기반 공구 테스트 ==========
 
     @Test
-    @DisplayName("레시피 기반 공구 생성 성공")
-    void createRecipeBasedGroupBuy_Success() {
+    @DisplayName("레시피 기반 공구 생성 성공 - 레시피 정보 자동 채움")
+    void createRecipeBasedGroupBuy_Success_AutoFillRecipeInfo() {
+        // given - 레시피 API ID만 제공 (recipeName, recipeImageUrl은 null)
+        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
+            .title("김치찌개 재료 공구")
+            .content("맛있는 김치찌개 재료 공동구매")
+            .category("육류")
+            .totalPrice(30000)
+            .targetHeadcount(4)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .isParticipantListPublic(true)
+            .imageFiles(new ArrayList<>())
+            .recipeApiId("meal-52772") // TheMealDB의 실제 레시피 ID
+            .build();
+
+        // when
+        GroupBuyResponse response = groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getRecipeApiId()).isEqualTo("meal-52772");
+        assertThat(response.getRecipeName()).isNotNull(); // 자동으로 채워져야 함
+        assertThat(response.getRecipeName()).isNotBlank();
+        assertThat(response.getRecipeImageUrl()).isNotNull(); // 자동으로 채워져야 함
+        assertThat(response.getRecipeImageUrl()).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("레시피 기반 공구 생성 성공 - 재료 목록이 content에 추가됨")
+    void createRecipeBasedGroupBuy_Success_IngredientsInContent() {
         // given
+        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
+            .title("김치찌개 재료 공구")
+            .content("맛있는 김치찌개를 만들어요!")
+            .category("육류")
+            .totalPrice(30000)
+            .targetHeadcount(4)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .isParticipantListPublic(true)
+            .imageFiles(new ArrayList<>())
+            .recipeApiId("meal-52772")
+            .build();
+
+        // when
+        GroupBuyResponse response = groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request);
+
+        // then
+        assertThat(response.getContent()).contains("맛있는 김치찌개를 만들어요!"); // 원래 내용 포함
+        assertThat(response.getContent()).contains("필요한 재료:"); // 재료 섹션이 추가되어야 함
+    }
+
+    @Test
+    @DisplayName("레시피 기반 공구 생성 성공 - 수동으로 제공된 레시피 정보 사용")
+    void createRecipeBasedGroupBuy_Success_WithManualRecipeInfo() {
+        // given - 레시피 정보를 수동으로 제공
         CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
             .title("김치찌개 재료 공구")
             .content("맛있는 김치찌개 재료 공동구매")
@@ -883,7 +937,7 @@ class GroupBuyServiceTest {
         // when
         GroupBuyResponse response = groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request);
 
-        // then
+        // then - 수동으로 제공된 정보가 우선 사용되어야 함
         assertThat(response).isNotNull();
         assertThat(response.getTitle()).isEqualTo("김치찌개 재료 공구");
         assertThat(response.getRecipeApiId()).isEqualTo("RECIPE_12345");
@@ -913,6 +967,28 @@ class GroupBuyServiceTest {
         assertThatThrownBy(() -> groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_RECIPE_API_ID);
+    }
+
+    @Test
+    @DisplayName("레시피 기반 공구 생성 실패 - 존재하지 않는 레시피 ID")
+    void createRecipeBasedGroupBuy_Fail_RecipeNotFound() {
+        // given
+        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
+            .title("김치찌개 재료 공구")
+            .content("맛있는 김치찌개 재료 공동구매")
+            .category("육류")
+            .totalPrice(30000)
+            .targetHeadcount(4)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .recipeApiId("invalid-recipe-id-999999") // 존재하지 않는 레시피 ID
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> groupBuyService.createRecipeBasedGroupBuy(testUser.getId(), request))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RECIPE_NOT_FOUND);
     }
 
     @Test

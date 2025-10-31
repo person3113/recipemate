@@ -1,17 +1,21 @@
 package com.recipemate.domain.recipe.controller;
 
+import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.recipe.dto.CategoryResponse;
 import com.recipemate.domain.recipe.dto.RecipeDetailResponse;
 import com.recipemate.domain.recipe.dto.RecipeListResponse;
 import com.recipemate.domain.recipe.service.RecipeService;
+import com.recipemate.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
 
@@ -88,5 +92,21 @@ public class RecipeController {
         model.addAttribute("categories", categories);
         
         return "recipes/categories";
+    }
+
+    /**
+     * 레시피 관련 공동구매 목록 조회 API
+     * GET /recipes/{recipeId}/group-purchases
+     */
+    @GetMapping("/{recipeId}/group-purchases")
+    @ResponseBody
+    public ResponseEntity<ApiResponse<List<GroupBuyResponse>>> getRelatedGroupBuys(
+            @PathVariable String recipeId) {
+        
+        log.info("레시피 관련 공동구매 조회 요청: recipeId={}", recipeId);
+        
+        List<GroupBuyResponse> groupBuys = recipeService.getRelatedGroupBuys(recipeId);
+        
+        return ResponseEntity.ok(ApiResponse.success(groupBuys));
     }
 }

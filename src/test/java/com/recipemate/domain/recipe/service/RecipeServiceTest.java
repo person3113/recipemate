@@ -1,8 +1,15 @@
 package com.recipemate.domain.recipe.service;
 
+import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
+import com.recipemate.domain.groupbuy.entity.GroupBuy;
+import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.recipe.client.FoodSafetyClient;
 import com.recipemate.domain.recipe.client.TheMealDBClient;
 import com.recipemate.domain.recipe.dto.*;
+import com.recipemate.domain.user.entity.User;
+import com.recipemate.global.common.DeliveryMethod;
+import com.recipemate.global.common.GroupBuyStatus;
+import com.recipemate.global.common.UserRole;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +20,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +40,9 @@ class RecipeServiceTest {
 
     @Mock
     private FoodSafetyClient foodSafetyClient;
+
+    @Mock
+    private GroupBuyRepository groupBuyRepository;
 
     @InjectMocks
     private RecipeService recipeService;
@@ -458,6 +469,192 @@ class RecipeServiceTest {
             // then
             assertThat(result).isNotNull();
             assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("레시피 관련 공동구매 조회")
+    class GetRelatedGroupBuys {
+
+        @Test
+        @DisplayName("레시피 ID로 활성 공동구매 목록을 조회한다")
+        void getRelatedGroupBuys_ValidRecipeId_Success() {
+            // given
+            String recipeApiId = "meal-52772";
+            User host = User.builder()
+                    .id(1L)
+                    .email("test@example.com")
+                    .nickname("테스터")
+                    .password("password")
+                    .role(UserRole.USER)
+                    .mannerTemperature(36.5)
+                    .build();
+
+            GroupBuy groupBuy1 = GroupBuy.builder()
+                    .id(1L)
+                    .title("치킨 공동구매")
+                    .content("치킨 함께 사실 분")
+                    .category("식재료")
+                    .totalPrice(30000)
+                    .targetHeadcount(4)
+                    .currentHeadcount(2)
+                    .deadline(LocalDateTime.now().plusDays(2))
+                    .deliveryMethod(DeliveryMethod.DIRECT)
+                    .meetupLocation("학교 정문")
+                    .status(GroupBuyStatus.RECRUITING)
+                    .host(host)
+                    .recipeApiId(recipeApiId)
+                    .recipeName("Teriyaki Chicken")
+                    .recipeImageUrl("http://example.com/chicken.jpg")
+                    .build();
+
+            GroupBuy groupBuy2 = GroupBuy.builder()
+                    .id(2L)
+                    .title("치킨 재료 구매")
+                    .content("레시피 재료 공동구매")
+                    .category("식재료")
+                    .totalPrice(40000)
+                    .targetHeadcount(5)
+                    .currentHeadcount(3)
+                    .deadline(LocalDateTime.now().plusHours(6))
+                    .deliveryMethod(DeliveryMethod.PARCEL)
+                    .parcelFee(3000)
+                    .status(GroupBuyStatus.IMMINENT)
+                    .host(host)
+                    .recipeApiId(recipeApiId)
+                    .recipeName("Teriyaki Chicken")
+                    .recipeImageUrl("http://example.com/chicken.jpg")
+                    .build();
+
+            when(groupBuyRepository.findByRecipeApiId(recipeApiId))
+                    .thenReturn(Arrays.asList(groupBuy1, groupBuy2));
+
+            // when
+            List<GroupBuyResponse> result = recipeService.getRelatedGroupBuys(recipeApiId);
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result).hasSize(2);
+            assertThat(result).extracting("recipeApiId")
+                    .containsOnly(recipeApiId);
+            assertThat(result).extracting("status")
+                    .containsExactlyInAnyOrder(GroupBuyStatus.RECRUITING, GroupBuyStatus.IMMINENT);
+        }
+
+        @Test
+        @DisplayName("활성 상태가 아닌 공동구매는 제외한다")
+        void getRelatedGroupBuys_ExcludesInactiveGroupBuys() {
+            // given
+            String recipeApiId = "meal-52772";
+            User host = User.builder()
+                    .id(1L)
+                    .email("test@example.com")
+                    .nickname("테스터")
+                    .password("password")
+                    .role(UserRole.USER)
+                    .mannerTemperature(36.5)
+                    .build();
+
+            GroupBuy activeGroupBuy = GroupBuy.builder()
+                    .id(1L)
+                    .title("활성 공동구매")
+                    .content("모집중")
+                    .category("식재료")
+                    .totalPrice(30000)
+                    .targetHeadcount(4)
+                    .currentHeadcount(2)
+                    .deadline(LocalDateTime.now().plusDays(2))
+                    .deliveryMethod(DeliveryMethod.DIRECT)
+                    .meetupLocation("학교 정문")
+                    .status(GroupBuyStatus.RECRUITING)
+                    .host(host)
+                    .recipeApiId(recipeApiId)
+                    .recipeName("Test Recipe")
+                    .recipeImageUrl("http://example.com/test.jpg")
+                    .build();
+
+            GroupBuy closedGroupBuy1 = GroupBuy.builder()
+                    .id(2L)
+                    .title("종료된 공동구매")
+                    .content("종료됨")
+                    .category("식재료")
+                    .totalPrice(40000)
+                    .targetHeadcount(4)
+                    .currentHeadcount(4)
+                    .deadline(LocalDateTime.now().minusDays(1))
+                    .deliveryMethod(DeliveryMethod.DIRECT)
+                    .meetupLocation("학교 정문")
+                    .status(GroupBuyStatus.CLOSED)
+                    .host(host)
+                    .recipeApiId(recipeApiId)
+                    .recipeName("Test Recipe")
+                    .recipeImageUrl("http://example.com/test.jpg")
+                    .build();
+
+            GroupBuy closedGroupBuy2 = GroupBuy.builder()
+                    .id(3L)
+                    .title("또 다른 종료된 공동구매")
+                    .content("종료됨")
+                    .category("식재료")
+                    .totalPrice(35000)
+                    .targetHeadcount(4)
+                    .currentHeadcount(1)
+                    .deadline(LocalDateTime.now().plusDays(1))
+                    .deliveryMethod(DeliveryMethod.DIRECT)
+                    .meetupLocation("학교 정문")
+                    .status(GroupBuyStatus.CLOSED)
+                    .host(host)
+                    .recipeApiId(recipeApiId)
+                    .recipeName("Test Recipe")
+                    .recipeImageUrl("http://example.com/test.jpg")
+                    .build();
+
+            when(groupBuyRepository.findByRecipeApiId(recipeApiId))
+                    .thenReturn(Arrays.asList(activeGroupBuy, closedGroupBuy1, closedGroupBuy2));
+
+            // when
+            List<GroupBuyResponse> result = recipeService.getRelatedGroupBuys(recipeApiId);
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getId()).isEqualTo(1L);
+            assertThat(result.get(0).getStatus()).isIn(GroupBuyStatus.RECRUITING, GroupBuyStatus.IMMINENT);
+        }
+
+        @Test
+        @DisplayName("관련 공동구매가 없으면 빈 리스트를 반환한다")
+        void getRelatedGroupBuys_NoRelatedGroupBuys_ReturnEmptyList() {
+            // given
+            String recipeApiId = "meal-99999";
+
+            when(groupBuyRepository.findByRecipeApiId(recipeApiId))
+                    .thenReturn(Collections.emptyList());
+
+            // when
+            List<GroupBuyResponse> result = recipeService.getRelatedGroupBuys(recipeApiId);
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("레시피 ID가 null이면 예외가 발생한다")
+        void getRelatedGroupBuys_NullRecipeId_ThrowException() {
+            // when & then
+            assertThatThrownBy(() -> recipeService.getRelatedGroupBuys(null))
+                    .isInstanceOf(CustomException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        @Test
+        @DisplayName("레시피 ID가 빈 문자열이면 예외가 발생한다")
+        void getRelatedGroupBuys_EmptyRecipeId_ThrowException() {
+            // when & then
+            assertThatThrownBy(() -> recipeService.getRelatedGroupBuys(""))
+                    .isInstanceOf(CustomException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_INPUT_VALUE);
         }
     }
 }

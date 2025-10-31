@@ -1,8 +1,12 @@
 package com.recipemate.domain.recipe.service;
 
+import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
+import com.recipemate.domain.groupbuy.entity.GroupBuy;
+import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.recipe.client.FoodSafetyClient;
 import com.recipemate.domain.recipe.client.TheMealDBClient;
 import com.recipemate.domain.recipe.dto.*;
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +29,7 @@ public class RecipeService {
 
     private final TheMealDBClient theMealDBClient;
     private final FoodSafetyClient foodSafetyClient;
+    private final GroupBuyRepository groupBuyRepository;
 
     private static final String MEAL_PREFIX = "meal-";
     private static final String FOOD_PREFIX = "food-";
@@ -138,6 +144,32 @@ public class RecipeService {
      */
     public List<CategoryResponse> getCategories() {
         return theMealDBClient.getCategories();
+    }
+
+    /**
+     * 레시피 관련 공동구매 조회
+     * 특정 레시피 ID와 연결된 활성 공동구매 목록 반환
+     * @param recipeApiId 레시피 API ID (meal-{id} 또는 food-{id} 형식)
+     * @return 활성 상태의 공동구매 목록
+     */
+    public List<GroupBuyResponse> getRelatedGroupBuys(String recipeApiId) {
+        validateRecipeApiId(recipeApiId);
+
+        // 레시피 ID로 공동구매 조회
+        List<GroupBuy> groupBuys = groupBuyRepository.findByRecipeApiId(recipeApiId);
+
+        // 활성 상태 (RECRUITING, IMMINENT)인 공동구매만 필터링하여 변환
+        return groupBuys.stream()
+                .filter(gb -> gb.getStatus() == GroupBuyStatus.RECRUITING || 
+                              gb.getStatus() == GroupBuyStatus.IMMINENT)
+                .map(gb -> {
+                    // 이미지 URL 목록 수집
+                    List<String> imageUrls = gb.getImages().stream()
+                            .map(img -> img.getImageUrl())
+                            .collect(Collectors.toList());
+                    return GroupBuyResponse.from(gb, imageUrls);
+                })
+                .collect(Collectors.toList());
     }
 
     // ========== 변환 메서드 ==========
@@ -272,6 +304,15 @@ public class RecipeService {
      */
     private void validateRandomCount(int count) {
         if (count < 0 || count > MAX_RANDOM_COUNT) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    /**
+     * 레시피 API ID 유효성 검증
+     */
+    private void validateRecipeApiId(String recipeApiId) {
+        if (recipeApiId == null || recipeApiId.trim().isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }

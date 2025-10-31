@@ -402,23 +402,23 @@
 
 ### 2.2. 레시피 기반 공구 생성
 
-#### [ ] Task 2-2-1: 레시피 기반 공구 생성 기능
-- [ ] 테스트 작성
+#### [x] Task 2-2-1: 레시피 기반 공구 생성 기능
+- [x] 테스트 작성
   - 레시피 ID 포함하여 공구 생성
   - recipeName, recipeImageUrl 자동 채워짐
   - 재료 목록 파싱 후 content에 자동 입력
-- [ ] GroupBuyService 확장
+- [x] GroupBuyService 확장
   - `createRecipeBasedGroupBuy(Long userId, CreateRecipeGroupBuyRequest dto)`
   - 레시피 API 호출하여 재료 가져오기
   - recipeName, recipeImageUrl 캐싱
-- [ ] GroupBuyController 확장
+- [x] GroupBuyController 확장
   - `POST /group-purchases/recipe-based`
   - 요청 DTO: CreateRecipeGroupBuyRequest (recipeApiId, selectedIngredients, targetHeadcount, ...)
 
-#### [ ] Task 2-2-2: 레시피 상세 페이지에서 공구 연결
-- [ ] 레시피 기반 진행 중인 공구 조회
+#### [x] Task 2-2-2: 레시피 상세 페이지에서 공구 연결
+- [x] 레시피 기반 진행 중인 공구 조회
   - `GET /recipes/{recipeId}/group-purchases`
-- [ ] RecipeService 확장
+- [x] RecipeService 확장
   - `getRelatedGroupBuys(String recipeApiId)`
 
 ---

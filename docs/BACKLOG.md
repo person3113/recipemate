@@ -2,17 +2,70 @@
 
 > 미구현 기능, 기술 부채, 개선 사항 기록 및 우선순위별 관리
 
+📝 원칙
+- **TDD**: 백로그 항목도 테스트 먼저 작성
+- **YAGNI**: 필요하지 않으면 구현하지 않기 (과도한 추상화 방지)
+- **지속적 리팩터링**: 코드 냄새 느껴질 때 백로그 항목 처리
+
 ---
 
 ## 🔴 HIGH Priority (즉시 수정)
 
 ---
 
-## 🟡 MEDIUM Priority (Phase 1 완료 전)
+## 🟡 MEDIUM Priority 
+
+### 1. 테스트 코드 리팩터링 - 슬라이스 테스트 및 단위 테스트 전환
+- **현황**: Service와 Controller 테스트가 `@SpringBootTest`로 전체 Context 로딩 (무거움)
+- **문제점**:
+  - Service 테스트: 전체 ApplicationContext 로딩, 실제 DB 연동 → 느림
+  - Controller 테스트: `@SpringBootTest` + `@AutoConfigureMockMvc` → 통합 테스트 수준
+  - `@MockBean` deprecated (Spring Boot 3.4.0+) 경고 발생
+- **개선 방안**:
+  
+  **✅ Entity 테스트 (현재 방식 유지)**
+  - Plain JUnit, 프레임워크 의존성 없음
+  - 순수 도메인 로직 검증 (속도: ⚡ 매우 빠름)
+  
+  **✅ Repository 테스트 (현재 방식 유지)**
+  - `@DataJpaTest` 슬라이스 테스트 (JPA 관련 빈만 로딩)
+  - 인메모리 DB (H2) 사용, QueryDSL 설정 @Import
+  - 쿼리 메서드, 커스텀 쿼리 검증 (속도: 🚀 빠름)
+  
+  **⚠️ Service 테스트 (전환 필요)**
+  - 현재: `@SpringBootTest` (무거움)
+  - 개선: `@ExtendWith(MockitoExtension.class)` + `@Mock`
+  - Repository와 의존성을 Mock으로 주입, 순수 비즈니스 로직만 테스트
+  - Context 로딩 없이 격리된 단위 테스트 (속도: ⚡ 매우 빠름)
+  
+  **⚠️ Controller 테스트 (전환 필요)**
+  - 현재: `@SpringBootTest` + `@AutoConfigureMockMvc` (무거움)
+  - 개선: `@WebMvcTest(ControllerName.class)`
+  - MVC 레이어만 로딩, Service는 `@MockitoBean`으로 주입
+  - MockMvc를 통한 HTTP 요청/응답 검증 (속도: 🚀 빠름)
+  
+  **📌 @MockBean Deprecation 대응 (Spring Boot 3.4.0+)**
+  - Deprecated: `@MockBean`, `@SpyBean`
+  - 대체: `@MockitoBean`, `@MockitoSpyBean`
+  - import 변경: `org.springframework.boot.test.mock.mockito.MockBean`
+    → `org.springframework.test.context.bean.override.mockito.MockitoBean`
+  
+  **Integration 테스트 (최소화)**
+  - `@SpringBootTest`는 전체 플로우 E2E 테스트에만 사용
+  - 핵심 시나리오 몇 개만 작성 (속도: 🐌 느림)
+  
+- **장점**:
+  - 테스트 실행 속도 5~10배 향상 (Context 로딩 시간 제거)
+  - 레이어별 책임 명확화 (단위 테스트 vs 통합 테스트)
+  - Mock을 통한 의존성 제어로 테스트 격리성 향상
+  - TDD 사이클 단축 (빠른 피드백)
+- **처리 시점**: Phase 1 완료 전 (테스트 속도 개선 필수)
+- **예상 시간**: 4-6시간
+- **참고**: 기존 테스트 로직 유지하면서 어노테이션 및 Mock 설정만 변경
 
 ---
 
-## 🟢 LOW Priority (Phase 2 이후)
+## 🟢 LOW Priority 
 
 ### 1. htmx HTML Fragment 엔드포인트 구현
 - **현황**: 현재 JSON API와 페이지 렌더링 엔드포인트만 존재
@@ -96,26 +149,4 @@
 - 처리 시점: Phase 4 리팩터링 단계
 - 예상 시간: 1-2시간
 
----
 
-## 📊 우선순위 요약
-
-| 항목 | 우선순위 | 처리 시점 | 예상 시간 | 상태 |
-|------|----------|-----------|-----------|------|
-| htmx HTML Fragment 엔드포인트 구현 | 🟢 LOW | Phase 2 UI 개선 시 | 3-4시간 | ⏳ 대기 |
-| ParticipationService 재시도 로직 개선 | 🟢 LOW | Phase 3-4 안정화 | 1-2시간 | ⏳ 대기 |
-| Repository 페치 조인 최적화 | 🟢 LOW | Phase 3-4 성능 테스트 후 | 1-2시간 | ⏳ 대기 |
-| GroupBuySearchCondition 빌더 패턴 | 🟢 LOW | Phase 2 검색 기능 확장 시 | 30분 | ⏳ 대기 |
-| Remember-Me 구현 | 🟢 LOW | 프로덕션 배포 전 | 2-3시간 | ⏳ 대기 |
-| Custom Validation | 🟢 LOW | 검증 로직 복잡 시 | 3-4시간 | ⏳ 대기 |
-| QueryDSL 활용 | 🟢 LOW | 검색 기능 구현 시 | 2-3시간 | ⏳ 대기 |
-| Repository 쿼리 최적화 | 🟢 LOW | Phase 2 검색 최적화 | 2-3시간 | ⏳ 대기 |
-| 엔티티 불변성 강화 | 🟢 LOW | Phase 4 리팩터링 | 1-2시간 | ⏳ 대기 |
-
----
-
-## 📝 원칙
-
-- **TDD**: 백로그 항목도 테스트 먼저 작성
-- **YAGNI**: 필요하지 않으면 구현하지 않기 (과도한 추상화 방지)
-- **지속적 리팩터링**: 코드 냄새 느껴질 때 백로그 항목 처리

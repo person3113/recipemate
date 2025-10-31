@@ -31,6 +31,7 @@ public class GroupBuyService {
     private final GroupBuyImageRepository groupBuyImageRepository;
     private final UserRepository userRepository;
     private final ImageUploadUtil imageUploadUtil;
+    private final com.recipemate.domain.recipe.service.RecipeService recipeService;
 
     /**
      * 일반 공구 생성
@@ -94,6 +95,7 @@ public class GroupBuyService {
 
     /**
      * 레시피 기반 공구 생성
+     * recipeApiId를 받아 레시피 정보를 자동으로 가져와 공구를 생성합니다.
      */
     @Transactional
     public GroupBuyResponse createRecipeBasedGroupBuy(Long userId, CreateGroupBuyRequest request) {
@@ -102,8 +104,79 @@ public class GroupBuyService {
             throw new CustomException(ErrorCode.INVALID_RECIPE_API_ID);
         }
         
-        // 일반 생성 메서드 사용 (내부에서 레시피 필드를 감지하여 처리)
-        return createGroupBuy(userId, request);
+        // 1. 레시피 정보 자동 채우기 (수동 제공된 경우 건너뛰기)
+        CreateGroupBuyRequest enrichedRequest = enrichWithRecipeInfo(request);
+        
+        // 2. 일반 생성 메서드 사용 (내부에서 레시피 필드를 감지하여 처리)
+        return createGroupBuy(userId, enrichedRequest);
+    }
+
+    /**
+     * 레시피 정보로 요청 데이터 보강
+     * recipeName이나 recipeImageUrl이 없으면 레시피 API에서 가져와서 채웁니다.
+     */
+    private CreateGroupBuyRequest enrichWithRecipeInfo(CreateGroupBuyRequest request) {
+        // 이미 모든 레시피 정보가 제공된 경우 API 호출 생략
+        if (request.getRecipeName() != null && request.getRecipeImageUrl() != null) {
+            return request;
+        }
+        
+        // 레시피 상세 정보 조회
+        com.recipemate.domain.recipe.dto.RecipeDetailResponse recipeDetail;
+        try {
+            recipeDetail = recipeService.getRecipeDetail(request.getRecipeApiId());
+        } catch (CustomException e) {
+            // 레시피를 찾을 수 없는 경우 예외 전파
+            if (e.getErrorCode() == ErrorCode.RECIPE_NOT_FOUND) {
+                throw e;
+            }
+            // 기타 오류는 일반적인 레시피 조회 오류로 처리
+            throw new CustomException(ErrorCode.RECIPE_NOT_FOUND);
+        }
+        
+        // 재료 목록을 문자열로 변환
+        String ingredientsText = buildIngredientsText(recipeDetail);
+        
+        // 기존 content에 재료 정보 추가
+        String enrichedContent = request.getContent() + "\n\n" + ingredientsText;
+        
+        // 새로운 요청 객체 생성 (레시피 정보 보강)
+        return CreateGroupBuyRequest.builder()
+            .title(request.getTitle())
+            .content(enrichedContent)
+            .category(request.getCategory())
+            .totalPrice(request.getTotalPrice())
+            .targetHeadcount(request.getTargetHeadcount())
+            .deadline(request.getDeadline())
+            .deliveryMethod(request.getDeliveryMethod())
+            .meetupLocation(request.getMeetupLocation())
+            .parcelFee(request.getParcelFee())
+            .isParticipantListPublic(request.getIsParticipantListPublic())
+            .imageFiles(request.getImageFiles())
+            .recipeApiId(request.getRecipeApiId())
+            .recipeName(request.getRecipeName() != null ? request.getRecipeName() : recipeDetail.getName())
+            .recipeImageUrl(request.getRecipeImageUrl() != null ? request.getRecipeImageUrl() : recipeDetail.getImageUrl())
+            .build();
+    }
+
+    /**
+     * 재료 목록을 문자열로 변환
+     */
+    private String buildIngredientsText(com.recipemate.domain.recipe.dto.RecipeDetailResponse recipeDetail) {
+        if (recipeDetail.getIngredients() == null || recipeDetail.getIngredients().isEmpty()) {
+            return "필요한 재료: 정보 없음";
+        }
+        
+        StringBuilder sb = new StringBuilder("필요한 재료:\n");
+        for (com.recipemate.domain.recipe.dto.RecipeDetailResponse.IngredientInfo ingredient : recipeDetail.getIngredients()) {
+            sb.append("- ").append(ingredient.getName());
+            if (ingredient.getMeasure() != null && !ingredient.getMeasure().isBlank()) {
+                sb.append(" (").append(ingredient.getMeasure()).append(")");
+            }
+            sb.append("\n");
+        }
+        
+        return sb.toString().trim();
     }
 
     /**

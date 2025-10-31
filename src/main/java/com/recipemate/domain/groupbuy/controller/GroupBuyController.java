@@ -125,6 +125,36 @@ public class GroupBuyController {
     }
 
     /**
+     * 레시피 기반 공구 생성 폼 제출
+     */
+    @PostMapping("/recipe-based")
+    public String createRecipeBasedGroupBuy(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @Valid @ModelAttribute CreateGroupBuyRequest request,
+        BindingResult bindingResult,
+        RedirectAttributes redirectAttributes
+    ) {
+        // 1. 유효성 검증 실패 처리
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", 
+                bindingResult.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/group-purchases/new";
+        }
+        
+        try {
+            User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            
+            GroupBuyResponse response = groupBuyService.createRecipeBasedGroupBuy(user.getId(), request);
+            redirectAttributes.addFlashAttribute("successMessage", "레시피 기반 공동구매가 성공적으로 생성되었습니다.");
+            return "redirect:/group-purchases/" + response.getId();
+        } catch (CustomException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
+            return "redirect:/group-purchases/new";
+        }
+    }
+
+    /**
      * 공구 수정 폼 제출
      */
     @PostMapping("/{purchaseId}")

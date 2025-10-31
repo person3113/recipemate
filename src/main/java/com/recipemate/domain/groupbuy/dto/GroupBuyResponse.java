@@ -1,5 +1,6 @@
 package com.recipemate.domain.groupbuy.dto;
 
+import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyStatus;
 import lombok.*;
@@ -43,4 +44,32 @@ public class GroupBuyResponse {
     // 타임스탬프
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
+    // 정적 팩토리 메서드
+    public static GroupBuyResponse from(GroupBuy groupBuy, List<String> imageUrls) {
+        return GroupBuyResponse.builder()
+                .id(groupBuy.getId())
+                .title(groupBuy.getTitle())
+                .content(groupBuy.getContent())
+                .category(groupBuy.getCategory())
+                .totalPrice(groupBuy.getTotalPrice())
+                .targetHeadcount(groupBuy.getTargetHeadcount())
+                .currentHeadcount(groupBuy.getCurrentHeadcount())
+                .deadline(groupBuy.getDeadline())
+                .deliveryMethod(groupBuy.getDeliveryMethod())
+                .meetupLocation(groupBuy.getMeetupLocation())
+                .parcelFee(groupBuy.getParcelFee())
+                .isParticipantListPublic(groupBuy.getParticipantListPublic())
+                .status(groupBuy.getStatus())
+                .hostId(groupBuy.getHost().getId())
+                .hostNickname(groupBuy.getHost().getNickname())
+                .hostMannerTemperature(groupBuy.getHost().getMannerTemperature())
+                .recipeApiId(groupBuy.getRecipeApiId())
+                .recipeName(groupBuy.getRecipeName())
+                .recipeImageUrl(groupBuy.getRecipeImageUrl())
+                .imageUrls(imageUrls)
+                .createdAt(groupBuy.getCreatedAt())
+                .updatedAt(groupBuy.getUpdatedAt())
+                .build();
+    }
 }

@@ -3,6 +3,8 @@ package com.recipemate.domain.groupbuy.entity;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.global.common.BaseEntity;
 import com.recipemate.global.common.DeliveryMethod;
+import com.recipemate.global.exception.CustomException;
+import com.recipemate.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -66,12 +68,12 @@ public class Participation extends BaseEntity {
     private static void validateCreateArgs(GroupBuy groupBuy, Integer quantity, DeliveryMethod selectedDeliveryMethod) {
         // BOTH는 선택 불가 (DIRECT 또는 PARCEL만 선택 가능)
         if (selectedDeliveryMethod == DeliveryMethod.BOTH) {
-            throw new IllegalArgumentException("선택한 수령 방법은 DIRECT 또는 PARCEL이어야 합니다.");
+            throw new CustomException(ErrorCode.INVALID_SELECTED_DELIVERY_METHOD);
         }
 
         // 수량 검증
         if (quantity == null || quantity < 1) {
-            throw new IllegalArgumentException("수량은 1 이상이어야 합니다.");
+            throw new CustomException(ErrorCode.INVALID_QUANTITY);
         }
 
         // 공구의 수령 방법과 선택한 수령 방법의 호환성 검증
@@ -86,21 +88,21 @@ public class Participation extends BaseEntity {
         
         // 직거래만 가능한 공구에 택배 선택 불가, 택배만 가능한 공구에 직거래 선택 불가
         if (groupBuyMethod != selectedMethod) {
-            throw new IllegalArgumentException("선택한 수령 방법이 공구의 수령 방법과 호환되지 않습니다.");
+            throw new CustomException(ErrorCode.DELIVERY_METHOD_INCOMPATIBLE);
         }
     }
 
     //== 수정 메서드 ==//
     public void updateQuantity(Integer quantity) {
         if (quantity == null || quantity < 1) {
-            throw new IllegalArgumentException("수량은 1 이상이어야 합니다.");
+            throw new CustomException(ErrorCode.INVALID_QUANTITY);
         }
         this.quantity = quantity;
     }
 
     public void updateDeliveryMethod(DeliveryMethod deliveryMethod) {
         if (deliveryMethod == DeliveryMethod.BOTH) {
-            throw new IllegalArgumentException("선택한 수령 방법은 DIRECT 또는 PARCEL이어야 합니다.");
+            throw new CustomException(ErrorCode.INVALID_SELECTED_DELIVERY_METHOD);
         }
         validateDeliveryMethodCompatibility(this.groupBuy.getDeliveryMethod(), deliveryMethod);
         this.selectedDeliveryMethod = deliveryMethod;

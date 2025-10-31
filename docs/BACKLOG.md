@@ -4,47 +4,6 @@
 
 ---
 
-## ✅ COMPLETED (완료된 작업)
-
-### [2025-10-31] 예외 처리 일관성 개선 및 데이터 검증 강화
-**처리 항목**:
-1. ✅ **GroupBuy.update() targetHeadcount 검증 추가**
-   - `GroupBuy.java:163-181`: targetHeadcount < currentHeadcount 검증 추가
-   - `ErrorCode.TARGET_HEADCOUNT_BELOW_CURRENT` 추가
-   - 데이터 무결성 보장
-
-2. ✅ **ErrorCode에 검증 관련 에러코드 추가**
-   - `ErrorCode.java:18-24`: 9개 검증 에러코드 추가
-   - `INVALID_TITLE`, `INVALID_CONTENT`, `INVALID_CATEGORY`
-   - `INVALID_TOTAL_PRICE`, `INVALID_TARGET_HEADCOUNT`, `INVALID_DEADLINE`
-   - `INVALID_DELIVERY_METHOD`, `INVALID_RECIPE_API_ID`
-   - `TARGET_HEADCOUNT_BELOW_CURRENT`
-
-3. ✅ **GroupBuyService 예외 처리 표준화**
-   - `GroupBuyService.java:104, 303-325`: IllegalArgumentException → CustomException
-   - `validateRequest()` 메서드 전체 변경
-   - `createRecipeBasedGroupBuy()` 메서드 변경
-
-4. ✅ **GroupBuy 엔티티 예외 처리 표준화**
-   - `GroupBuy.java:1-17`: CustomException, ErrorCode import 추가
-   - `GroupBuy.java:151-161`: validateCreateArgs() IllegalArgumentException → CustomException
-   - `GroupBuy.java:163-181`: update() 메서드 검증 추가 및 CustomException 사용
-
-5. ✅ **테스트 코드 업데이트**
-   - `GroupBuyTest.java`: 예외 타입 변경 (IllegalArgumentException → CustomException)
-   - `GroupBuyServiceTest.java`: 예외 타입 및 검증 방식 변경
-   - 모든 테스트 통과 확인 (64 tests)
-
-**효과**:
-- 에러코드 추적 가능
-- HTTP 상태 자동 매핑
-- 클라이언트 친화적 구조화된 응답
-- 일관된 예외 처리 패턴
-
-**소요 시간**: 약 1.5시간
-
----
-
 ## 🔴 HIGH Priority (즉시 수정)
 
 > 현재 HIGH Priority 항목 없음
@@ -53,15 +12,7 @@
 
 ## 🟡 MEDIUM Priority (Phase 1 완료 전)
 
-### 3. GroupBuy 엔티티 Participation 양방향 연관관계 추가
-- **필요성**: `isParticipant(User)` 메서드로 권한 체크
-- **해결**: 
-  1. `GroupBuy`에 `@OneToMany(mappedBy = "groupBuy") List<Participation> participations` 추가
-  2. `isParticipant(User user)` 메서드 구현
-- **처리 시점**: Participation 엔티티 구현 시 (Task 1-4-1)
-- **예상 시간**: 30분
-
-### 4. Controller 아키텍처 변경 (Thymeleaf 통합)
+### 6. Controller 아키텍처 변경 (Thymeleaf 통합)
 - **현황**: 모든 Controller가 @RestController (JSON만 반환)
 - **문제**: Thymeleaf 템플릿 없어 브라우저 직접 접근 불가, htmx 미사용
 - **해결**: 페이지용 @Controller + API용 @RestController 이원화
@@ -72,7 +23,34 @@
 
 ## 🟢 LOW Priority (Phase 2 이후)
 
-### 6. Remember-Me 기능 완전 구현
+### 7. ParticipationService 낙관적 락 재시도 로직 개선
+- **현황**: `@Retryable` 어노테이션 사용 (maxAttempts=3, backoff=100ms)
+- **문제**: 재시도 실패 시 사용자 친화적 메시지 부족, 로깅 없음
+- **개선**: 
+  1. 재시도 실패 시 명확한 에러 메시지 (`ErrorCode.CONCURRENCY_FAILURE`)
+  2. 재시도 로그 추가 (`@Recover` 메서드 활용)
+  3. Exponential backoff 적용 고려
+- **처리 시점**: Phase 3-4 안정화 단계
+- **예상 시간**: 1-2시간
+
+### 8. Repository 페치 조인 최적화
+- **현황**: 
+  - `ParticipationRepository.findByGroupBuyIdWithUser()`: User 페치 조인
+  - `ParticipationRepository.findByUserIdWithGroupBuyAndHost()`: GroupBuy, Host 페치 조인
+  - `GroupBuyRepository.findByIdWithHost()`: Host 페치 조인
+- **장점**: N+1 문제 방지, 쿼리 최적화
+- **주의**: 페이징과 @OneToMany 페치 조인 혼용 시 메모리 문제 가능 (현재는 @ManyToOne만 페치 조인하여 안전)
+- **개선**: Hibernate default_batch_fetch_size 설정 추가 고려
+- **처리 시점**: Phase 3-4 성능 테스트 후
+- **예상 시간**: 1-2시간
+
+### 9. GroupBuySearchCondition 빌더 패턴 적용
+- **현황**: DTO 필드가 많아 생성자 방식 복잡해질 가능성
+- **개선**: 빌더 패턴 적용으로 가독성 향상
+- **처리 시점**: Phase 2 검색 기능 확장 시
+- **예상 시간**: 30분
+
+### 10. Remember-Me 기능 완전 구현
 - 현재 기본 세션 인증만 동작
 - 필요 작업: PersistentTokenRepository 설정, DB 테이블 생성, LoginRequest 수정
 - 장점: 7일간 로그인 상태 유지
@@ -119,25 +97,15 @@
 
 | 항목 | 우선순위 | 처리 시점 | 예상 시간 | 상태 |
 |------|----------|-----------|-----------|------|
-| GroupBuy update() 검증 | 🔴 HIGH | 즉시 | 30분 | ✅ 완료 |
-| 예외 처리 일관성 개선 | 🔴 HIGH | 즉시 | 1시간 | ✅ 완료 |
-| GroupBuy 양방향 연관관계 | 🟡 MEDIUM | Participation 엔티티 구현 시 | 30분 | ⏳ 대기 |
 | Controller Thymeleaf 통합 | 🟡 MEDIUM | Phase 1 백엔드 완성 후 | 4-6시간 | ⏳ 대기 |
+| ParticipationService 재시도 로직 개선 | 🟢 LOW | Phase 3-4 안정화 | 1-2시간 | ⏳ 대기 |
+| Repository 페치 조인 최적화 | 🟢 LOW | Phase 3-4 성능 테스트 후 | 1-2시간 | ⏳ 대기 |
+| GroupBuySearchCondition 빌더 패턴 | 🟢 LOW | Phase 2 검색 기능 확장 시 | 30분 | ⏳ 대기 |
 | Remember-Me 구현 | 🟢 LOW | 프로덕션 배포 전 | 2-3시간 | ⏳ 대기 |
 | Custom Validation | 🟢 LOW | 검증 로직 복잡 시 | 3-4시간 | ⏳ 대기 |
 | QueryDSL 활용 | 🟢 LOW | 검색 기능 구현 시 | 2-3시간 | ⏳ 대기 |
 | Repository 쿼리 최적화 | 🟢 LOW | Phase 2 검색 최적화 | 2-3시간 | ⏳ 대기 |
 | 엔티티 불변성 강화 | 🟢 LOW | Phase 4 리팩터링 | 1-2시간 | ⏳ 대기 |
-
----
-
-## 🎯 권장 처리 순서
-
-1. ✅ **완료**: GroupBuy 도메인 검증 로직 및 예외 처리 개선 (2025-10-31)
-2. **다음**: Participation 엔티티 구현 (Task 1-4-1) → 양방향 연관관계 추가
-3. **Phase 1 완료 후**: Controller → Thymeleaf 통합 (모든 도메인 화면 구현)
-4. **Phase 2**: QueryDSL 검색 기능, Remember-Me 등 부가 기능
-5. **Phase 4**: 필요 시 Validator/PermissionChecker 리팩터링
 
 ---
 

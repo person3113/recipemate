@@ -121,7 +121,7 @@ public class UserService {
                     .stream()
                     .map(GroupBuyImage::getImageUrl)
                     .toList();
-            return mapToResponse(groupBuy, imageUrls);
+            return GroupBuyResponse.from(groupBuy, imageUrls);
         });
     }
 
@@ -150,34 +150,7 @@ public class UserService {
                     .stream()
                     .map(GroupBuyImage::getImageUrl)
                     .toList();
-            return mapToResponse(groupBuy, imageUrls);
+            return GroupBuyResponse.from(groupBuy, imageUrls);
         });
-    }
-
-    private GroupBuyResponse mapToResponse(GroupBuy groupBuy, List<String> imageUrls) {
-        return GroupBuyResponse.builder()
-                .id(groupBuy.getId())
-                .title(groupBuy.getTitle())
-                .content(groupBuy.getContent())
-                .category(groupBuy.getCategory())
-                .totalPrice(groupBuy.getTotalPrice())
-                .targetHeadcount(groupBuy.getTargetHeadcount())
-                .currentHeadcount(groupBuy.getCurrentHeadcount())
-                .deadline(groupBuy.getDeadline())
-                .deliveryMethod(groupBuy.getDeliveryMethod())
-                .meetupLocation(groupBuy.getMeetupLocation())
-                .parcelFee(groupBuy.getParcelFee())
-                .isParticipantListPublic(groupBuy.getParticipantListPublic())
-                .status(groupBuy.getStatus())
-                .hostId(groupBuy.getHost().getId())
-                .hostNickname(groupBuy.getHost().getNickname())
-                .hostMannerTemperature(groupBuy.getHost().getMannerTemperature())
-                .recipeApiId(groupBuy.getRecipeApiId())
-                .recipeName(groupBuy.getRecipeName())
-                .recipeImageUrl(groupBuy.getRecipeImageUrl())
-                .imageUrls(imageUrls)
-                .createdAt(groupBuy.getCreatedAt())
-                .updatedAt(groupBuy.getUpdatedAt())
-                .build();
     }
 }

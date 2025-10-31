@@ -3,6 +3,8 @@ package com.recipemate.domain.groupbuy.entity;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyStatus;
+import com.recipemate.global.exception.CustomException;
+import com.recipemate.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -40,8 +42,8 @@ class ParticipationTest {
         
         // when & then - BOTH는 선택 불가
         assertThatThrownBy(() -> Participation.create(user, groupBuy, 1, DeliveryMethod.BOTH))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("DIRECT 또는 PARCEL");
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_SELECTED_DELIVERY_METHOD);
     }
     
     @Test
@@ -53,8 +55,8 @@ class ParticipationTest {
         
         // when & then
         assertThatThrownBy(() -> Participation.create(user, groupBuy, 0, DeliveryMethod.DIRECT))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("수량은 1 이상");
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_QUANTITY);
     }
     
     @Test
@@ -66,8 +68,8 @@ class ParticipationTest {
         
         // when & then - 직거래만 가능한 공구에 택배 선택 불가
         assertThatThrownBy(() -> Participation.create(user, directOnlyGroupBuy, 1, DeliveryMethod.PARCEL))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("공구의 수령 방법과 호환");
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.DELIVERY_METHOD_INCOMPATIBLE);
     }
     
     @Test

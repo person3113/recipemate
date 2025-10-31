@@ -189,14 +189,14 @@ public class GroupBuy extends BaseEntity {
     //== 비즈니스 로직 ==//
     public void increaseParticipant() {
         if (this.currentHeadcount + 1 > this.targetHeadcount) {
-            throw new IllegalStateException("목표 인원에 도달했습니다.");
+            throw new CustomException(ErrorCode.MAX_PARTICIPANTS_EXCEEDED);
         }
         this.currentHeadcount++;
     }
 
     public void decreaseParticipant() {
         if (this.currentHeadcount <= 0) {
-            throw new IllegalStateException("참여 인원이 0명입니다.");
+            throw new CustomException(ErrorCode.NO_PARTICIPANTS);
         }
         this.currentHeadcount--;
     }

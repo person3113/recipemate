@@ -128,8 +128,8 @@ class GroupBuyTest {
 
         // when & then
         assertThatThrownBy(groupBuy::decreaseParticipant)
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("참여 인원이 0명입니다");
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NO_PARTICIPANTS);
     }
 
     @Test
@@ -159,8 +159,8 @@ class GroupBuyTest {
 
         // when & then
         assertThatThrownBy(groupBuy::increaseParticipant)
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("목표 인원에 도달했습니다");
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MAX_PARTICIPANTS_EXCEEDED);
     }
 
     @Test

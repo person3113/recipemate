@@ -28,6 +28,10 @@ public enum ErrorCode {
     PARTICIPATION_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUP-017", "참여하지 않은 공동구매입니다."),
     CANCELLATION_DEADLINE_PASSED(HttpStatus.BAD_REQUEST, "GROUP-018", "마감 1일 전에는 참여를 취소할 수 없습니다."),
     UNAUTHORIZED_PARTICIPANT_LIST_ACCESS(HttpStatus.FORBIDDEN, "GROUP-019", "참여자 목록을 볼 수 있는 권한이 없습니다."),
+    INVALID_QUANTITY(HttpStatus.BAD_REQUEST, "GROUP-020", "수량은 1 이상이어야 합니다."),
+    INVALID_SELECTED_DELIVERY_METHOD(HttpStatus.BAD_REQUEST, "GROUP-021", "선택한 수령 방법은 DIRECT 또는 PARCEL이어야 합니다."),
+    DELIVERY_METHOD_INCOMPATIBLE(HttpStatus.BAD_REQUEST, "GROUP-022", "선택한 수령 방법이 공구의 수령 방법과 호환되지 않습니다."),
+    NO_PARTICIPANTS(HttpStatus.BAD_REQUEST, "GROUP-023", "참여 인원이 0명입니다."),
     
     RECIPE_NOT_FOUND(HttpStatus.NOT_FOUND, "RECIPE-001", "레시피를 찾을 수 없습니다."),
     

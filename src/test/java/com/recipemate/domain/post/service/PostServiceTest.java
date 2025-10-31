@@ -20,11 +20,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -386,5 +394,271 @@ class PostServiceTest {
                 .hasMessage("게시글을 찾을 수 없습니다.");
 
         verify(postRepository).findByIdWithAuthor(1L);
+    }
+
+    @Test
+    @DisplayName("게시글 목록 조회에 성공한다 - 페이징")
+    void getPostList_withPaging_success() throws Exception {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        
+        Post post1 = Post.builder()
+                .author(author)
+                .title("첫 번째 게시글")
+                .content("내용1")
+                .category(PostCategory.TIPS)
+                .viewCount(10)
+                .build();
+        setPostId(post1, 1L);
+        setCreatedAt(post1, LocalDateTime.now().minusDays(2));
+        
+        Post post2 = Post.builder()
+                .author(anotherUser)
+                .title("두 번째 게시글")
+                .content("내용2")
+                .category(PostCategory.FREE)
+                .viewCount(5)
+                .build();
+        setPostId(post2, 2L);
+        setCreatedAt(post2, LocalDateTime.now().minusDays(1));
+        
+        Post post3 = Post.builder()
+                .author(author)
+                .title("세 번째 게시글")
+                .content("내용3")
+                .category(PostCategory.REVIEW)
+                .viewCount(15)
+                .build();
+        setPostId(post3, 3L);
+        setCreatedAt(post3, LocalDateTime.now());
+        
+        List<Post> posts = Arrays.asList(post3, post2, post1); // 최신순
+        Page<Post> postPage = new PageImpl<>(posts, pageable, 3);
+        
+        given(postRepository.findAllByDeletedAtIsNull(pageable)).willReturn(postPage);
+        
+        // when
+        Page<PostResponse> result = postService.getPostList(null, null, pageable);
+        
+        // then
+        assertThat(result.getTotalElements()).isEqualTo(3);
+        assertThat(result.getContent()).hasSize(3);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("세 번째 게시글");
+        assertThat(result.getContent().get(1).getTitle()).isEqualTo("두 번째 게시글");
+        assertThat(result.getContent().get(2).getTitle()).isEqualTo("첫 번째 게시글");
+        
+        verify(postRepository).findAllByDeletedAtIsNull(pageable);
+    }
+    
+    @Test
+    @DisplayName("카테고리별 게시글 목록 조회에 성공한다")
+    void getPostList_withCategory_success() throws Exception {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        PostCategory category = PostCategory.TIPS;
+        
+        Post post1 = Post.builder()
+                .author(author)
+                .title("팁 게시글 1")
+                .content("유용한 팁")
+                .category(PostCategory.TIPS)
+                .viewCount(10)
+                .build();
+        setPostId(post1, 1L);
+        setCreatedAt(post1, LocalDateTime.now());
+        
+        Post post2 = Post.builder()
+                .author(anotherUser)
+                .title("팁 게시글 2")
+                .content("또 다른 팁")
+                .category(PostCategory.TIPS)
+                .viewCount(5)
+                .build();
+        setPostId(post2, 2L);
+        setCreatedAt(post2, LocalDateTime.now().minusHours(1));
+        
+        List<Post> posts = Arrays.asList(post1, post2);
+        Page<Post> postPage = new PageImpl<>(posts, pageable, 2);
+        
+        given(postRepository.findByCategoryAndDeletedAtIsNull(eq(category), eq(pageable)))
+                .willReturn(postPage);
+        
+        // when
+        Page<PostResponse> result = postService.getPostList(category, null, pageable);
+        
+        // then
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent()).allMatch(post -> post.getCategory() == PostCategory.TIPS);
+        
+        verify(postRepository).findByCategoryAndDeletedAtIsNull(eq(category), eq(pageable));
+    }
+    
+    @Test
+    @DisplayName("키워드로 게시글 검색에 성공한다 - 제목에서 검색")
+    void getPostList_withKeyword_inTitle_success() throws Exception {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        String keyword = "레시피";
+        
+        Post post1 = Post.builder()
+                .author(author)
+                .title("맛있는 레시피 공유")
+                .content("오늘의 요리")
+                .category(PostCategory.TIPS)
+                .viewCount(10)
+                .build();
+        setPostId(post1, 1L);
+        setCreatedAt(post1, LocalDateTime.now());
+        
+        Post post2 = Post.builder()
+                .author(anotherUser)
+                .title("간단한 레시피 추천")
+                .content("빠른 요리법")
+                .category(PostCategory.TIPS)
+                .viewCount(5)
+                .build();
+        setPostId(post2, 2L);
+        setCreatedAt(post2, LocalDateTime.now().minusHours(1));
+        
+        List<Post> posts = Arrays.asList(post1, post2);
+        Page<Post> postPage = new PageImpl<>(posts, pageable, 2);
+        
+        given(postRepository.searchByKeyword(eq(keyword), eq(pageable)))
+                .willReturn(postPage);
+        
+        // when
+        Page<PostResponse> result = postService.getPostList(null, keyword, pageable);
+        
+        // then
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent()).allMatch(post -> 
+                post.getTitle().contains("레시피"));
+        
+        verify(postRepository).searchByKeyword(eq(keyword), eq(pageable));
+    }
+    
+    @Test
+    @DisplayName("키워드로 게시글 검색에 성공한다 - 내용에서 검색")
+    void getPostList_withKeyword_inContent_success() throws Exception {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        String keyword = "공구";
+        
+        Post post1 = Post.builder()
+                .author(author)
+                .title("후기 게시글")
+                .content("지난번 공구 정말 좋았어요")
+                .category(PostCategory.REVIEW)
+                .viewCount(10)
+                .build();
+        setPostId(post1, 1L);
+        setCreatedAt(post1, LocalDateTime.now());
+        
+        List<Post> posts = Arrays.asList(post1);
+        Page<Post> postPage = new PageImpl<>(posts, pageable, 1);
+        
+        given(postRepository.searchByKeyword(eq(keyword), eq(pageable)))
+                .willReturn(postPage);
+        
+        // when
+        Page<PostResponse> result = postService.getPostList(null, keyword, pageable);
+        
+        // then
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getContent()).contains("공구");
+        
+        verify(postRepository).searchByKeyword(eq(keyword), eq(pageable));
+    }
+    
+    @Test
+    @DisplayName("카테고리와 키워드로 게시글 검색에 성공한다")
+    void getPostList_withCategoryAndKeyword_success() throws Exception {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        PostCategory category = PostCategory.TIPS;
+        String keyword = "레시피";
+        
+        Post post1 = Post.builder()
+                .author(author)
+                .title("맛있는 레시피 공유")
+                .content("팁입니다")
+                .category(PostCategory.TIPS)
+                .viewCount(10)
+                .build();
+        setPostId(post1, 1L);
+        setCreatedAt(post1, LocalDateTime.now());
+        
+        List<Post> posts = Arrays.asList(post1);
+        Page<Post> postPage = new PageImpl<>(posts, pageable, 1);
+        
+        given(postRepository.searchByCategoryAndKeyword(eq(category), eq(keyword), eq(pageable)))
+                .willReturn(postPage);
+        
+        // when
+        Page<PostResponse> result = postService.getPostList(category, keyword, pageable);
+        
+        // then
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getCategory()).isEqualTo(PostCategory.TIPS);
+        assertThat(result.getContent().get(0).getTitle()).contains("레시피");
+        
+        verify(postRepository).searchByCategoryAndKeyword(eq(category), eq(keyword), eq(pageable));
+    }
+    
+    @Test
+    @DisplayName("검색 결과가 없으면 빈 목록을 반환한다")
+    void getPostList_noResults_returnsEmptyPage() {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        String keyword = "존재하지않는키워드";
+        
+        Page<Post> emptyPage = new PageImpl<>(Arrays.asList(), pageable, 0);
+        given(postRepository.searchByKeyword(eq(keyword), eq(pageable)))
+                .willReturn(emptyPage);
+        
+        // when
+        Page<PostResponse> result = postService.getPostList(null, keyword, pageable);
+        
+        // then
+        assertThat(result.getTotalElements()).isEqualTo(0);
+        assertThat(result.getContent()).isEmpty();
+        
+        verify(postRepository).searchByKeyword(eq(keyword), eq(pageable));
+    }
+    
+    @Test
+    @DisplayName("삭제된 게시글은 목록에 포함되지 않는다")
+    void getPostList_excludesDeletedPosts() throws Exception {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        
+        Post activePost = Post.builder()
+                .author(author)
+                .title("정상 게시글")
+                .content("내용")
+                .category(PostCategory.FREE)
+                .viewCount(10)
+                .build();
+        setPostId(activePost, 1L);
+        setCreatedAt(activePost, LocalDateTime.now());
+        
+        List<Post> posts = Arrays.asList(activePost);
+        Page<Post> postPage = new PageImpl<>(posts, pageable, 1);
+        
+        given(postRepository.findAllByDeletedAtIsNull(pageable)).willReturn(postPage);
+        
+        // when
+        Page<PostResponse> result = postService.getPostList(null, null, pageable);
+        
+        // then
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("정상 게시글");
+        
+        verify(postRepository).findAllByDeletedAtIsNull(pageable);
     }
 }

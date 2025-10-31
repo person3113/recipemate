@@ -491,10 +491,10 @@
   - `POST /community-posts/{postId}` (수정)
   - `POST /community-posts/{postId}/delete` (삭제)
 
-#### [ ] Task 3-1-4: 게시글 목록 조회 및 검색
-- [ ] PostService 구현
+#### [x] Task 3-1-4: 게시글 목록 조회 및 검색
+- [x] PostService 구현
   - `getPostList(PostCategory category, String keyword, Pageable pageable)`
-- [ ] PostController 구현
+- [x] PostController 구현
   - `GET /community-posts`
 
 ---

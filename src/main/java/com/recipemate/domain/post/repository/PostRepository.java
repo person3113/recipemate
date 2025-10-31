@@ -21,4 +21,24 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT p FROM Post p LEFT JOIN FETCH p.author WHERE p.id = :id")
     Optional<Post> findByIdWithAuthor(@Param("id") Long id);
+
+    // 게시글 목록 조회 - 삭제되지 않은 게시글만
+    Page<Post> findAllByDeletedAtIsNull(Pageable pageable);
+
+    // 카테고리별 조회 - 삭제되지 않은 게시글만
+    Page<Post> findByCategoryAndDeletedAtIsNull(PostCategory category, Pageable pageable);
+
+    // 키워드 검색 (제목 + 내용) - 삭제되지 않은 게시글만
+    @Query("SELECT p FROM Post p WHERE p.deletedAt IS NULL " +
+            "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<Post> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    // 카테고리 + 키워드 검색 - 삭제되지 않은 게시글만
+    @Query("SELECT p FROM Post p WHERE p.category = :category AND p.deletedAt IS NULL " +
+            "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<Post> searchByCategoryAndKeyword(@Param("category") PostCategory category,
+                                          @Param("keyword") String keyword,
+                                          Pageable pageable);
 }

@@ -6,10 +6,15 @@ import com.recipemate.domain.post.dto.UpdatePostRequest;
 import com.recipemate.domain.post.service.PostService;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
+import com.recipemate.global.common.PostCategory;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -38,9 +43,31 @@ public class PostController {
     public String listPage(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
             Model model
     ) {
-        // TODO: 목록 조회 기능 구현 예정
+        // 페이징 정보 생성 (최신순 정렬)
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        
+        // 카테고리 파라미터 변환
+        PostCategory postCategory = null;
+        if (category != null && !category.isEmpty()) {
+            try {
+                postCategory = PostCategory.valueOf(category.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // 잘못된 카테고리인 경우 무시
+            }
+        }
+        
+        // 게시글 목록 조회
+        Page<PostResponse> posts = postService.getPostList(postCategory, keyword, pageable);
+        
+        // 모델에 데이터 추가
+        model.addAttribute("posts", posts);
+        model.addAttribute("currentCategory", category);
+        model.addAttribute("keyword", keyword);
+        
         return "community-posts/list";
     }
     

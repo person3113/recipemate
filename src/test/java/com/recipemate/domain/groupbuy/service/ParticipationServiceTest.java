@@ -293,4 +293,127 @@ class ParticipationServiceTest {
             .isInstanceOf(CustomException.class)
             .hasMessageContaining("마감 1일 전에는 참여를 취소할 수 없습니다");
     }
+
+    @Test
+    @DisplayName("참여자 목록 조회 성공 - 공개 설정인 경우 모든 사용자 조회 가능")
+    void getParticipants_Success_PublicList() {
+        // given
+        // 여러 참여자 추가
+        User participant1 = User.builder()
+            .email("p1@test.com")
+            .password("password123!")
+            .nickname("참여자1")
+            .phoneNumber("010-1111-1111")
+            .mannerTemperature(38.0)
+            .role(UserRole.USER)
+            .build();
+        userRepository.save(participant1);
+
+        User participant2 = User.builder()
+            .email("p2@test.com")
+            .password("password123!")
+            .nickname("참여자2")
+            .phoneNumber("010-2222-2222")
+            .mannerTemperature(40.0)
+            .role(UserRole.USER)
+            .build();
+        userRepository.save(participant2);
+
+        ParticipateRequest request = ParticipateRequest.builder()
+            .selectedDeliveryMethod(DeliveryMethod.DIRECT)
+            .quantity(1)
+            .build();
+
+        participationService.participate(participant1.getId(), groupBuy.getId(), request);
+        participationService.participate(participant2.getId(), groupBuy.getId(), request);
+
+        // when - 참여하지 않은 일반 사용자가 조회
+        var result = participationService.getParticipants(groupBuy.getId(), participant.getId());
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getNickname()).isEqualTo("참여자1");
+        assertThat(result.get(0).getMannerTemperature()).isEqualTo(38.0);
+        assertThat(result.get(1).getNickname()).isEqualTo("참여자2");
+        assertThat(result.get(1).getMannerTemperature()).isEqualTo(40.0);
+    }
+
+    @Test
+    @DisplayName("참여자 목록 조회 성공 - 비공개 설정이지만 주최자는 조회 가능")
+    void getParticipants_Success_PrivateListByHost() {
+        // given
+        // 비공개 공구 생성
+        GroupBuy privateGroupBuy = GroupBuy.createGeneral(
+            host,
+            "비공개 공구",
+            "테스트 내용",
+            "식재료",
+            50000,
+            5,
+            LocalDateTime.now().plusDays(7),
+            DeliveryMethod.BOTH,
+            "서울역",
+            3000,
+            false  // 참여자 목록 비공개
+        );
+        groupBuyRepository.save(privateGroupBuy);
+
+        // 참여자 추가
+        ParticipateRequest request = ParticipateRequest.builder()
+            .selectedDeliveryMethod(DeliveryMethod.DIRECT)
+            .quantity(1)
+            .build();
+        participationService.participate(participant.getId(), privateGroupBuy.getId(), request);
+
+        // when - 주최자가 조회
+        var result = participationService.getParticipants(privateGroupBuy.getId(), host.getId());
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getNickname()).isEqualTo("참여자");
+        assertThat(result.get(0).getMannerTemperature()).isEqualTo(36.5);
+    }
+
+    @Test
+    @DisplayName("참여자 목록 조회 실패 - 비공개 설정이고 주최자가 아닌 경우 접근 거부")
+    void getParticipants_Fail_PrivateListByNonHost() {
+        // given
+        // 비공개 공구 생성
+        GroupBuy privateGroupBuy = GroupBuy.createGeneral(
+            host,
+            "비공개 공구",
+            "테스트 내용",
+            "식재료",
+            50000,
+            5,
+            LocalDateTime.now().plusDays(7),
+            DeliveryMethod.BOTH,
+            "서울역",
+            3000,
+            false  // 참여자 목록 비공개
+        );
+        groupBuyRepository.save(privateGroupBuy);
+
+        // 참여자 추가
+        ParticipateRequest request = ParticipateRequest.builder()
+            .selectedDeliveryMethod(DeliveryMethod.DIRECT)
+            .quantity(1)
+            .build();
+        participationService.participate(participant.getId(), privateGroupBuy.getId(), request);
+
+        // when & then - 주최자가 아닌 다른 사용자가 조회
+        User otherUser = User.builder()
+            .email("other@test.com")
+            .password("password123!")
+            .nickname("다른사용자")
+            .phoneNumber("010-9999-9999")
+            .mannerTemperature(36.5)
+            .role(UserRole.USER)
+            .build();
+        userRepository.save(otherUser);
+
+        assertThatThrownBy(() -> participationService.getParticipants(privateGroupBuy.getId(), otherUser.getId()))
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining("참여자 목록을 볼 수 있는 권한이 없습니다");
+    }
 }

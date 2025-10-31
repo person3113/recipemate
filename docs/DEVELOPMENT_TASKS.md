@@ -274,14 +274,14 @@
 - [x] GroupBuyController 구현
   - `DELETE /group-purchases/{purchaseId}/participate`
 
-#### [ ] Task 1-4-4: 참여자 목록 조회 기능
-- [ ] 테스트 작성
+#### [x] Task 1-4-4: 참여자 목록 조회 기능
+- [x] 테스트 작성
   - 공개 설정 시 모든 사용자 조회 가능
   - 비공개 설정 시 주최자만 조회 가능
-- [ ] ParticipationService 구현
+- [x] ParticipationService 구현
   - `getParticipants(Long purchaseId, Long currentUserId)`
   - 권한 검증 (isParticipantListPublic 확인)
-- [ ] GroupBuyController 구현
+- [x] GroupBuyController 구현
   - `GET /group-purchases/{purchaseId}/participants`
   - 응답: ParticipantResponse 리스트 (닉네임, 매너온도, 참여일)
 

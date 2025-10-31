@@ -3,6 +3,7 @@ package com.recipemate.domain.groupbuy.controller;
 import com.recipemate.domain.groupbuy.dto.CreateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
+import com.recipemate.domain.groupbuy.dto.ParticipantResponse;
 import com.recipemate.domain.groupbuy.dto.ParticipateRequest;
 import com.recipemate.domain.groupbuy.dto.UpdateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.service.GroupBuyService;
@@ -22,6 +23,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/group-purchases")
@@ -159,5 +162,23 @@ public class GroupBuyController {
         
         participationService.cancelParticipation(user.getId(), purchaseId);
         return ApiResponse.success(null);
+    }
+
+    /**
+     * 공구 참여자 목록 조회
+     * @param userDetails 인증된 사용자
+     * @param purchaseId 공구 ID
+     */
+    @GetMapping("/{purchaseId}/participants")
+    public ApiResponse<List<ParticipantResponse>> getParticipants(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @PathVariable Long purchaseId
+    ) {
+        // 이메일로 사용자 조회
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        List<ParticipantResponse> participants = participationService.getParticipants(purchaseId, user.getId());
+        return ApiResponse.success(participants);
     }
 }

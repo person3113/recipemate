@@ -27,6 +27,7 @@ public enum ErrorCode {
     HOST_CANNOT_PARTICIPATE(HttpStatus.BAD_REQUEST, "GROUP-016", "주최자는 자신의 공동구매에 참여할 수 없습니다."),
     PARTICIPATION_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUP-017", "참여하지 않은 공동구매입니다."),
     CANCELLATION_DEADLINE_PASSED(HttpStatus.BAD_REQUEST, "GROUP-018", "마감 1일 전에는 참여를 취소할 수 없습니다."),
+    UNAUTHORIZED_PARTICIPANT_LIST_ACCESS(HttpStatus.FORBIDDEN, "GROUP-019", "참여자 목록을 볼 수 있는 권한이 없습니다."),
     
     RECIPE_NOT_FOUND(HttpStatus.NOT_FOUND, "RECIPE-001", "레시피를 찾을 수 없습니다."),
     

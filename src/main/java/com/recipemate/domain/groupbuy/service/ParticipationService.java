@@ -1,5 +1,6 @@
 package com.recipemate.domain.groupbuy.service;
 
+import com.recipemate.domain.groupbuy.dto.ParticipantResponse;
 import com.recipemate.domain.groupbuy.dto.ParticipateRequest;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.Participation;
@@ -19,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -116,5 +119,26 @@ public class ParticipationService {
         if (groupBuy.getStatus() == GroupBuyStatus.CLOSED && !groupBuy.isTargetReached()) {
             groupBuy.reopen();
         }
+    }
+
+    public List<ParticipantResponse> getParticipants(Long groupBuyId, Long currentUserId) {
+        // 1. 공구 조회
+        GroupBuy groupBuy = groupBuyRepository.findByIdWithHost(groupBuyId)
+            .orElseThrow(() -> new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
+
+        // 2. 현재 사용자 조회
+        User currentUser = userRepository.findById(currentUserId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 3. 접근 권한 검증
+        if (!groupBuy.getParticipantListPublic() && !groupBuy.isHost(currentUser)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_PARTICIPANT_LIST_ACCESS);
+        }
+
+        // 4. 참여자 목록 조회 및 DTO 변환
+        List<Participation> participations = participationRepository.findByGroupBuyIdWithUser(groupBuyId);
+        return participations.stream()
+            .map(ParticipantResponse::from)
+            .collect(Collectors.toList());
     }
 }

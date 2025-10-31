@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+    <!-- Header Fragment -->
+    <header th:fragment="header" class="bg-white shadow-md">
+        <nav class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo -->
+                <a th:href="@{/}" class="text-2xl font-bold text-green-600">
+                    RecipeMate
+                </a>
+                
+                <!-- Navigation Links -->
+                <div class="flex items-center space-x-6">
+                    <a th:href="@{/group-purchases}" class="text-gray-700 hover:text-green-600">
+                        공동구매
+                    </a>
+                    
+                    <!-- Authenticated User Menu -->
+                    <div sec:authorize="isAuthenticated()" class="flex items-center space-x-4">
+                        <a th:href="@{/users/me}" class="text-gray-700 hover:text-green-600">
+                            내 프로필
+                        </a>
+                        <a th:href="@{/users/me/group-purchases}" class="text-gray-700 hover:text-green-600">
+                            내 공구
+                        </a>
+                        <form th:action="@{/api/auth/logout}" method="post" class="inline">
+                            <button type="submit" class="text-gray-700 hover:text-red-600">
+                                로그아웃
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Anonymous User Menu -->
+                    <div sec:authorize="!isAuthenticated()" class="flex items-center space-x-4">
+                        <a th:href="@{/auth/login}" class="text-gray-700 hover:text-green-600">
+                            로그인
+                        </a>
+                        <a th:href="@{/auth/signup}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                            회원가입
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+</body>
+</html>

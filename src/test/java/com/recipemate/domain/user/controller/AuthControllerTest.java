@@ -1,12 +1,6 @@
 package com.recipemate.domain.user.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.recipemate.global.exception.CustomException;
-import com.recipemate.global.exception.ErrorCode;
-import com.recipemate.domain.user.dto.LoginRequest;
 import com.recipemate.domain.user.dto.SignupRequest;
-import com.recipemate.domain.user.dto.UserResponse;
-import com.recipemate.domain.user.service.AuthService;
 import com.recipemate.domain.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,12 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -30,9 +24,6 @@ class AuthControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Autowired
     private UserService userService;
@@ -49,49 +40,56 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("로그인 성공 - 세션이 생성되어야 한다")
-    void login_Success() throws Exception {
-        LoginRequest request = LoginRequest.of("test@example.com", "password123");
-
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+    @DisplayName("로그인 페이지 렌더링")
+    void loginPage() throws Exception {
+        mockMvc.perform(get("/auth/login"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.email").value("test@example.com"))
-                .andExpect(jsonPath("$.data.nickname").value("테스트유저"));
+                .andExpect(view().name("auth/login"));
     }
 
     @Test
-    @DisplayName("로그인 실패 - 잘못된 비밀번호")
-    void login_Failure_WrongPassword() throws Exception {
-        LoginRequest request = LoginRequest.of("test@example.com", "wrongpassword");
-
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false));
+    @DisplayName("회원가입 페이지 렌더링")
+    void signupPage() throws Exception {
+        mockMvc.perform(get("/auth/signup"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("auth/signup"));
     }
 
     @Test
-    @DisplayName("로그인 실패 - 존재하지 않는 이메일")
-    void login_Failure_UserNotFound() throws Exception {
-        LoginRequest request = LoginRequest.of("notfound@example.com", "password123");
+    @DisplayName("회원가입 폼 제출 성공 - 로그인 페이지로 리다이렉트")
+    void signup_Success() throws Exception {
+        mockMvc.perform(post("/auth/signup")
+                        .with(csrf())
+                        .param("email", "new@example.com")
+                        .param("password", "password123")
+                        .param("nickname", "새유저")
+                        .param("phoneNumber", "010-9999-9999"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/auth/login"))
+                .andExpect(flash().attributeExists("message"));
+    }
 
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.success").value(false));
+    @Test
+    @DisplayName("회원가입 실패 - 중복 이메일")
+    void signup_Failure_DuplicateEmail() throws Exception {
+        mockMvc.perform(post("/auth/signup")
+                        .with(csrf())
+                        .param("email", "test@example.com")  // 이미 존재하는 이메일
+                        .param("password", "password123")
+                        .param("nickname", "새유저")
+                        .param("phoneNumber", "010-9999-9999"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/auth/signup"))
+                .andExpect(flash().attributeExists("error"));
     }
 
     @Test
     @WithMockUser
-    @DisplayName("로그아웃 성공 - 세션이 무효화되어야 한다")
+    @DisplayName("로그아웃 성공 - 로그인 페이지로 리다이렉트")
     void logout_Success() throws Exception {
-        mockMvc.perform(post("/auth/logout"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+        mockMvc.perform(post("/auth/logout")
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/auth/login"));
     }
 }

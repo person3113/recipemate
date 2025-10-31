@@ -197,7 +197,7 @@
   - `getGroupBuyList(GroupBuySearchCondition condition, Pageable pageable)`
   - JPA Specification 사용
 - [x] GroupBuyController 구현
-  - `GET /group-purchases`
+  - `GET /group-purchases/list`
   - 쿼리 파라미터: category, status, recipeOnly, keyword, page, size, sort
 
 #### [x] Task 1-3-5: 공구 상세 조회 기능
@@ -225,8 +225,8 @@
   - 권한 검증 (주최자 확인)
   - 소프트 삭제 (deletedAt 설정)
 - [x] GroupBuyController 구현
-  - `PUT /group-purchases/{purchaseId}`
-  - `DELETE /group-purchases/{purchaseId}`
+  - `POST /group-purchases/{purchaseId}` (수정)
+  - `POST /group-purchases/{purchaseId}/delete` (삭제)
 
 ---
 
@@ -272,7 +272,7 @@
   - currentHeadcount-- (트랜잭션)
   - 마감일 확인 로직
 - [x] GroupBuyController 구현
-  - `DELETE /group-purchases/{purchaseId}/participate`
+  - `POST /group-purchases/{purchaseId}/participate/cancel`
 
 #### [x] Task 1-4-4: 참여자 목록 조회 기능
 - [x] 테스트 작성

@@ -4,6 +4,76 @@
 
 ---
 
+## [2025-10-31] GroupBuyController Form-Based 리팩터링 완료
+
+### 처리 항목
+
+#### 1. ✅ GroupBuyController 폼 기반 아키텍처로 전환
+- **변경 파일**:
+  - `GroupBuyController.java`:
+    - JSON API 엔드포인트 모두 제거
+    - 폼 제출 엔드포인트로 변경 (`POST` 방식 사용)
+    - `BindingResult` 추가로 유효성 검증 에러 처리
+    - RedirectAttributes로 성공/에러 메시지 전달
+
+#### 2. ✅ DTO 필드명 통일
+- **변경 파일**:
+  - `GroupBuyResponse.java`: `allowedDeliveryMethods` → `deliveryMethod`
+  - `ParticipateRequest.java`: `phoneNumber` 필드 제거 (User 엔티티에서 가져옴)
+
+#### 3. ✅ 뷰 템플릿 수정
+- **변경 파일**:
+  - `form.html`: 
+    - CSRF 토큰 null 체크 추가
+    - 날짜 포맷 escape 문자 수정
+    - 필드명 통일
+  - `detail.html`:
+    - `phoneNumber` 입력 필드 제거
+    - CSRF 토큰 null 체크 추가
+    - 불필요한 Edit/Delete 버튼 로직 제거
+
+#### 4. ✅ 테스트 코드 수정
+- **변경 파일**:
+  - `GroupBuyControllerTest.java`:
+    - 참여자 전용 테스트 유저 추가 (`participantUser`)
+    - 호스트가 자신의 공구에 참여하지 않도록 수정
+    - 유효성 검증 테스트 수정
+    - 중복 메서드 제거
+
+#### 5. ✅ SecurityConfig 업데이트
+- **변경 파일**:
+  - `SecurityConfig.java`:
+    - 구식 JSON API 경로 제거 (`/group-purchases`, `/{id}/page`)
+    - Form-based 경로만 유지 (`/list`, `/{id}`)
+    - 불필요한 주석 정리
+
+### URL 설계 변경
+
+**변경 전** (JSON API):
+```
+PUT /group-purchases/{id}
+DELETE /group-purchases/{id}
+DELETE /group-purchases/{id}/participate
+```
+
+**변경 후** (Form-Based):
+```
+POST /group-purchases/{id}
+POST /group-purchases/{id}/delete
+POST /group-purchases/{id}/participate/cancel
+```
+
+### 효과
+- ✅ Pure Form-Based 아키텍처로 통일
+- ✅ 모든 테스트 통과 (11/11 tests passing)
+- ✅ htmx 통합 준비 완료
+- ✅ 빌드 성공 (BUILD SUCCESSFUL)
+
+### 소요 시간
+약 1시간
+
+---
+
 ## [2025-10-31] MEDIUM 우선순위 리팩터링 완료
 
 ### 처리 항목
@@ -102,12 +172,14 @@
 
 | 날짜 | 작업 항목 | 우선순위 | 소요 시간 |
 |------|----------|----------|-----------|
+| 2025-10-31 | GroupBuyController Form-Based 리팩터링 | 🔴 HIGH | 1시간 |
+| 2025-10-31 | Controller 아키텍처 htmx 철학 정렬 리팩터링 | 🔴 HIGH | 2시간 |
 | 2025-10-31 | GroupBuy 도메인 검증 로직 및 예외 처리 개선 | 🔴 HIGH | 1.5시간 |
 | 2025-10-31 | Participation 예외 처리 표준화 | 🟡 MEDIUM | 30분 |
 | 2025-10-31 | GroupBuy 비즈니스 로직 예외 처리 표준화 | 🟡 MEDIUM | 20분 |
 | 2025-10-31 | UserService DTO 변환 로직 중복 제거 | 🟡 MEDIUM | 20분 |
 
-**총 소요 시간**: 약 2.5시간
+**총 소요 시간**: 약 5.5시간
 
 ---
 

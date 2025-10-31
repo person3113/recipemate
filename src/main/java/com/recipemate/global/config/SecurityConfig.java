@@ -22,7 +22,30 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/h2-console/**").permitAll()
+                        // Static resources
+                        .requestMatchers(
+                            "/css/**",            // Static CSS
+                            "/js/**",             // Static JS
+                            "/images/**",         // Static images
+                            "/h2-console/**"      // H2 console
+                        ).permitAll()
+                        
+                        // Auth pages and API endpoints
+                        .requestMatchers(
+                            "/auth/login",        // Login page
+                            "/auth/signup",       // Signup page
+                            "/auth/login/**",     // Login API
+                            "/auth/signup/**",    // Signup API
+                            "/auth/logout"        // Logout API
+                        ).permitAll()
+                        
+                        // Public group purchase pages (read-only)
+                        .requestMatchers(
+                            "/group-purchases/list",              // List page (HTML)
+                            "/group-purchases/{id:[0-9]+}"        // Detail page (HTML)
+                        ).permitAll()
+                        
+                        // All other requests require authentication
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
@@ -30,3 +53,4 @@ public class SecurityConfig {
         return http.build();
     }
 }
+

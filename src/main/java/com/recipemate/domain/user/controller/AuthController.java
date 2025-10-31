@@ -1,17 +1,17 @@
 package com.recipemate.domain.user.controller;
 
-import com.recipemate.global.common.ApiResponse;
-import com.recipemate.domain.user.dto.LoginRequest;
 import com.recipemate.domain.user.dto.SignupRequest;
-import com.recipemate.domain.user.dto.UserResponse;
 import com.recipemate.domain.user.service.AuthService;
 import com.recipemate.domain.user.service.UserService;
+import com.recipemate.global.exception.CustomException;
+import com.recipemate.global.exception.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@RestController
+@Controller
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
@@ -19,22 +19,62 @@ public class AuthController {
     private final UserService userService;
     private final AuthService authService;
 
+    /**
+     * 로그인 페이지 렌더링
+     * GET /auth/login
+     */
+    @GetMapping("/login")
+    public String loginPage() {
+        return "auth/login";
+    }
+    
+    /**
+     * 회원가입 페이지 렌더링
+     * GET /auth/signup
+     */
+    @GetMapping("/signup")
+    public String signupPage() {
+        return "auth/signup";
+    }
+
+    /**
+     * 회원가입 폼 제출 처리
+     * POST /auth/signup
+     */
     @PostMapping("/signup")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<UserResponse> signup(@Valid @RequestBody SignupRequest request) {
-        UserResponse response = userService.signup(request);
-        return ApiResponse.success(response);
+    public String signup(
+            @Valid @ModelAttribute SignupRequest request,
+            RedirectAttributes redirectAttributes) {
+        try {
+            userService.signup(request);
+            redirectAttributes.addFlashAttribute("message", "회원가입이 완료되었습니다. 로그인해주세요.");
+            return "redirect:/auth/login";
+        } catch (CustomException e) {
+            if (e.getErrorCode() == ErrorCode.DUPLICATE_EMAIL) {
+                redirectAttributes.addFlashAttribute("error", "이미 사용 중인 이메일입니다.");
+            } else {
+                redirectAttributes.addFlashAttribute("error", "회원가입에 실패했습니다.");
+            }
+            return "redirect:/auth/signup";
+        }
     }
 
-    @PostMapping("/login")
-    public ApiResponse<UserResponse> login(@Valid @RequestBody LoginRequest request) {
-        UserResponse response = authService.login(request);
-        return ApiResponse.success(response);
-    }
-
+    /**
+     * 로그아웃 처리
+     * POST /auth/logout
+     * 
+     * Note: 실제 로그아웃은 Spring Security의 LogoutFilter가 처리합니다.
+     * 이 메서드는 커스텀 로그아웃 로직이 필요한 경우에만 사용됩니다.
+     */
     @PostMapping("/logout")
-    public ApiResponse<Void> logout() {
+    public String logout(RedirectAttributes redirectAttributes) {
         authService.logout();
-        return ApiResponse.success(null);
+        redirectAttributes.addFlashAttribute("message", "로그아웃되었습니다.");
+        return "redirect:/auth/login";
     }
+    
+    // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========
+    // TODO: htmx 통합 시 아래 엔드포인트 구현
+    // @PostMapping("/signup-fragment") - 회원가입 폼 처리 후 HTML 조각 반환 (인라인 검증 등)
+    // @PostMapping("/login-fragment") - 로그인 폼 처리 후 HTML 조각 반환
 }

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${groupBuy.title} + ' - RecipeMate'"></title>
+</head>
+<body>
+    <h1 th:text="${groupBuy.title}"></h1>
+    
+    <!-- Flash Messages -->
+    <div th:if="${successMessage}" class="alert alert-success">
+        <p th:text="${successMessage}"></p>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-error">
+        <p th:text="${errorMessage}"></p>
+    </div>
+    
+    <!-- Group Buy Details -->
+    <div class="group-buy-detail">
+        <p><strong>카테고리:</strong> <span th:text="${groupBuy.category}"></span></p>
+        <p><strong>내용:</strong> <span th:text="${groupBuy.content}"></span></p>
+        <p><strong>총 가격:</strong> <span th:text="${groupBuy.totalPrice}"></span>원</p>
+        <p><strong>목표 인원:</strong> <span th:text="${groupBuy.targetHeadcount}"></span>명</p>
+        <p><strong>현재 인원:</strong> <span th:text="${groupBuy.currentHeadcount}"></span>명</p>
+        <p><strong>상태:</strong> <span th:text="${groupBuy.status}"></span></p>
+        <p><strong>배송 방법:</strong> <span th:text="${groupBuy.deliveryMethod}"></span></p>
+        <p th:if="${groupBuy.meetupLocation}"><strong>만남 장소:</strong> <span th:text="${groupBuy.meetupLocation}"></span></p>
+        <p th:if="${groupBuy.parcelFee}"><strong>택배비:</strong> <span th:text="${groupBuy.parcelFee}"></span>원</p>
+        <p><strong>마감일:</strong> <span th:text="${groupBuy.deadline}"></span></p>
+        <p><strong>주최자:</strong> <span th:text="${groupBuy.hostNickname}"></span> (매너온도: <span th:text="${groupBuy.hostMannerTemperature}"></span>)</p>
+        
+        <!-- Recipe Info (if recipe-based) -->
+        <div th:if="${groupBuy.recipeApiId}">
+            <h3>레시피 정보</h3>
+            <p><strong>레시피 이름:</strong> <span th:text="${groupBuy.recipeName}"></span></p>
+            <img th:if="${groupBuy.recipeImageUrl}" th:src="${groupBuy.recipeImageUrl}" alt="Recipe Image">
+        </div>
+        
+        <!-- Images -->
+        <div th:if="${groupBuy.imageUrls != null && !groupBuy.imageUrls.isEmpty()}">
+            <h3>사진</h3>
+            <div th:each="imageUrl : ${groupBuy.imageUrls}">
+                <img th:src="${imageUrl}" alt="Group Buy Image">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Buttons (Only for authenticated users) -->
+    <div sec:authorize="isAuthenticated()">
+        <!-- Participate Form -->
+        <div th:if="${groupBuy.status.name() == 'RECRUITING'}">
+            <h3>참여하기</h3>
+            <form method="post" th:action="@{/group-purchases/{id}/participate(id=${groupBuy.id})}">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <label>
+                    수량:
+                    <input type="number" name="quantity" min="1" value="1" required>
+                </label>
+                <label>
+                    배송 방법:
+                    <select name="deliveryMethod" required>
+                        <option value="DIRECT">직거래</option>
+                        <option value="PARCEL">택배</option>
+                    </select>
+                </label>
+                <button type="submit">참여하기</button>
+            </form>
+        </div>
+        
+        <!-- Cancel Participation -->
+        <form method="post" th:action="@{/group-purchases/{id}/participate/cancel(id=${groupBuy.id})}">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit">참여 취소</button>
+        </form>
+    </div>
+    
+    <a href="/group-purchases/list">목록으로</a>
+</body>
+</html>

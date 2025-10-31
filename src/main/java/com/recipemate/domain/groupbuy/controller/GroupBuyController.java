@@ -3,14 +3,13 @@ package com.recipemate.domain.groupbuy.controller;
 import com.recipemate.domain.groupbuy.dto.CreateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
-import com.recipemate.domain.groupbuy.dto.ParticipantResponse;
 import com.recipemate.domain.groupbuy.dto.ParticipateRequest;
 import com.recipemate.domain.groupbuy.dto.UpdateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.service.GroupBuyService;
 import com.recipemate.domain.groupbuy.service.ParticipationService;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
-import com.recipemate.global.common.ApiResponse;
+import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
@@ -22,11 +21,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.List;
-
-@RestController
+@Controller
 @RequestMapping("/group-purchases")
 @RequiredArgsConstructor
 public class GroupBuyController {
@@ -35,37 +36,19 @@ public class GroupBuyController {
     private final ParticipationService participationService;
     private final UserRepository userRepository;
 
+    // ========== 페이지 렌더링 엔드포인트 ==========
+    
     /**
-     * 일반 공구 생성
+     * 공구 목록 페이지 렌더링
      */
-    @PostMapping
-    public ApiResponse<GroupBuyResponse> createGroupBuy(
-        @AuthenticationPrincipal UserDetails userDetails,
-        @Valid @ModelAttribute CreateGroupBuyRequest request
-    ) {
-        // 이메일로 사용자 조회
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        
-        GroupBuyResponse response = groupBuyService.createGroupBuy(user.getId(), request);
-        return ApiResponse.success(response);
-    }
-
-    /**
-     * 공구 목록 조회 (검색 및 필터링)
-     * @param category 카테고리 필터 (optional)
-     * @param status 상태 필터 (optional: RECRUITING, IMMINENT, CLOSED)
-     * @param recipeOnly 레시피 기반 공구만 조회 (optional, default: false)
-     * @param keyword 검색 키워드 - 제목 또는 내용 (optional)
-     * @param pageable 페이징 정보 (default: page=0, size=20, sort=createdAt,desc)
-     */
-    @GetMapping
-    public ApiResponse<Page<GroupBuyResponse>> getGroupBuyList(
+    @GetMapping("/list")
+    public String listPage(
         @RequestParam(required = false) String category,
         @RequestParam(required = false) GroupBuyStatus status,
         @RequestParam(required = false, defaultValue = "false") Boolean recipeOnly,
         @RequestParam(required = false) String keyword,
-        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+        Model model
     ) {
         GroupBuySearchCondition condition = GroupBuySearchCondition.builder()
             .category(category)
@@ -75,110 +58,178 @@ public class GroupBuyController {
             .build();
         
         Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(condition, pageable);
-        return ApiResponse.success(result);
+        model.addAttribute("groupBuys", result);
+        model.addAttribute("searchCondition", condition);
+        
+        return "group-purchases/list";
     }
-
+    
     /**
-     * 공구 상세 조회
-     * @param purchaseId 공구 ID
+     * 공구 상세 페이지 렌더링
      */
     @GetMapping("/{purchaseId}")
-    public ApiResponse<GroupBuyResponse> getGroupBuyDetail(@PathVariable Long purchaseId) {
-        GroupBuyResponse response = groupBuyService.getGroupBuyDetail(purchaseId);
-        return ApiResponse.success(response);
+    public String detailPage(@PathVariable Long purchaseId, Model model) {
+        GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
+        model.addAttribute("groupBuy", groupBuy);
+        return "group-purchases/detail";
+    }
+    
+    /**
+     * 공구 작성 페이지 렌더링
+     */
+    @GetMapping("/new")
+    public String createPage() {
+        return "group-purchases/form";
+    }
+    
+    /**
+     * 공구 수정 페이지 렌더링
+     */
+    @GetMapping("/{purchaseId}/edit")
+    public String editPage(@PathVariable Long purchaseId, Model model) {
+        GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
+        model.addAttribute("groupBuy", groupBuy);
+        return "group-purchases/form";
+    }
+
+    // ========== 폼 처리 엔드포인트 ==========
+
+    /**
+     * 일반 공구 생성 폼 제출
+     */
+    @PostMapping
+    public String createGroupBuy(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @Valid @ModelAttribute CreateGroupBuyRequest request,
+        BindingResult bindingResult,
+        RedirectAttributes redirectAttributes
+    ) {
+        // 1. 유효성 검증 실패 처리
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", 
+                bindingResult.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/group-purchases/new";
+        }
+        
+        try {
+            User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            
+            GroupBuyResponse response = groupBuyService.createGroupBuy(user.getId(), request);
+            redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 생성되었습니다.");
+            return "redirect:/group-purchases/" + response.getId();
+        } catch (CustomException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
+            return "redirect:/group-purchases/new";
+        }
     }
 
     /**
-     * 공구 수정
-     * @param userDetails 인증된 사용자
-     * @param purchaseId 공구 ID
-     * @param request 수정 요청 정보
+     * 공구 수정 폼 제출
      */
-    @PutMapping("/{purchaseId}")
-    public ApiResponse<GroupBuyResponse> updateGroupBuy(
+    @PostMapping("/{purchaseId}")
+    public String updateGroupBuy(
         @AuthenticationPrincipal UserDetails userDetails,
         @PathVariable Long purchaseId,
-        @Valid @RequestBody UpdateGroupBuyRequest request
+        @Valid @ModelAttribute UpdateGroupBuyRequest request,
+        BindingResult bindingResult,
+        RedirectAttributes redirectAttributes
     ) {
-        // 이메일로 사용자 조회
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        // 1. 유효성 검증 실패 처리
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", 
+                bindingResult.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/group-purchases/" + purchaseId + "/edit";
+        }
         
-        GroupBuyResponse response = groupBuyService.updateGroupBuy(user.getId(), purchaseId, request);
-        return ApiResponse.success(response);
+        try {
+            User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            
+            groupBuyService.updateGroupBuy(user.getId(), purchaseId, request);
+            redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 수정되었습니다.");
+            return "redirect:/group-purchases/" + purchaseId;
+        } catch (CustomException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
+            return "redirect:/group-purchases/" + purchaseId + "/edit";
+        }
     }
 
     /**
-     * 공구 삭제 (소프트 삭제)
-     * @param userDetails 인증된 사용자
-     * @param purchaseId 공구 ID
+     * 공구 삭제 폼 제출
      */
-    @DeleteMapping("/{purchaseId}")
-    public ApiResponse<Void> deleteGroupBuy(
+    @PostMapping("/{purchaseId}/delete")
+    public String deleteGroupBuy(
         @AuthenticationPrincipal UserDetails userDetails,
-        @PathVariable Long purchaseId
+        @PathVariable Long purchaseId,
+        RedirectAttributes redirectAttributes
     ) {
-        // 이메일로 사용자 조회
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        
-        groupBuyService.deleteGroupBuy(user.getId(), purchaseId);
-        return ApiResponse.success(null);
+        try {
+            User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            
+            groupBuyService.deleteGroupBuy(user.getId(), purchaseId);
+            redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 삭제되었습니다.");
+            return "redirect:/group-purchases/list";
+        } catch (CustomException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
+            return "redirect:/group-purchases/" + purchaseId;
+        }
     }
 
     /**
-     * 공구 참여
-     * @param userDetails 인증된 사용자
-     * @param purchaseId 공구 ID
-     * @param request 참여 요청 정보 (수령 방법, 수량)
+     * 공구 참여 폼 제출
      */
     @PostMapping("/{purchaseId}/participate")
-    public ApiResponse<Void> participate(
+    public String participate(
+        @PathVariable Long purchaseId,
+        @AuthenticationPrincipal UserDetails userDetails,
+        @RequestParam Integer quantity,
+        @RequestParam DeliveryMethod deliveryMethod,
+        RedirectAttributes redirectAttributes
+    ) {
+        try {
+            User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            
+            ParticipateRequest request = ParticipateRequest.builder()
+                .selectedDeliveryMethod(deliveryMethod)
+                .quantity(quantity)
+                .build();
+            participationService.participate(user.getId(), purchaseId, request);
+            redirectAttributes.addFlashAttribute("successMessage", "공동구매에 성공적으로 참여했습니다.");
+            return "redirect:/group-purchases/" + purchaseId;
+        } catch (CustomException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
+            return "redirect:/group-purchases/" + purchaseId;
+        }
+    }
+
+    /**
+     * 공구 참여 취소 폼 제출
+     */
+    @PostMapping("/{purchaseId}/participate/cancel")
+    public String cancelParticipation(
         @AuthenticationPrincipal UserDetails userDetails,
         @PathVariable Long purchaseId,
-        @Valid @RequestBody ParticipateRequest request
+        RedirectAttributes redirectAttributes
     ) {
-        // 이메일로 사용자 조회
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        
-        participationService.participate(user.getId(), purchaseId, request);
-        return ApiResponse.success(null);
+        try {
+            User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            
+            participationService.cancelParticipation(user.getId(), purchaseId);
+            redirectAttributes.addFlashAttribute("successMessage", "공동구매 참여가 취소되었습니다.");
+            return "redirect:/group-purchases/" + purchaseId;
+        } catch (CustomException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
+            return "redirect:/group-purchases/" + purchaseId;
+        }
     }
-
-    /**
-     * 공구 참여 취소
-     * @param userDetails 인증된 사용자
-     * @param purchaseId 공구 ID
-     */
-    @DeleteMapping("/{purchaseId}/participate")
-    public ApiResponse<Void> cancelParticipation(
-        @AuthenticationPrincipal UserDetails userDetails,
-        @PathVariable Long purchaseId
-    ) {
-        // 이메일로 사용자 조회
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        
-        participationService.cancelParticipation(user.getId(), purchaseId);
-        return ApiResponse.success(null);
-    }
-
-    /**
-     * 공구 참여자 목록 조회
-     * @param userDetails 인증된 사용자
-     * @param purchaseId 공구 ID
-     */
-    @GetMapping("/{purchaseId}/participants")
-    public ApiResponse<List<ParticipantResponse>> getParticipants(
-        @AuthenticationPrincipal UserDetails userDetails,
-        @PathVariable Long purchaseId
-    ) {
-        // 이메일로 사용자 조회
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        
-        List<ParticipantResponse> participants = participationService.getParticipants(purchaseId, user.getId());
-        return ApiResponse.success(participants);
-    }
+    
+    // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========
+    // TODO: htmx 통합 시 아래 엔드포인트 구현
+    // @GetMapping("/search-fragment") - 검색 결과 HTML 조각 (리스트 아이템들)
+    // @GetMapping("/{purchaseId}/participants-fragment") - 참여자 목록 HTML 조각
+    // @PostMapping("/{purchaseId}/participate-fragment") - 참여 폼 처리 후 HTML 조각 반환
 }

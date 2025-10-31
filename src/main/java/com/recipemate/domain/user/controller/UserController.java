@@ -1,68 +1,84 @@
 package com.recipemate.domain.user.controller;
 
-import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
-import com.recipemate.global.common.ApiResponse;
 import com.recipemate.domain.user.dto.ChangePasswordRequest;
 import com.recipemate.domain.user.dto.UpdateProfileRequest;
 import com.recipemate.domain.user.dto.UserResponse;
 import com.recipemate.domain.user.service.UserService;
-import com.recipemate.global.common.GroupBuyStatus;
+import com.recipemate.global.exception.CustomException;
+import com.recipemate.global.exception.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@RestController
+@Controller
 @RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
 
+    /**
+     * 마이페이지 렌더링
+     * GET /users/me
+     */
     @GetMapping("/me")
-    public ApiResponse<UserResponse> getMyProfile(@AuthenticationPrincipal UserDetails userDetails) {
-        UserResponse response = userService.getMyProfile(userDetails.getUsername());
-        return ApiResponse.success(response);
-    }
-
-    @PutMapping("/me")
-    public ApiResponse<UserResponse> updateProfile(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody UpdateProfileRequest request) {
-        UserResponse response = userService.updateProfile(userDetails.getUsername(), request);
-        return ApiResponse.success(response);
-    }
-
-    @PutMapping("/me/password")
-    public ApiResponse<Void> changePassword(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody ChangePasswordRequest request) {
-        userService.changePassword(userDetails.getUsername(), request);
-        return ApiResponse.success(null);
-    }
-
-    @GetMapping("/me/group-purchases")
-    public ApiResponse<Page<GroupBuyResponse>> getMyGroupBuys(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(required = false) GroupBuyStatus status,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    public String myPage(@AuthenticationPrincipal UserDetails userDetails, Model model) {
         UserResponse userResponse = userService.getMyProfile(userDetails.getUsername());
-        Page<GroupBuyResponse> groupBuys = userService.getMyGroupBuys(userResponse.getId(), status, pageable);
-        return ApiResponse.success(groupBuys);
+        model.addAttribute("user", userResponse);
+        return "user/my-page";
     }
 
-    @GetMapping("/me/participations")
-    public ApiResponse<Page<GroupBuyResponse>> getParticipatedGroupBuys(
+    /**
+     * 프로필 수정 폼 제출 처리
+     * POST /users/me
+     */
+    @PostMapping("/me")
+    public String updateProfile(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(required = false) GroupBuyStatus status,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        UserResponse userResponse = userService.getMyProfile(userDetails.getUsername());
-        Page<GroupBuyResponse> participations = userService.getParticipatedGroupBuys(userResponse.getId(), status, pageable);
-        return ApiResponse.success(participations);
+            @Valid @ModelAttribute UpdateProfileRequest request,
+            RedirectAttributes redirectAttributes) {
+        try {
+            userService.updateProfile(userDetails.getUsername(), request);
+            redirectAttributes.addFlashAttribute("message", "프로필이 수정되었습니다.");
+            return "redirect:/users/me";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "프로필 수정에 실패했습니다.");
+            return "redirect:/users/me";
+        }
     }
+
+    /**
+     * 비밀번호 변경 폼 제출 처리
+     * POST /users/me/password
+     */
+    @PostMapping("/me/password")
+    public String changePassword(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @ModelAttribute ChangePasswordRequest request,
+            RedirectAttributes redirectAttributes) {
+        try {
+            userService.changePassword(userDetails.getUsername(), request);
+            redirectAttributes.addFlashAttribute("message", "비밀번호가 변경되었습니다.");
+            return "redirect:/users/me";
+        } catch (CustomException e) {
+            if (e.getErrorCode() == ErrorCode.INVALID_PASSWORD) {
+                redirectAttributes.addFlashAttribute("error", "현재 비밀번호가 일치하지 않습니다.");
+            } else {
+                redirectAttributes.addFlashAttribute("error", "비밀번호 변경에 실패했습니다.");
+            }
+            return "redirect:/users/me";
+        }
+    }
+    
+    // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========
+    // TODO: htmx 통합 시 아래 엔드포인트 구현
+    // @GetMapping("/me/fragments/profile") - 프로필 정보 HTML 조각
+    // @PostMapping("/me/fragments/profile") - 프로필 수정 폼 처리 후 HTML 조각 반환
+    // @GetMapping("/me/fragments/group-purchases") - 내 공구 목록 HTML 조각
+    // @GetMapping("/me/fragments/participations") - 내 참여 공구 목록 HTML 조각
 }

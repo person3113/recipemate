@@ -34,25 +34,30 @@
 
 ## 4. 공동구매 (Group Purchases)
 
-- `GET /group-purchases`: 공동구매 목록 조회 (검색, 필터링 포함)
-- `POST /group-purchases`: 공동구매 생성
-- `GET /group-purchases/{purchaseId}`: 특정 공동구매 상세 조회
-- `PUT /group-purchases/{purchaseId}`: 공동구매 수정
-- `DELETE /group-purchases/{purchaseId}`: 공동구매 삭제
+### 4.1. 페이지 렌더링 (View)
+- `GET /group-purchases/list`: 공동구매 목록 페이지
+- `GET /group-purchases/new`: 공동구매 작성 페이지
+- `GET /group-purchases/{purchaseId}`: 공동구매 상세 페이지
+- `GET /group-purchases/{purchaseId}/edit`: 공동구매 수정 페이지
 
-### 4.1. 참여 (Participation)
+### 4.2. 폼 처리 (Form Submission)
+- `POST /group-purchases`: 공동구매 생성 (form-based)
+- `POST /group-purchases/{purchaseId}`: 공동구매 수정 (form-based)
+- `POST /group-purchases/{purchaseId}/delete`: 공동구매 삭제 (form-based)
 
-- `POST /group-purchases/{purchaseId}/participate`: 공동구매 참여
-- `DELETE /group-purchases/{purchaseId}/participate`: 공동구매 참여 취소
+### 4.3. 참여 (Participation)
+
+- `POST /group-purchases/{purchaseId}/participate`: 공동구매 참여 (form-based)
+- `POST /group-purchases/{purchaseId}/participate/cancel`: 공동구매 참여 취소 (form-based)
 - `GET /group-purchases/{purchaseId}/participants`: 공동구매 참여자 목록 조회
 
-### 4.2. 찜 (Bookmarks)
+### 4.4. 찜 (Bookmarks)
 
 - `POST /group-purchases/{purchaseId}/bookmarks`: 공동구매 찜하기
 - `DELETE /group-purchases/{purchaseId}/bookmarks`: 공동구매 찜 취소
 - `GET /users/me/bookmarks`: 내가 찜한 공동구매 목록 조회
 
-### 4.3. 후기 (Reviews)
+### 4.5. 후기 (Reviews)
 
 - `GET /group-purchases/{purchaseId}/reviews`: 특정 공동구매의 후기 목록 조회
 - `POST /group-purchases/{purchaseId}/reviews`: 특정 공동구매에 후기 작성

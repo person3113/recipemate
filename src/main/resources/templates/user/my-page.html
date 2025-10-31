@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>마이페이지</title>
+</head>
+<body>
+    <h1>마이페이지</h1>
+    
+    <div th:if="${message}" class="alert alert-success">
+        <p th:text="${message}"></p>
+    </div>
+    
+    <div th:if="${error}" class="alert alert-danger">
+        <p th:text="${error}"></p>
+    </div>
+    
+    <div th:object="${user}">
+        <h2>프로필 정보</h2>
+        <p>이메일: <span th:text="*{email}"></span></p>
+        <p>닉네임: <span th:text="*{nickname}"></span></p>
+        <p>전화번호: <span th:text="*{phoneNumber}"></span></p>
+        <p>매너온도: <span th:text="*{mannerTemperature}"></span></p>
+        
+        <h3>프로필 수정</h3>
+        <form th:action="@{/users/me}" method="post">
+            <label>닉네임: <input type="text" name="nickname" th:value="*{nickname}" /></label><br/>
+            <label>전화번호: <input type="text" name="phoneNumber" th:value="*{phoneNumber}" /></label><br/>
+            <label>프로필 이미지 URL: <input type="text" name="profileImageUrl" th:value="*{profileImageUrl}" /></label><br/>
+            <button type="submit">수정</button>
+        </form>
+        
+        <h3>비밀번호 변경</h3>
+        <form th:action="@{/users/me/password}" method="post">
+            <label>현재 비밀번호: <input type="password" name="currentPassword" /></label><br/>
+            <label>새 비밀번호: <input type="password" name="newPassword" /></label><br/>
+            <button type="submit">변경</button>
+        </form>
+    </div>
+    
+    <!-- TODO: htmx 통합 시 아래 섹션들을 동적으로 로드 -->
+    <!-- 내가 만든 공구 목록 -->
+    <!-- 내가 참여한 공구 목록 -->
+</body>
+</html>

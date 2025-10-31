@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>공동구매 목록 - RecipeMate</title>
+</head>
+<body>
+    <h1>공동구매 목록</h1>
+    
+    <!-- Flash Messages -->
+    <div th:if="${successMessage}" class="alert alert-success">
+        <p th:text="${successMessage}"></p>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-error">
+        <p th:text="${errorMessage}"></p>
+    </div>
+    
+    <!-- Search Form -->
+    <form method="get" action="/group-purchases/list">
+        <input type="text" name="keyword" th:value="${searchCondition.keyword}" placeholder="검색어 입력">
+        <select name="category">
+            <option value="">전체 카테고리</option>
+            <option value="육류" th:selected="${searchCondition.category == '육류'}">육류</option>
+            <option value="채소" th:selected="${searchCondition.category == '채소'}">채소</option>
+            <option value="과일" th:selected="${searchCondition.category == '과일'}">과일</option>
+        </select>
+        <select name="status">
+            <option value="">전체 상태</option>
+            <option value="RECRUITING" th:selected="${searchCondition.status?.name() == 'RECRUITING'}">모집중</option>
+            <option value="CLOSED" th:selected="${searchCondition.status?.name() == 'CLOSED'}">마감</option>
+        </select>
+        <label>
+            <input type="checkbox" name="recipeOnly" th:checked="${searchCondition.recipeOnly}">
+            레시피 기반만
+        </label>
+        <button type="submit">검색</button>
+    </form>
+    
+    <!-- Create Button -->
+    <a href="/group-purchases/new">새 공동구매 만들기</a>
+    
+    <!-- Group Buy List -->
+    <div th:if="${groupBuys.isEmpty()}">
+        <p>공동구매가 없습니다.</p>
+    </div>
+    
+    <div th:if="${!groupBuys.isEmpty()}">
+        <div th:each="groupBuy : ${groupBuys}" class="group-buy-item">
+            <h3><a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" th:text="${groupBuy.title}"></a></h3>
+            <p th:text="${groupBuy.content}"></p>
+            <p>카테고리: <span th:text="${groupBuy.category}"></span></p>
+            <p>가격: <span th:text="${groupBuy.totalPrice}"></span>원</p>
+            <p>인원: <span th:text="${groupBuy.currentHeadcount}"></span> / <span th:text="${groupBuy.targetHeadcount}"></span></p>
+            <p>상태: <span th:text="${groupBuy.status}"></span></p>
+            <p>주최자: <span th:text="${groupBuy.hostNickname}"></span></p>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="pagination">
+            <span>Page <span th:text="${groupBuys.number + 1}"></span> of <span th:text="${groupBuys.totalPages}"></span></span>
+            <a th:if="${groupBuys.hasPrevious()}" th:href="@{/group-purchases/list(page=${groupBuys.number - 1})}">이전</a>
+            <a th:if="${groupBuys.hasNext()}" th:href="@{/group-purchases/list(page=${groupBuys.number + 1})}">다음</a>
+        </div>
+    </div>
+</body>
+</html>

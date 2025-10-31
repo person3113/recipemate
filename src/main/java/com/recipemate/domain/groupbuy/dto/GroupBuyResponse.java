@@ -1,0 +1,46 @@
+package com.recipemate.domain.groupbuy.dto;
+
+import com.recipemate.global.common.DeliveryMethod;
+import com.recipemate.global.common.GroupBuyStatus;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class GroupBuyResponse {
+
+    private Long id;
+    private String title;
+    private String content;
+    private String category;
+    private Integer totalPrice;
+    private Integer targetHeadcount;
+    private Integer currentHeadcount;
+    private LocalDateTime deadline;
+    private DeliveryMethod deliveryMethod;
+    private String meetupLocation;
+    private Integer parcelFee;
+    private Boolean isParticipantListPublic;
+    private GroupBuyStatus status;
+    
+    // 주최자 정보
+    private Long hostId;
+    private String hostNickname;
+    private Double hostMannerTemperature;
+    
+    // 레시피 정보 (선택적)
+    private String recipeApiId;
+    private String recipeName;
+    private String recipeImageUrl;
+    
+    // 이미지 목록
+    private List<String> imageUrls;
+    
+    // 타임스탬프
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}

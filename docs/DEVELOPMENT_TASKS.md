@@ -166,22 +166,22 @@
 - [x] GroupBuyImageRepository 작성
   - `findByGroupBuyIdOrderByDisplayOrderAsc(Long groupBuyId)`
 
-#### [ ] Task 1-3-3: 공구 생성 기능 (일반 공구)
-- [ ] 테스트 작성 (GroupBuyServiceTest.java)
+#### [x] Task 1-3-3: 공구 생성 기능 (일반 공구)
+- [x] 테스트 작성 (GroupBuyServiceTest.java)
   - 일반 공구 생성 성공
   - 필수 필드 누락 시 실패
   - 마감일이 과거일 때 실패
   - 이미지 3장 초과 시 실패
-- [ ] GroupBuyService 구현
+- [x] GroupBuyService 구현
   - `createGroupBuy(Long userId, CreateGroupBuyRequest dto)`
   - 유효성 검사 (마감일, 인원, 가격)
   - 이미지 업로드 처리 (파일 저장 로직)
   - 상태 기본값: RECRUITING
-- [ ] GroupBuyController 구현
+- [x] GroupBuyController 구현
   - `POST /group-purchases`
   - 요청 DTO: CreateGroupBuyRequest
   - 응답 DTO: GroupBuyResponse
-- [ ] 이미지 업로드 유틸 작성
+- [x] 이미지 업로드 유틸 작성
   - 파일 저장 경로 설정 (로컬/S3)
   - 파일명 UUID 생성
   - 파일 크기/확장자 검증

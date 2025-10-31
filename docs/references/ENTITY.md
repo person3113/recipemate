@@ -717,7 +717,7 @@ private void validate() {
 - Spring Data JPA 자동 DDL (`spring.jpa.hibernate.ddl-auto=create`)
 
 ### 중기 개발 (Week 3-5)
-- MySQL 전환
+- PostgreSql 전환
 - Flyway/Liquibase 도입 (선택)
 - DDL → `validate` 모드 전환
 
@@ -854,8 +854,3 @@ public class GroupBuy extends BaseEntity {
 }
 ```
 
----
-
-**문서 버전**: v2.0  
-**최종 수정일**: 2025-01-XX  
-**작성자**: RecipeMate 개발팀

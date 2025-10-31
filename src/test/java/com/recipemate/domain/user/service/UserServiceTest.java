@@ -3,7 +3,9 @@ package com.recipemate.domain.user.service;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
+import com.recipemate.domain.groupbuy.entity.Participation;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
+import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
 import com.recipemate.domain.user.dto.SignupRequest;
 import com.recipemate.domain.user.dto.UserResponse;
 import com.recipemate.domain.user.entity.User;
@@ -40,9 +42,13 @@ class UserServiceTest {
     private GroupBuyRepository groupBuyRepository;
 
     @Autowired
+    private ParticipationRepository participationRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     private User testUser;
+    private User participant;
 
     @BeforeEach
     void setUp() {
@@ -54,6 +60,15 @@ class UserServiceTest {
                 .role(com.recipemate.global.common.UserRole.USER)
                 .build();
         userRepository.save(testUser);
+
+        participant = User.builder()
+                .email("participant@example.com")
+                .password(passwordEncoder.encode("password123"))
+                .nickname("참여자")
+                .phoneNumber("010-9876-5432")
+                .role(com.recipemate.global.common.UserRole.USER)
+                .build();
+        userRepository.save(participant);
     }
 
     @Test
@@ -219,11 +234,116 @@ class UserServiceTest {
                 .currentHeadcount(1)
                 .totalPrice(10000)
                 .meetupLocation("서울시 강남구")
-                .deliveryMethod(DeliveryMethod.DIRECT)
+                .deliveryMethod(DeliveryMethod.BOTH)
                 .deadline(LocalDateTime.now().plusDays(7))
                 .status(status)
                 .host(testUser)
                 .build();
         return groupBuyRepository.save(groupBuy);
+    }
+
+    @Test
+    @DisplayName("사용자가 참여한 모든 공구 목록을 조회한다")
+    void getParticipatedGroupBuys_all() {
+        // given
+        GroupBuy groupBuy1 = createGroupBuy("공구1", GroupBuyStatus.RECRUITING);
+        GroupBuy groupBuy2 = createGroupBuy("공구2", GroupBuyStatus.IMMINENT);
+        GroupBuy groupBuy3 = createGroupBuy("공구3", GroupBuyStatus.CLOSED);
+        
+        createParticipation(participant, groupBuy1, DeliveryMethod.DIRECT);
+        createParticipation(participant, groupBuy2, DeliveryMethod.PARCEL);
+        createParticipation(participant, groupBuy3, DeliveryMethod.DIRECT);
+        
+        Pageable pageable = PageRequest.of(0, 10);
+        
+        // when
+        Page<GroupBuyResponse> result = userService.getParticipatedGroupBuys(participant.getId(), null, pageable);
+        
+        // then
+        assertThat(result.getTotalElements()).isEqualTo(3);
+        assertThat(result.getContent()).hasSize(3);
+        assertThat(result.getContent().get(0).getTitle()).isIn("공구1", "공구2", "공구3");
+    }
+
+    @Test
+    @DisplayName("사용자가 참여한 공구 목록을 상태별로 필터링하여 조회한다")
+    void getParticipatedGroupBuys_filterByStatus() {
+        // given
+        GroupBuy recruitingGroupBuy1 = createGroupBuy("모집중공구1", GroupBuyStatus.RECRUITING);
+        GroupBuy recruitingGroupBuy2 = createGroupBuy("모집중공구2", GroupBuyStatus.RECRUITING);
+        GroupBuy imminentGroupBuy = createGroupBuy("마감임박공구", GroupBuyStatus.IMMINENT);
+        GroupBuy closedGroupBuy = createGroupBuy("마감공구", GroupBuyStatus.CLOSED);
+        
+        createParticipation(participant, recruitingGroupBuy1, DeliveryMethod.DIRECT);
+        createParticipation(participant, recruitingGroupBuy2, DeliveryMethod.DIRECT);
+        createParticipation(participant, imminentGroupBuy, DeliveryMethod.PARCEL);
+        createParticipation(participant, closedGroupBuy, DeliveryMethod.DIRECT);
+        
+        Pageable pageable = PageRequest.of(0, 10);
+        
+        // when
+        Page<GroupBuyResponse> recruitingResult = userService.getParticipatedGroupBuys(participant.getId(), GroupBuyStatus.RECRUITING, pageable);
+        Page<GroupBuyResponse> imminentResult = userService.getParticipatedGroupBuys(participant.getId(), GroupBuyStatus.IMMINENT, pageable);
+        Page<GroupBuyResponse> closedResult = userService.getParticipatedGroupBuys(participant.getId(), GroupBuyStatus.CLOSED, pageable);
+        
+        // then
+        assertThat(recruitingResult.getTotalElements()).isEqualTo(2);
+        assertThat(imminentResult.getTotalElements()).isEqualTo(1);
+        assertThat(closedResult.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("사용자가 참여한 공구 목록을 페이징하여 조회한다")
+    void getParticipatedGroupBuys_pagination() {
+        // given
+        for (int i = 1; i <= 15; i++) {
+            GroupBuy groupBuy = createGroupBuy("공구" + i, GroupBuyStatus.RECRUITING);
+            createParticipation(participant, groupBuy, DeliveryMethod.DIRECT);
+        }
+        
+        Pageable firstPage = PageRequest.of(0, 10);
+        Pageable secondPage = PageRequest.of(1, 10);
+        
+        // when
+        Page<GroupBuyResponse> firstResult = userService.getParticipatedGroupBuys(participant.getId(), null, firstPage);
+        Page<GroupBuyResponse> secondResult = userService.getParticipatedGroupBuys(participant.getId(), null, secondPage);
+        
+        // then
+        assertThat(firstResult.getTotalElements()).isEqualTo(15);
+        assertThat(firstResult.getContent()).hasSize(10);
+        assertThat(firstResult.getTotalPages()).isEqualTo(2);
+        assertThat(secondResult.getContent()).hasSize(5);
+    }
+
+    @Test
+    @DisplayName("사용자가 참여한 공구가 없으면 빈 목록을 반환한다")
+    void getParticipatedGroupBuys_empty() {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        
+        // when
+        Page<GroupBuyResponse> result = userService.getParticipatedGroupBuys(participant.getId(), null, pageable);
+        
+        // then
+        assertThat(result.getTotalElements()).isEqualTo(0);
+        assertThat(result.getContent()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자의 참여 공구 목록 조회 시 예외가 발생한다")
+    void getParticipatedGroupBuys_userNotFound() {
+        // given
+        Long nonExistentUserId = 999L;
+        Pageable pageable = PageRequest.of(0, 10);
+        
+        // when & then
+        assertThatThrownBy(() -> userService.getParticipatedGroupBuys(nonExistentUserId, null, pageable))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("사용자를 찾을 수 없습니다.");
+    }
+
+    private Participation createParticipation(User user, GroupBuy groupBuy, DeliveryMethod deliveryMethod) {
+        Participation participation = Participation.create(user, groupBuy, 1, deliveryMethod);
+        return participationRepository.save(participation);
     }
 }

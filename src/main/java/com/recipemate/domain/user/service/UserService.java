@@ -3,8 +3,10 @@ package com.recipemate.domain.user.service;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.GroupBuyImage;
+import com.recipemate.domain.groupbuy.entity.Participation;
 import com.recipemate.domain.groupbuy.repository.GroupBuyImageRepository;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
+import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
 import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
@@ -33,6 +35,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final GroupBuyRepository groupBuyRepository;
     private final GroupBuyImageRepository groupBuyImageRepository;
+    private final ParticipationRepository participationRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -114,6 +117,35 @@ public class UserService {
         }
 
         return groupBuys.map(groupBuy -> {
+            List<String> imageUrls = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy)
+                    .stream()
+                    .map(GroupBuyImage::getImageUrl)
+                    .toList();
+            return mapToResponse(groupBuy, imageUrls);
+        });
+    }
+
+    public Page<GroupBuyResponse> getParticipatedGroupBuys(Long userId, GroupBuyStatus status, Pageable pageable) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        Page<Participation> participations;
+        
+        if (status == null) {
+            // 모든 상태의 참여 공구 조회
+            List<GroupBuyStatus> allStatuses = Arrays.asList(
+                GroupBuyStatus.RECRUITING,
+                GroupBuyStatus.IMMINENT,
+                GroupBuyStatus.CLOSED
+            );
+            participations = participationRepository.findByUserIdWithGroupBuyAndHost(userId, allStatuses, pageable);
+        } else {
+            // 특정 상태의 참여 공구만 조회
+            participations = participationRepository.findByUserIdWithGroupBuyAndHost(userId, List.of(status), pageable);
+        }
+
+        return participations.map(participation -> {
+            GroupBuy groupBuy = participation.getGroupBuy();
             List<String> imageUrls = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy)
                     .stream()
                     .map(GroupBuyImage::getImageUrl)

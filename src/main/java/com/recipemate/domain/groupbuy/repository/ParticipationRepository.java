@@ -1,6 +1,9 @@
 package com.recipemate.domain.groupbuy.repository;
 
 import com.recipemate.domain.groupbuy.entity.Participation;
+import com.recipemate.global.common.GroupBuyStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -53,4 +56,18 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
      * 특정 사용자가 참여한 공구 수
      */
     long countByUserId(Long userId);
+
+    /**
+     * 특정 사용자가 참여한 공구 목록 조회 (페이징, 상태별 필터링)
+     */
+    @Query("SELECT p FROM Participation p " +
+           "JOIN FETCH p.groupBuy gb " +
+           "JOIN FETCH gb.host " +
+           "WHERE p.user.id = :userId " +
+           "AND (:statuses IS NULL OR gb.status IN :statuses) " +
+           "ORDER BY p.participatedAt DESC")
+    Page<Participation> findByUserIdWithGroupBuyAndHost(
+            @Param("userId") Long userId,
+            @Param("statuses") List<GroupBuyStatus> statuses,
+            Pageable pageable);
 }

@@ -55,4 +55,14 @@ public class UserController {
         Page<GroupBuyResponse> groupBuys = userService.getMyGroupBuys(userResponse.getId(), status, pageable);
         return ApiResponse.success(groupBuys);
     }
+
+    @GetMapping("/me/participations")
+    public ApiResponse<Page<GroupBuyResponse>> getParticipatedGroupBuys(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(required = false) GroupBuyStatus status,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        UserResponse userResponse = userService.getMyProfile(userDetails.getUsername());
+        Page<GroupBuyResponse> participations = userService.getParticipatedGroupBuys(userResponse.getId(), status, pageable);
+        return ApiResponse.success(participations);
+    }
 }

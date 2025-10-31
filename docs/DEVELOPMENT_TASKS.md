@@ -315,12 +315,12 @@
 - [x] UserController 구현
   - `GET /users/me/group-purchases`
 
-#### [ ] Task 1-6-2: 내가 참여한 공구 목록
-- [ ] 테스트 작성
+#### [x] Task 1-6-2: 내가 참여한 공구 목록
+- [x] 테스트 작성
   - 참여중/완료/취소 필터링
-- [ ] UserService 구현
+- [x] UserService 구현
   - `getParticipatedGroupBuys(Long userId, String status, Pageable pageable)`
-- [ ] UserController 구현
+- [x] UserController 구현
   - `GET /users/me/participations`
 
 ---

@@ -13,6 +13,8 @@ public enum ErrorCode {
     GROUP_BUY_CLOSED(HttpStatus.BAD_REQUEST, "GROUP-002", "마감된 공동구매입니다."),
     ALREADY_PARTICIPATED(HttpStatus.CONFLICT, "GROUP-003", "이미 참여 중인 공동구매입니다."),
     MAX_PARTICIPANTS_EXCEEDED(HttpStatus.BAD_REQUEST, "GROUP-004", "최대 참여 인원을 초과했습니다."),
+    UNAUTHORIZED_GROUP_BUY_ACCESS(HttpStatus.FORBIDDEN, "GROUP-005", "공동구매 접근 권한이 없습니다."),
+    HAS_PARTICIPANTS(HttpStatus.BAD_REQUEST, "GROUP-006", "참여자가 있는 공동구매는 삭제할 수 없습니다."),
     
     RECIPE_NOT_FOUND(HttpStatus.NOT_FOUND, "RECIPE-001", "레시피를 찾을 수 없습니다."),
     

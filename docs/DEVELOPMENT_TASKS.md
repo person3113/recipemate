@@ -214,17 +214,17 @@
   - `GET /group-purchases/{purchaseId}`
   - 응답 DTO: GroupBuyResponse (주최자, 이미지 포함)
 
-#### [ ] Task 1-3-6: 공구 수정/삭제 기능
-- [ ] 테스트 작성
+#### [x] Task 1-3-6: 공구 수정/삭제 기능
+- [x] 테스트 작성
   - 주최자만 수정 가능
   - 참여자 있으면 삭제 불가
   - 레시피 연동 여부는 변경 불가
-- [ ] GroupBuyService 구현
+- [x] GroupBuyService 구현
   - `updateGroupBuy(Long userId, Long purchaseId, UpdateGroupBuyRequest dto)`
   - `deleteGroupBuy(Long userId, Long purchaseId)`
   - 권한 검증 (주최자 확인)
   - 소프트 삭제 (deletedAt 설정)
-- [ ] GroupBuyController 구현
+- [x] GroupBuyController 구현
   - `PUT /group-purchases/{purchaseId}`
   - `DELETE /group-purchases/{purchaseId}`
 

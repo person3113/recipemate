@@ -3,6 +3,7 @@ package com.recipemate.domain.groupbuy.controller;
 import com.recipemate.domain.groupbuy.dto.CreateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
+import com.recipemate.domain.groupbuy.dto.UpdateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.service.GroupBuyService;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
@@ -79,5 +80,43 @@ public class GroupBuyController {
     public ApiResponse<GroupBuyResponse> getGroupBuyDetail(@PathVariable Long purchaseId) {
         GroupBuyResponse response = groupBuyService.getGroupBuyDetail(purchaseId);
         return ApiResponse.success(response);
+    }
+
+    /**
+     * 공구 수정
+     * @param userDetails 인증된 사용자
+     * @param purchaseId 공구 ID
+     * @param request 수정 요청 정보
+     */
+    @PutMapping("/{purchaseId}")
+    public ApiResponse<GroupBuyResponse> updateGroupBuy(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @PathVariable Long purchaseId,
+        @Valid @RequestBody UpdateGroupBuyRequest request
+    ) {
+        // 이메일로 사용자 조회
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        GroupBuyResponse response = groupBuyService.updateGroupBuy(user.getId(), purchaseId, request);
+        return ApiResponse.success(response);
+    }
+
+    /**
+     * 공구 삭제 (소프트 삭제)
+     * @param userDetails 인증된 사용자
+     * @param purchaseId 공구 ID
+     */
+    @DeleteMapping("/{purchaseId}")
+    public ApiResponse<Void> deleteGroupBuy(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @PathVariable Long purchaseId
+    ) {
+        // 이메일로 사용자 조회
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        groupBuyService.deleteGroupBuy(user.getId(), purchaseId);
+        return ApiResponse.success(null);
     }
 }

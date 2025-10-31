@@ -3,6 +3,7 @@ package com.recipemate.domain.groupbuy.service;
 import com.recipemate.domain.groupbuy.dto.CreateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
+import com.recipemate.domain.groupbuy.dto.UpdateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.GroupBuyImage;
 import com.recipemate.domain.groupbuy.repository.GroupBuyImageRepository;
@@ -104,6 +105,75 @@ public class GroupBuyService {
             .toList();
         
         return mapToResponse(groupBuy, imageUrls);
+    }
+
+    /**
+     * 공구 수정
+     */
+    @Transactional
+    public GroupBuyResponse updateGroupBuy(Long userId, Long groupBuyId, UpdateGroupBuyRequest request) {
+        // 1. 사용자 조회
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        // 2. GroupBuy 조회
+        GroupBuy groupBuy = groupBuyRepository.findByIdWithHost(groupBuyId)
+            .orElseThrow(() -> new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
+        
+        // 3. 권한 검증 (주최자만 수정 가능)
+        if (!groupBuy.isHost(user)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_GROUP_BUY_ACCESS);
+        }
+        
+        // 4. 공구 정보 수정
+        groupBuy.update(
+            request.getTitle(),
+            request.getContent(),
+            request.getCategory(),
+            request.getTotalPrice(),
+            request.getTargetHeadcount(),
+            request.getDeadline(),
+            request.getDeliveryMethod(),
+            request.getMeetupLocation(),
+            request.getParcelFee(),
+            request.getIsParticipantListPublic() != null ? request.getIsParticipantListPublic() : false
+        );
+        
+        // 5. 이미지 목록 조회
+        List<String> imageUrls = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy)
+            .stream()
+            .map(GroupBuyImage::getImageUrl)
+            .toList();
+        
+        // 6. 응답 DTO 생성
+        return mapToResponse(groupBuy, imageUrls);
+    }
+
+    /**
+     * 공구 삭제 (소프트 삭제)
+     */
+    @Transactional
+    public void deleteGroupBuy(Long userId, Long groupBuyId) {
+        // 1. 사용자 조회
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        // 2. GroupBuy 조회
+        GroupBuy groupBuy = groupBuyRepository.findByIdWithHost(groupBuyId)
+            .orElseThrow(() -> new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
+        
+        // 3. 권한 검증 (주최자만 삭제 가능)
+        if (!groupBuy.isHost(user)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_GROUP_BUY_ACCESS);
+        }
+        
+        // 4. 참여자가 있는지 확인
+        if (groupBuy.getCurrentHeadcount() > 0) {
+            throw new CustomException(ErrorCode.HAS_PARTICIPANTS);
+        }
+        
+        // 5. 소프트 삭제
+        groupBuy.delete();
     }
 
     /**

@@ -3,6 +3,7 @@ package com.recipemate.domain.groupbuy.service;
 import com.recipemate.domain.groupbuy.dto.CreateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
+import com.recipemate.domain.groupbuy.dto.UpdateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.repository.GroupBuyImageRepository;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
@@ -45,6 +46,9 @@ class GroupBuyServiceTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private jakarta.persistence.EntityManager entityManager;
 
     private User testUser;
 
@@ -637,6 +641,219 @@ class GroupBuyServiceTest {
 
         // when & then
         assertThatThrownBy(() -> groupBuyService.getGroupBuyDetail(nonExistentId))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.GROUP_BUY_NOT_FOUND);
+    }
+
+    // ========== 공구 수정 테스트 ==========
+
+    @Test
+    @DisplayName("공구 수정 성공 - 주최자가 수정")
+    void updateGroupBuy_Success() {
+        // given
+        CreateGroupBuyRequest createRequest = CreateGroupBuyRequest.builder()
+            .title("삼겹살 공동구매")
+            .content("신선한 삼겹살 공동구매합니다")
+            .category("육류")
+            .totalPrice(50000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .meetupLocation("강남역 2번 출구")
+            .parcelFee(3000)
+            .isParticipantListPublic(true)
+            .imageFiles(new ArrayList<>())
+            .build();
+        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), createRequest);
+
+        UpdateGroupBuyRequest updateRequest = UpdateGroupBuyRequest.builder()
+            .title("목살 공동구매")
+            .content("수정된 내용입니다")
+            .category("육류")
+            .totalPrice(60000)
+            .targetHeadcount(7)
+            .deadline(LocalDateTime.now().plusDays(10))
+            .deliveryMethod(DeliveryMethod.DIRECT)
+            .meetupLocation("홍대입구역 3번 출구")
+            .parcelFee(null)
+            .isParticipantListPublic(false)
+            .build();
+
+        // when
+        GroupBuyResponse updated = groupBuyService.updateGroupBuy(testUser.getId(), created.getId(), updateRequest);
+
+        // then
+        assertThat(updated).isNotNull();
+        assertThat(updated.getTitle()).isEqualTo("목살 공동구매");
+        assertThat(updated.getContent()).isEqualTo("수정된 내용입니다");
+        assertThat(updated.getTotalPrice()).isEqualTo(60000);
+        assertThat(updated.getTargetHeadcount()).isEqualTo(7);
+        assertThat(updated.getDeliveryMethod()).isEqualTo(DeliveryMethod.DIRECT);
+        assertThat(updated.getMeetupLocation()).isEqualTo("홍대입구역 3번 출구");
+        assertThat(updated.getParcelFee()).isNull();
+        assertThat(updated.getIsParticipantListPublic()).isFalse();
+    }
+
+    @Test
+    @DisplayName("공구 수정 실패 - 주최자가 아닌 사용자")
+    void updateGroupBuy_Fail_NotHost() {
+        // given
+        CreateGroupBuyRequest createRequest = CreateGroupBuyRequest.builder()
+            .title("삼겹살 공동구매")
+            .content("신선한 삼겹살 공동구매합니다")
+            .category("육류")
+            .totalPrice(50000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .build();
+        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), createRequest);
+
+        // 다른 사용자 생성
+        User otherUser = User.create(
+            "other@example.com",
+            "encodedPassword",
+            "다른사용자",
+            "010-9999-9999"
+        );
+        userRepository.save(otherUser);
+
+        UpdateGroupBuyRequest updateRequest = UpdateGroupBuyRequest.builder()
+            .title("목살 공동구매")
+            .content("수정된 내용입니다")
+            .category("육류")
+            .totalPrice(60000)
+            .targetHeadcount(7)
+            .deadline(LocalDateTime.now().plusDays(10))
+            .deliveryMethod(DeliveryMethod.DIRECT)
+            .isParticipantListPublic(false)
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> groupBuyService.updateGroupBuy(otherUser.getId(), created.getId(), updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNAUTHORIZED_GROUP_BUY_ACCESS);
+    }
+
+    @Test
+    @DisplayName("공구 수정 실패 - 존재하지 않는 공구")
+    void updateGroupBuy_Fail_NotFound() {
+        // given
+        Long nonExistentId = 999L;
+        UpdateGroupBuyRequest updateRequest = UpdateGroupBuyRequest.builder()
+            .title("목살 공동구매")
+            .content("수정된 내용입니다")
+            .category("육류")
+            .totalPrice(60000)
+            .targetHeadcount(7)
+            .deadline(LocalDateTime.now().plusDays(10))
+            .deliveryMethod(DeliveryMethod.DIRECT)
+            .isParticipantListPublic(false)
+            .build();
+
+        // when & then
+        assertThatThrownBy(() -> groupBuyService.updateGroupBuy(testUser.getId(), nonExistentId, updateRequest))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.GROUP_BUY_NOT_FOUND);
+    }
+
+    // ========== 공구 삭제 테스트 ==========
+
+    @Test
+    @DisplayName("공구 삭제 성공 - 주최자가 삭제 (참여자 없음)")
+    void deleteGroupBuy_Success() {
+        // given
+        CreateGroupBuyRequest createRequest = CreateGroupBuyRequest.builder()
+            .title("삼겹살 공동구매")
+            .content("신선한 삼겹살 공동구매합니다")
+            .category("육류")
+            .totalPrice(50000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .build();
+        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), createRequest);
+
+        // when
+        groupBuyService.deleteGroupBuy(testUser.getId(), created.getId());
+
+        // then - 소프트 삭제 검증 (deletedAt이 설정되어야 함)
+        GroupBuy deleted = groupBuyRepository.findById(created.getId()).orElseThrow();
+        assertThat(deleted.getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("공구 삭제 실패 - 주최자가 아닌 사용자")
+    void deleteGroupBuy_Fail_NotHost() {
+        // given
+        CreateGroupBuyRequest createRequest = CreateGroupBuyRequest.builder()
+            .title("삼겹살 공동구매")
+            .content("신선한 삼겹살 공동구매합니다")
+            .category("육류")
+            .totalPrice(50000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .build();
+        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), createRequest);
+
+        // 다른 사용자 생성
+        User otherUser = User.create(
+            "other@example.com",
+            "encodedPassword",
+            "다른사용자",
+            "010-9999-9999"
+        );
+        userRepository.save(otherUser);
+
+        // when & then
+        assertThatThrownBy(() -> groupBuyService.deleteGroupBuy(otherUser.getId(), created.getId()))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNAUTHORIZED_GROUP_BUY_ACCESS);
+    }
+
+    @Test
+    @DisplayName("공구 삭제 실패 - 참여자가 있는 경우")
+    void deleteGroupBuy_Fail_HasParticipants() {
+        // given
+        GroupBuy groupBuy = GroupBuy.createGeneral(
+            testUser,
+            "삼겹살 공동구매",
+            "신선한 삼겹살",
+            "육류",
+            50000,
+            5,
+            LocalDateTime.now().plusDays(7),
+            DeliveryMethod.BOTH,
+            null,
+            null,
+            true
+        );
+        GroupBuy savedGroupBuy = groupBuyRepository.save(groupBuy);
+        savedGroupBuy.increaseParticipant(); // 참여자 1명 추가
+        groupBuyRepository.saveAndFlush(savedGroupBuy); // 변경사항 저장 및 즉시 DB에 반영
+        
+        Long groupBuyId = savedGroupBuy.getId();
+        Long userId = testUser.getId();
+        entityManager.clear(); // 영속성 컨텍스트 초기화
+
+        // when & then
+        assertThatThrownBy(() -> groupBuyService.deleteGroupBuy(userId, groupBuyId))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.HAS_PARTICIPANTS);
+    }
+
+    @Test
+    @DisplayName("공구 삭제 실패 - 존재하지 않는 공구")
+    void deleteGroupBuy_Fail_NotFound() {
+        // given
+        Long nonExistentId = 999L;
+
+        // when & then
+        assertThatThrownBy(() -> groupBuyService.deleteGroupBuy(testUser.getId(), nonExistentId))
             .isInstanceOf(CustomException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.GROUP_BUY_NOT_FOUND);
     }

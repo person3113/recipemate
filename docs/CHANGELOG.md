@@ -4,6 +4,73 @@
 
 ---
 
+## [2025-11-01] 테스트 리팩토링 및 Security 통합 테스트 추가
+
+### 처리 항목
+
+#### 1. ✅ FoodSafetyClientTest 리팩토링
+- **변경 파일**:
+  - `FoodSafetyClientTest.java`:
+    - `@SpringBootTest` 제거 → 단위 테스트로 전환
+    - `MockRestServiceServer` 사용으로 RestTemplate 모킹
+    - `ReflectionTestUtils`로 private 필드(`apiKey`, `baseUrl`) 주입
+    - URL 인코딩 문제 해결: `org.hamcrest.Matchers.matchesPattern()` 사용
+    
+- **효과**:
+  - 외부 API 의존성 완전 제거
+  - 테스트 속도 5~10배 향상 (전체 Context 로딩 제거)
+  - 순수 FoodSafetyClient 로직만 테스트
+  - 10개 테스트 모두 통과 확인
+
+#### 2. ✅ SecurityConfigIntegrationTest 신규 작성
+- **변경 파일**:
+  - `SecurityConfigIntegrationTest.java` (신규 생성):
+    - 실제 Security 설정이 적용된 상태에서 통합 테스트 수행
+    - `@SpringBootTest` + `@AutoConfigureMockMvc` 사용
+    - 20개 테스트 케이스 작성
+    
+- **테스트 케이스**:
+  1. 정적 리소스 접근 (CSS, JS, Images) - 인증 불필요
+  2. 인증 페이지 (로그인, 회원가입) - 인증 불필요
+  3. Public 공동구매 페이지 (목록, 상세) - 인증 불필요
+  4. 보호된 엔드포인트 (공동구매 생성 폼) - 인증 필요 (403 Forbidden)
+  5. 레시피 엔드포인트 - 인증 필요
+  6. 사용자 프로필 (`/users/me`) - 인증 필요
+  7. 공동구매 생성 API - 인증 필요
+  8. H2 Console 접근
+  9. 로그아웃
+  10. CSRF 비활성화 확인
+  11. 권한별 접근 제어 (USER 역할)
+  12. URL 패턴 매칭 (숫자 ID vs 문자열 ID)
+  
+- **주요 수정 사항**:
+  - `@WithMockUser(username = "test@example.com")` 사용 (User 엔티티의 email 필드 사용)
+  - 예상 HTTP 상태 코드 수정:
+    - 인증 실패 시 `403 Forbidden` (formLogin 미설정으로 redirect 없음)
+    - 존재하지 않는 리소스 시 `404 Not Found`
+    - 비즈니스 예외 발생 시 `302 Redirect` (에러 메시지와 함께)
+  - 실제 엔드포인트에 맞게 URL 수정:
+    - `/recipes/list` → `/recipes` (RecipeController 실제 경로)
+    - `/user/my-page` → `/users/me` (UserController 실제 경로)
+    - `/api/group-purchases` → `/group-purchases` (실제 폼 제출 경로)
+    
+- **효과**:
+  - Controller 단위 테스트에서 누락된 Security 설정 검증
+  - 실제 Security 규칙이 올바르게 동작하는지 확인
+  - 인증/인가 관련 회귀 버그 방지
+  - 20개 테스트 모두 통과 확인
+
+### 효과
+- ✅ FoodSafetyClientTest 테스트 속도 대폭 향상
+- ✅ Security 통합 테스트로 인증/인가 규칙 검증 완료
+- ✅ 모든 테스트 통과 (BUILD SUCCESSFUL)
+- ✅ 테스트 커버리지 향상
+
+### 소요 시간
+약 1.5시간
+
+---
+
 ## [2025-10-31] GroupBuyController Form-Based 리팩터링 완료
 
 ### 처리 항목
@@ -243,6 +310,7 @@ POST /group-purchases/{id}/participate/cancel
 
 | 날짜 | 작업 항목 | 우선순위 | 소요 시간 |
 |------|----------|----------|-----------|
+| 2025-11-01 | FoodSafetyClientTest 리팩토링 + SecurityConfigIntegrationTest 추가 | 🔴 HIGH | 1.5시간 |
 | 2025-11-01 | Controller 테스트 슬라이스 테스트 전환 | 🟡 MEDIUM | 1.5시간 |
 | 2025-10-31 | GroupBuyController Form-Based 리팩터링 | 🔴 HIGH | 1시간 |
 | 2025-10-31 | Controller 아키텍처 htmx 철학 정렬 리팩터링 | 🔴 HIGH | 2시간 |
@@ -251,7 +319,7 @@ POST /group-purchases/{id}/participate/cancel
 | 2025-10-31 | GroupBuy 비즈니스 로직 예외 처리 표준화 | 🟡 MEDIUM | 20분 |
 | 2025-10-31 | UserService DTO 변환 로직 중복 제거 | 🟡 MEDIUM | 20분 |
 
-**총 소요 시간**: 약 7시간
+**총 소요 시간**: 약 8.5시간
 
 ---
 

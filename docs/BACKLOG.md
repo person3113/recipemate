@@ -11,23 +11,9 @@
 
 ## 🔴 HIGH Priority (즉시 수정)
 
-### 1. Security 통합 테스트 추가
-- **현황**: Controller 단위 테스트는 Security OFF, Security 설정 검증 테스트 누락
-- **개선**: `SecurityConfigIntegrationTest.java` 신규 생성하여 인증/인가 규칙 검증
-- **처리 시점**: Phase 1 완료 전
-- **예상 시간**: 30분
-
 ---
 
 ## 🟡 MEDIUM Priority
-
-### 1. FoodSafetyClientTest 리팩토링
-- **현황**: `@SpringBootTest`로 전체 Context 로딩 (느림)
-- **개선**: `MockRestServiceServer` 사용으로 전환
-- **효과**: 테스트 속도 5~10배 향상
-- **처리 시점**: Phase 1 테스트 최적화 단계
-- **예상 시간**: 1시간 
-
 
 ---
 

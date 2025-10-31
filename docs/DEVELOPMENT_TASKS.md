@@ -458,14 +458,14 @@
 
 ### 3.1. 커뮤니티 게시판 (Post Domain)
 
-#### [ ] Task 3-1-1: Post 엔티티 작성
-- [ ] 테스트 작성
+#### [x] Task 3-1-1: Post 엔티티 작성
+- [x] 테스트 작성
   - 카테고리별 게시글 조회
   - 조회수 증가 (중복 방지)
-- [ ] Post 엔티티 구현
+- [x] Post 엔티티 구현
   - 필드: id, author(User FK), title, content, category, viewCount
   - 인덱스: category+createdAt, authorId
-- [ ] PostRepository 작성
+- [x] PostRepository 작성
   - `findByCategoryOrderByCreatedAtDesc(PostCategory category, Pageable pageable)`
   - `findByAuthorId(Long authorId)`
 

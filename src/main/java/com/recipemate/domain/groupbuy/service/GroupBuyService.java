@@ -13,11 +13,9 @@ import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import com.recipemate.global.util.ImageUploadUtil;
-import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -109,11 +107,16 @@ public class GroupBuyService {
     }
 
     /**
-     * 공구 목록 조회 (검색 및 필터링 지원)
+     * 공구 목록 조회 (검색 및 필터링 지원 - QueryDSL 기반)
      */
     public Page<GroupBuyResponse> getGroupBuyList(GroupBuySearchCondition condition, Pageable pageable) {
-        Specification<GroupBuy> spec = createSpecification(condition);
-        Page<GroupBuy> groupBuys = groupBuyRepository.findAll(spec, pageable);
+        // condition이 null인 경우 빈 조건으로 초기화
+        GroupBuySearchCondition searchCondition = (condition != null) 
+            ? condition 
+            : GroupBuySearchCondition.builder().build();
+        
+        // QueryDSL 기반 동적 검색 사용
+        Page<GroupBuy> groupBuys = groupBuyRepository.searchGroupBuys(searchCondition, pageable);
         
         return groupBuys.map(groupBuy -> {
             List<String> imageUrls = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy)
@@ -208,43 +211,6 @@ public class GroupBuyService {
         
         // 5. 소프트 삭제
         groupBuy.delete();
-    }
-
-    /**
-     * 검색 조건으로 Specification 생성
-     */
-    private Specification<GroupBuy> createSpecification(GroupBuySearchCondition condition) {
-        return (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            // 카테고리 필터
-            if (condition != null && condition.getCategory() != null && !condition.getCategory().isBlank()) {
-                predicates.add(criteriaBuilder.equal(root.get("category"), condition.getCategory()));
-            }
-
-            // 상태 필터
-            if (condition != null && condition.getStatus() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("status"), condition.getStatus()));
-            }
-
-            // 레시피 기반 공구만 필터
-            if (condition != null && condition.getRecipeOnly() != null && condition.getRecipeOnly()) {
-                predicates.add(criteriaBuilder.isNotNull(root.get("recipeApiId")));
-            }
-
-            // 키워드 검색 (제목 또는 내용)
-            if (condition != null && condition.getKeyword() != null && !condition.getKeyword().isBlank()) {
-                String keywordPattern = "%" + condition.getKeyword() + "%";
-                Predicate titlePredicate = criteriaBuilder.like(root.get("title"), keywordPattern);
-                Predicate contentPredicate = criteriaBuilder.like(root.get("content"), keywordPattern);
-                predicates.add(criteriaBuilder.or(titlePredicate, contentPredicate));
-            }
-
-            // 정렬: 최신순
-            query.orderBy(criteriaBuilder.desc(root.get("createdAt")));
-
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
     }
 
     /**

@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSpecificationExecutor<GroupBuy> {
+public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSpecificationExecutor<GroupBuy>, GroupBuyRepositoryCustom {
 
     Page<GroupBuy> findByStatusOrderByDeadlineAsc(GroupBuyStatus status, Pageable pageable);
 

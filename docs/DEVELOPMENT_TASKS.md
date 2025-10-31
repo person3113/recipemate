@@ -289,16 +289,16 @@
 
 ### 1.5. 검색 및 필터링
 
-#### [ ] Task 1-5-1: 공구 검색 기능
-- [ ] 테스트 작성
+#### [x] Task 1-5-1: 공구 검색 기능
+- [x] 테스트 작성
   - 제목으로 검색
   - 내용으로 검색
   - 카테고리 필터링
   - 상태 필터링
   - 복합 조건 검색
-- [ ] GroupBuyRepositoryCustom 인터페이스 작성
+- [x] GroupBuyRepositoryCustom 인터페이스 작성
   - QueryDSL 기반 동적 쿼리
-- [ ] GroupBuyRepositoryImpl 구현
+- [x] GroupBuyRepositoryImpl 구현
   - `searchGroupBuys(GroupBuySearchCondition condition, Pageable pageable)`
 - [ ] 통합 검색 API
   - `GET /search?query={keyword}` (나중에 구현)
@@ -664,38 +664,17 @@
 
 ### 4.5. 확장 기능 (4순위 - 선택적, 시간 여유 시)
 
-#### [ ] Task 4-5-1: 번역 API 연동
+#### [ ] Task 4-5-1: 통합 검색 기능 구현
 - [ ] 테스트 작성
-  - TheMealDB 영문 레시피명 → 한글 번역
-  - 재료명 번역 캐싱
-- [ ] Google Translation API 설정
-  - API Key 발급 및 환경변수 설정
-  - 번역 클라이언트 작성
-- [ ] TranslationService 구현
-  - `translateRecipeName(String englishName)`
-  - `translateIngredient(String ingredient)`
-  - 번역 결과 캐싱 (Redis 또는 로컬 캐시)
-- [ ] RecipeService에 번역 로직 통합
-  - 레시피 조회 시 자동 번역 옵션
-  - 사용자 언어 설정에 따라 번역 제공
+    - 공동구매, 커뮤니티 게시글, 레시피 동시 검색
+    - 검색 결과 타입별 그룹화
+- [ ] SearchService 구현
+    - 각 도메인 Repository에서 키워드 검색
+    - 검색 결과를 통합 DTO로 조합
+- [ ] SearchController 구현
+    - `GET /search?query={keyword}`
 
-#### [ ] Task 4-5-2: 지도 API 연동 (만남 장소 표시)
-- [ ] 테스트 작성
-  - 주소 → 위도/경도 변환 (Geocoding)
-  - 지도 표시 컴포넌트 렌더링
-- [ ] 카카오/네이버 지도 API 설정
-  - API Key 발급
-  - JavaScript SDK 추가
-- [ ] GroupBuy 엔티티 확장
-  - latitude, longitude 필드 추가 (Nullable)
-- [ ] MapService 구현
-  - `geocodeAddress(String address)` (주소 → 좌표)
-  - `reverseGeocode(Double lat, Double lng)` (좌표 → 주소)
-- [ ] 프론트엔드 통합
-  - 공구 작성 시 지도에서 장소 선택
-  - 공구 상세 페이지에 지도 표시
-
-#### [ ] Task 4-5-3: 뱃지 시스템
+#### [ ] Task 4-5-2: 뱃지 시스템
 - [ ] Badge 엔티티 작성
   - 테스트 작성
     - 뱃지 조건 달성 여부 확인
@@ -719,7 +698,7 @@
   - UserController에 엔드포인트 추가
   - `GET /users/me/badges`
 
-#### [ ] Task 4-5-4: 포인트 시스템
+#### [ ] Task 4-5-3: 포인트 시스템
 - [ ] User 엔티티 확장
   - 테스트 작성
     - 포인트 적립/차감 로직 확인
@@ -743,7 +722,7 @@
   - `GET /users/me/points`
   - `GET /users/me/points/history`
 
-#### [ ] Task 4-5-5: 이미지 최적화
+#### [ ] Task 4-5-4: 이미지 최적화
 - [ ] Thumbnailator 라이브러리 추가
   - build.gradle 의존성 추가
 - [ ] 테스트 작성
@@ -759,7 +738,38 @@
   - 원본 + 썸네일 2종 저장 (선택)
   - CDN 연동 고려 (선택)
 
-#### [ ] Task 4-5-6: 실시간 채팅 (선택 - 복잡도 높음)
+#### [ ] Task 4-5-5: 지도 API 연동 (만남 장소 표시)
+- [ ] 테스트 작성
+    - 주소 → 위도/경도 변환 (Geocoding)
+    - 지도 표시 컴포넌트 렌더링
+- [ ] 카카오/네이버 지도 API 설정
+    - API Key 발급
+    - JavaScript SDK 추가
+- [ ] GroupBuy 엔티티 확장
+    - latitude, longitude 필드 추가 (Nullable)
+- [ ] MapService 구현
+    - `geocodeAddress(String address)` (주소 → 좌표)
+    - `reverseGeocode(Double lat, Double lng)` (좌표 → 주소)
+- [ ] 프론트엔드 통합
+    - 공구 작성 시 지도에서 장소 선택
+    - 공구 상세 페이지에 지도 표시
+
+#### [ ] Task 4-5-6: 번역 API 연동 (선택)
+- [ ] 테스트 작성
+    - TheMealDB 영문 레시피명 → 한글 번역
+    - 재료명 번역 캐싱
+- [ ] Google Translation API 설정
+    - API Key 발급 및 환경변수 설정
+    - 번역 클라이언트 작성
+- [ ] TranslationService 구현
+    - `translateRecipeName(String englishName)`
+    - `translateIngredient(String ingredient)`
+    - 번역 결과 캐싱 (Redis 또는 로컬 캐시)
+- [ ] RecipeService에 번역 로직 통합
+    - 레시피 조회 시 자동 번역 옵션
+    - 사용자 언어 설정에 따라 번역 제공
+
+#### [ ] Task 4-5-7: 실시간 채팅 (선택 - 복잡도 높음)
 - [ ] WebSocket 설정
   - Spring WebSocket 의존성 추가
   - WebSocketConfig 작성
@@ -784,36 +794,6 @@
 
 ---
 
-## 📊 작업 추적
-
-### Week 1-2: Phase 1 (프로젝트 초기 설정 + 회원 + 공구 핵심)
-- [ ] 프로젝트 초기 설정 (1.1)
-- [ ] 회원 관리 (1.2)
-- [ ] 공동구매 핵심 기능 (1.3)
-- [ ] 공구 참여/취소 (1.4)
-- [ ] 검색 및 필터링 (1.5)
-- [ ] 마이페이지 기본 (1.6)
-
-### Week 3-4: Phase 2 (레시피 연동 + 차별화)
-- [ ] 외부 API 연동 (2.1)
-- [ ] 레시피 기반 공구 생성 (2.2)
-- [ ] 찜 기능 (2.3)
-
-### Week 5: Phase 3 (커뮤니티 + 후기 + 알림)
-- [ ] 커뮤니티 게시판 (3.1)
-- [ ] 댓글 시스템 (3.2)
-- [ ] 후기 및 매너온도 (3.3)
-- [ ] 알림 시스템 (3.4)
-
-### Week 6: Phase 4 (최적화 + 배치 + 프론트 + 배포)
-- [ ] 배치 작업 (4.1)
-- [ ] 성능 최적화 (4.2)
-- [ ] 프론트엔드 개발 (4.3)
-- [ ] 배포 준비 (4.4)
-- [ ] 확장 기능 (4.5) - 선택적
-
----
-
 ## 🎯 우선순위 라벨
 
 - **P0 (Critical)**: 핵심 기능, 없으면 서비스 불가
@@ -821,20 +801,4 @@
 - **P2 (Medium)**: 부가 기능, 사용자 경험 향상
 - **P3 (Low)**: 확장 기능, 시간 여유 시 추가
 
----
-
-## 📝 개발 가이드라인 (재확인)
-
-1. **TDD 방식**: 테스트 먼저 → 구현 → 리팩터링
-2. **단계적 개발**: 간단한 버전 먼저 → 점진적 개선
-3. **Best Practice**: SOLID 원칙, Clean Code
-4. **코드 리뷰**: 주요 기능 완성 시 팀원 리뷰
-5. **문서화**: README, API 문서, ERD 업데이트
-6. **Git 전략**: Feature Branch → Develop → Main
-
----
-
-**문서 버전**: v1.1  
-**최종 수정일**: 2025-01-26  
-**작성자**: RecipeMate 개발팀
 

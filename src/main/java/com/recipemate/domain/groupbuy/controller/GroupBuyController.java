@@ -70,4 +70,14 @@ public class GroupBuyController {
         Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(condition, pageable);
         return ApiResponse.success(result);
     }
+
+    /**
+     * 공구 상세 조회
+     * @param purchaseId 공구 ID
+     */
+    @GetMapping("/{purchaseId}")
+    public ApiResponse<GroupBuyResponse> getGroupBuyDetail(@PathVariable Long purchaseId) {
+        GroupBuyResponse response = groupBuyService.getGroupBuyDetail(purchaseId);
+        return ApiResponse.success(response);
+    }
 }

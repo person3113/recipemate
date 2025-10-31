@@ -90,6 +90,23 @@ public class GroupBuyService {
     }
 
     /**
+     * 공구 상세 조회
+     */
+    public GroupBuyResponse getGroupBuyDetail(Long purchaseId) {
+        // GroupBuy와 Host를 Fetch Join으로 조회
+        GroupBuy groupBuy = groupBuyRepository.findByIdWithHost(purchaseId)
+            .orElseThrow(() -> new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
+        
+        // 이미지 목록을 별도 쿼리로 조회 (displayOrder로 정렬)
+        List<String> imageUrls = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy)
+            .stream()
+            .map(GroupBuyImage::getImageUrl)
+            .toList();
+        
+        return mapToResponse(groupBuy, imageUrls);
+    }
+
+    /**
      * 검색 조건으로 Specification 생성
      */
     private Specification<GroupBuy> createSpecification(GroupBuySearchCondition condition) {

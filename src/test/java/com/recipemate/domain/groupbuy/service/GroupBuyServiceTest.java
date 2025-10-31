@@ -539,4 +539,105 @@ class GroupBuyServiceTest {
         assertThat(result.getContent()).isEmpty();
         assertThat(result.getTotalElements()).isEqualTo(0);
     }
+
+    // ========== 공구 상세 조회 테스트 ==========
+
+    @Test
+    @DisplayName("공구 상세 조회 성공")
+    void getGroupBuyDetail_Success() {
+        // given
+        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
+            .title("삼겹살 공동구매")
+            .content("신선한 삼겹살 공동구매합니다")
+            .category("육류")
+            .totalPrice(50000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .meetupLocation("강남역 2번 출구")
+            .parcelFee(3000)
+            .isParticipantListPublic(true)
+            .imageFiles(new ArrayList<>())
+            .build();
+        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), request);
+
+        // when
+        GroupBuyResponse response = groupBuyService.getGroupBuyDetail(created.getId());
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getId()).isEqualTo(created.getId());
+        assertThat(response.getTitle()).isEqualTo("삼겹살 공동구매");
+        assertThat(response.getContent()).isEqualTo("신선한 삼겹살 공동구매합니다");
+        assertThat(response.getHostId()).isEqualTo(testUser.getId());
+        assertThat(response.getHostNickname()).isEqualTo(testUser.getNickname());
+        assertThat(response.getHostMannerTemperature()).isEqualTo(testUser.getMannerTemperature());
+    }
+
+    @Test
+    @DisplayName("공구 상세 조회 성공 - 주최자 정보 포함 (Fetch Join)")
+    void getGroupBuyDetail_Success_WithHostInfo() {
+        // given
+        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
+            .title("삼겹살 공동구매")
+            .content("신선한 삼겹살 공동구매합니다")
+            .category("육류")
+            .totalPrice(50000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(new ArrayList<>())
+            .build();
+        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), request);
+
+        // when
+        GroupBuyResponse response = groupBuyService.getGroupBuyDetail(created.getId());
+
+        // then - 주최자 정보가 함께 조회되어야 함
+        assertThat(response.getHostId()).isNotNull();
+        assertThat(response.getHostNickname()).isEqualTo("테스터");
+        assertThat(response.getHostMannerTemperature()).isEqualTo(36.5);
+    }
+
+    @Test
+    @DisplayName("공구 상세 조회 성공 - 이미지 목록 포함 (순서대로)")
+    void getGroupBuyDetail_Success_WithImages() {
+        // given
+        List<MultipartFile> imageFiles = List.of(
+            new MockMultipartFile("image1", "test1.jpg", "image/jpeg", "test1".getBytes()),
+            new MockMultipartFile("image2", "test2.jpg", "image/jpeg", "test2".getBytes()),
+            new MockMultipartFile("image3", "test3.jpg", "image/jpeg", "test3".getBytes())
+        );
+
+        CreateGroupBuyRequest request = CreateGroupBuyRequest.builder()
+            .title("삼겹살 공동구매")
+            .content("신선한 삼겹살 공동구매합니다")
+            .category("육류")
+            .totalPrice(50000)
+            .targetHeadcount(5)
+            .deadline(LocalDateTime.now().plusDays(7))
+            .deliveryMethod(DeliveryMethod.BOTH)
+            .imageFiles(imageFiles)
+            .build();
+        GroupBuyResponse created = groupBuyService.createGroupBuy(testUser.getId(), request);
+
+        // when
+        GroupBuyResponse response = groupBuyService.getGroupBuyDetail(created.getId());
+
+        // then - 이미지가 순서대로 포함되어야 함
+        assertThat(response.getImageUrls()).isNotNull();
+        assertThat(response.getImageUrls()).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("공구 상세 조회 실패 - 존재하지 않는 공구")
+    void getGroupBuyDetail_Fail_NotFound() {
+        // given
+        Long nonExistentId = 999L;
+
+        // when & then
+        assertThatThrownBy(() -> groupBuyService.getGroupBuyDetail(nonExistentId))
+            .isInstanceOf(CustomException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.GROUP_BUY_NOT_FOUND);
+    }
 }

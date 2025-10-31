@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSpecificationExecutor<GroupBuy> {
 
@@ -51,4 +52,13 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSp
     long countByHostIdAndStatus(Long hostId, GroupBuyStatus status);
 
     boolean existsByHostIdAndRecipeApiIdAndStatus(Long hostId, String recipeApiId, GroupBuyStatus status);
+
+    @Query("SELECT DISTINCT g FROM GroupBuy g LEFT JOIN FETCH g.host WHERE g.id = :id")
+    Optional<GroupBuy> findByIdWithHost(@Param("id") Long id);
+
+    @Query("SELECT DISTINCT g FROM GroupBuy g LEFT JOIN FETCH g.images WHERE g.id = :id")
+    Optional<GroupBuy> findByIdWithImages(@Param("id") Long id);
+
+    @Query("SELECT g FROM GroupBuy g LEFT JOIN FETCH g.host WHERE g.id = :id")
+    Optional<GroupBuy> findByIdWithHostAndImages(@Param("id") Long id);
 }

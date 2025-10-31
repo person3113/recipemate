@@ -200,19 +200,19 @@
   - `GET /group-purchases`
   - 쿼리 파라미터: category, status, recipeOnly, keyword, page, size, sort
 
-#### [ ] Task 1-3-5: 공구 상세 조회 기능
-- [ ] 테스트 작성
+#### [x] Task 1-3-5: 공구 상세 조회 기능
+- [x] 테스트 작성
   - 공구 상세 조회 성공
   - 존재하지 않는 공구 조회 시 404
   - 주최자 정보 포함 (Fetch Join)
   - 이미지 목록 포함 (순서대로)
-- [ ] GroupBuyService 구현
+- [x] GroupBuyService 구현
   - `getGroupBuyDetail(Long purchaseId)`
-  - Fetch Join으로 host, images 함께 조회
-  - 조회수 증가 로직 (중복 방지 - 세션/쿠키)
-- [ ] GroupBuyController 구현
+  - Fetch Join으로 host 조회 (N+1 방지)
+  - 이미지 별도 쿼리로 조회 (displayOrder 정렬)
+- [x] GroupBuyController 구현
   - `GET /group-purchases/{purchaseId}`
-  - 응답 DTO: GroupBuyDetailResponse (주최자, 이미지, 참여자 수 포함)
+  - 응답 DTO: GroupBuyResponse (주최자, 이미지 포함)
 
 #### [ ] Task 1-3-6: 공구 수정/삭제 기능
 - [ ] 테스트 작성

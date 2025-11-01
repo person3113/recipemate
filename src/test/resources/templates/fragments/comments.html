@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Comments Fragment</title>
+</head>
+<body>
+
+<!-- 댓글 목록 Fragment -->
+<div th:fragment="comment-list">
+    <div class="comments-container">
+        <div th:each="comment : ${comments}" class="comment-item">
+            <p th:text="${comment.content}">댓글 내용</p>
+            <span th:text="${comment.authorNickname}">작성자</span>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

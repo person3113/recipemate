@@ -177,6 +177,14 @@ public class MvcExceptionHandler {
             return "/group-purchases/list";
         }
 
+        // /comments 관련 경로
+        // 댓글은 targetType과 targetId를 폼 데이터로 전달받으므로, 
+        // 컨트롤러에서 직접 리다이렉트 처리해야 함
+        // 여기서는 기본 홈으로 리다이렉트
+        if (path.contains("/comments")) {
+            return "/";
+        }
+
         // 기본: 홈 페이지
         return "/";
     }

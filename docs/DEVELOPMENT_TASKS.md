@@ -501,34 +501,42 @@
 
 ### 3.2. 댓글 시스템 (Comment Domain)
 
-#### [ ] Task 3-2-1: Comment 엔티티 작성
-- [ ] 테스트 작성
+#### [x] Task 3-2-1: Comment 엔티티 작성
+- [x] 테스트 작성
   - 공구 또는 게시글 중 하나에만 연결
   - 대댓글 (parent) 관계 확인
   - Q&A vs 일반 댓글 구분
-- [ ] Comment 엔티티 구현
+- [x] Comment 엔티티 구현
   - 필드: id, author(User FK), groupBuy(FK, Nullable), post(FK, Nullable), parent(FK, Nullable), content, type
   - 제약조건: CHECK (groupBuy XOR post)
   - 인덱스: groupBuyId, postId, parentId
-- [ ] CommentRepository 작성
+- [x] CommentRepository 작성
   - `findByGroupBuyIdAndParentIsNullOrderByCreatedAtAsc(Long groupBuyId)`
   - `findByPostIdAndParentIsNullOrderByCreatedAtAsc(Long postId)`
   - `findByParentIdOrderByCreatedAtAsc(Long parentId)`
 
-#### [ ] Task 3-2-2: 댓글 작성/수정/삭제 기능
-- [ ] 테스트 작성
+#### [x] Task 3-2-2: 댓글 작성/수정/삭제 기능
+- [x] 테스트 작성 (13개 테스트, 100% 통과)
   - 공구에 댓글 작성
   - 게시글에 댓글 작성
   - 대댓글 작성
   - 본인 댓글만 수정/삭제
   - 소프트 삭제 ("삭제된 댓글입니다")
-- [ ] CommentService 구현
+  - Q&A 타입 댓글 (공구 전용)
+  - 권한 검증 (작성자만 수정/삭제)
+- [x] CommentService 구현
   - `createComment(Long userId, CreateCommentRequest dto)`
   - `updateComment(Long userId, Long commentId, UpdateCommentRequest dto)`
   - `deleteComment(Long userId, Long commentId)`
-- [ ] Controller 구현
-  - 공구 댓글: `/group-purchases/{purchaseId}/comments`
-  - 게시글 댓글: `/community-posts/{postId}/comments`
+  - `getComments(EntityType targetType, Long targetId)`
+- [x] CommentController 구현 (통합 엔드포인트 설계)
+  - **통합 댓글 엔드포인트**: `POST /comments` (targetType, targetId로 공구/게시글 구분)
+  - **수정**: `POST /comments/{commentId}/edit`
+  - **삭제**: `POST /comments/{commentId}/delete`
+  - **Fragment**: `GET /comments/fragments` (htmx용)
+  - **장점**: RESTful, 확장 가능(Review 추가 가능), 코드 중복 없음
+- [x] ValidationConfig 추가
+  - 수동 DTO 검증을 위한 Validator 빈 설정
 
 ---
 

@@ -43,6 +43,9 @@ public enum ErrorCode {
     
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMENT-001", "댓글을 찾을 수 없습니다."),
     UNAUTHORIZED_COMMENT_ACCESS(HttpStatus.FORBIDDEN, "COMMENT-002", "댓글 접근 권한이 없습니다."),
+    UNAUTHORIZED_COMMENT_UPDATE(HttpStatus.FORBIDDEN, "COMMENT-003", "댓글 수정 권한이 없습니다."),
+    UNAUTHORIZED_COMMENT_DELETE(HttpStatus.FORBIDDEN, "COMMENT-004", "댓글 삭제 권한이 없습니다."),
+    COMMENT_DEPTH_EXCEEDED(HttpStatus.BAD_REQUEST, "COMMENT-005", "대댓글의 대댓글은 작성할 수 없습니다."),
     
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "COMMON-001", "입력값이 올바르지 않습니다."),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "COMMON-003", "입력값이 유효하지 않습니다."),

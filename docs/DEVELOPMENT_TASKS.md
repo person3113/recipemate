@@ -131,9 +131,9 @@
   - `updateProfile(Long userId, UpdateProfileRequest dto)`
   - `changePassword(Long userId, ChangePasswordRequest dto)`
 - [x] UserController 구현
-  - `GET /users/me`
-  - `PUT /users/me`
-  - `PUT /users/me/password`
+  - `GET /users/me` (마이페이지 렌더링)
+  - `POST /users/me` (프로필 수정 폼 제출)
+  - `POST /users/me/password` (비밀번호 변경 폼 제출)
 
 ---
 
@@ -313,7 +313,7 @@
 - [x] UserService 구현
   - `getMyGroupBuys(Long userId, GroupBuyStatus status, Pageable pageable)`
 - [x] UserController 구현
-  - `GET /users/me/group-purchases`
+  - `GET /users/me/group-purchases` (내가 만든 공구 목록 페이지)
 
 #### [x] Task 1-6-2: 내가 참여한 공구 목록
 - [x] 테스트 작성
@@ -321,7 +321,7 @@
 - [x] UserService 구현
   - `getParticipatedGroupBuys(Long userId, String status, Pageable pageable)`
 - [x] UserController 구현
-  - `GET /users/me/participations`
+  - `GET /users/me/participations` (내가 참여한 공구 목록 페이지)
 
 ---
 
@@ -445,12 +445,13 @@
   - `addWishlist(Long userId, Long purchaseId)`
   - `removeWishlist(Long userId, Long purchaseId)`
 - [x] GroupBuyController 구현
-  - `POST /group-purchases/{purchaseId}/bookmarks`
-  - `DELETE /group-purchases/{purchaseId}/bookmarks`
+  - `POST /group-purchases/{purchaseId}/bookmarks` (찜하기)
+  - `POST /group-purchases/{purchaseId}/bookmarks/cancel` (찜 취소)
+  - htmx 사용 시 DELETE도 가능
 
 #### [x] Task 2-3-3: 찜 목록 조회
 - [x] UserController 구현
-  - `GET /users/me/bookmarks`
+  - `GET /users/me/bookmarks` (찜 목록 페이지)
 
 ---
 
@@ -486,16 +487,18 @@
   - `updatePost(Long userId, Long postId, UpdatePostRequest dto)`
   - `deletePost(Long userId, Long postId)`
 - [x] PostController 구현
-  - `POST /community-posts`
-  - `GET /community-posts/{postId}`
-  - `POST /community-posts/{postId}` (수정)
-  - `POST /community-posts/{postId}/delete` (삭제)
+  - `GET /community-posts/new` (작성 페이지)
+  - `POST /community-posts` (작성 폼 제출)
+  - `GET /community-posts/{postId}` (상세 페이지)
+  - `GET /community-posts/{postId}/edit` (수정 페이지)
+  - `POST /community-posts/{postId}` (수정 폼 제출)
+  - `POST /community-posts/{postId}/delete` (삭제 폼 제출)
 
 #### [x] Task 3-1-4: 게시글 목록 조회 및 검색
 - [x] PostService 구현
   - `getPostList(PostCategory category, String keyword, Pageable pageable)`
 - [x] PostController 구현
-  - `GET /community-posts`
+  - `GET /community-posts/list` (목록 페이지, 검색 포함)
 
 ---
 
@@ -568,11 +571,13 @@
   - 공구 상태 확인 (CLOSED)
   - 매너온도 업데이트 로직
 - [ ] GroupBuyController 구현
-  - `POST /group-purchases/{purchaseId}/reviews`
+  - `POST /group-purchases/{purchaseId}/reviews` (후기 작성 폼 제출)
+  - `POST /group-purchases/{purchaseId}/reviews/{reviewId}/edit` (후기 수정)
+  - `POST /group-purchases/{purchaseId}/reviews/{reviewId}/delete` (후기 삭제)
 
 #### [ ] Task 3-3-3: 후기 목록 조회
 - [ ] GroupBuyController 구현
-  - `GET /group-purchases/{purchaseId}/reviews`
+  - `GET /group-purchases/{purchaseId}/reviews` (후기 목록 페이지)
 
 ---
 
@@ -603,9 +608,10 @@
 
 #### [ ] Task 3-4-3: 알림 조회/읽음 처리/삭제
 - [ ] UserController 구현
-  - `GET /users/me/notifications`
-  - `PUT /users/me/notifications/{notificationId}` (읽음 처리)
-  - `DELETE /users/me/notifications` (전체 삭제)
+  - `GET /users/me/notifications` (알림 목록 페이지)
+  - `POST /users/me/notifications/{notificationId}/read` (읽음 처리)
+  - `POST /users/me/notifications/delete-all` (전체 삭제)
+  - `GET /users/me/fragments/notifications` (htmx용 알림 목록 조각)
 
 ---
 
@@ -705,7 +711,8 @@
     - 각 도메인 Repository에서 키워드 검색
     - 검색 결과를 통합 DTO로 조합
 - [ ] SearchController 구현
-    - `GET /search?query={keyword}`
+    - `GET /search?query={keyword}` (통합 검색 결과 페이지)
+    - `GET /search/fragments?query={keyword}&type={type}` (htmx용 검색 결과 조각)
 
 #### [ ] Task 4-5-2: 뱃지 시스템
 - [ ] Badge 엔티티 작성

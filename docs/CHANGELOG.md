@@ -4,6 +4,155 @@
 
 ---
 
+## [2025-11-03] N+1 쿼리 문제 최적화
+
+### 처리 항목
+
+#### 1. ✅ Notification 조회 Fetch Join 최적화
+- **변경 파일**:
+  - `NotificationRepository.java`:
+    - `findUnreadByUser()`: `LEFT JOIN FETCH n.actor` 추가
+    - `findByUserOrderByCreatedAtDesc()`: `LEFT JOIN FETCH n.actor` 추가
+- **문제**: 알림 목록 조회 시 각 알림마다 actor(행위자) 정보를 개별 쿼리로 조회 (N+1)
+- **해결**: Fetch Join으로 알림과 actor를 한 번에 조회
+- **효과**: N개 알림 조회 시 N+1개 쿼리 → 1개 쿼리로 감소
+
+#### 2. ✅ GroupBuy 이미지 배치 조회 최적화
+- **신규 메서드**:
+  - `GroupBuyImageRepository.java`:
+    - `findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(List<Long> groupBuyIds)` 추가
+    - IN 쿼리로 여러 공동구매의 이미지를 한 번에 조회
+    
+- **변경 파일**:
+  - `GroupBuyService.java` (`getGroupBuyList()` 메서드 리팩터링):
+    ```java
+    // Before: 각 GroupBuy마다 개별 쿼리
+    for (GroupBuy groupBuy : groupBuys) {
+        List<String> imageUrls = groupBuyImageRepository
+            .findByGroupBuyOrderByDisplayOrderAsc(groupBuy)
+            .stream()
+            .map(GroupBuyImage::getImageUrl)
+            .toList();
+    }
+    
+    // After: 모든 GroupBuy의 이미지를 한 번에 조회
+    List<Long> groupBuyIds = groupBuys.stream()
+        .map(GroupBuy::getId)
+        .toList();
+    
+    List<GroupBuyImage> allImages = groupBuyImageRepository
+        .findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(groupBuyIds);
+    
+    Map<Long, List<String>> imageUrlMap = allImages.stream()
+        .collect(Collectors.groupingBy(
+            image -> image.getGroupBuy().getId(),
+            Collectors.mapping(GroupBuyImage::getImageUrl, Collectors.toList())
+        ));
+    ```
+    
+  - `UserService.java` (2개 메서드 리팩터링):
+    - `getMyGroupBuys()`: 동일한 배치 조회 패턴 적용
+    - `getParticipatedGroupBuys()`: 동일한 배치 조회 패턴 적용
+    
+- **문제**: 공동구매 목록 조회 시 각 공동구매마다 이미지를 개별 쿼리로 조회 (N+1)
+- **해결**: 모든 공동구매 ID를 수집 → IN 쿼리로 한 번에 조회 → Map으로 그룹화
+- **효과**: N개 공동구매 조회 시 N개 쿼리 → 1개 쿼리로 감소
+
+#### 3. ✅ Hibernate 배치 설정 추가
+- **변경 파일**:
+  - `application.yml` (dev, prod 환경):
+    ```yaml
+    jpa:
+      properties:
+        hibernate:
+          default_batch_fetch_size: 100  # 연관 엔티티 최대 100개씩 배치 조회
+          order_inserts: true             # INSERT 문 배치 처리
+          order_updates: true             # UPDATE 문 배치 처리
+          batch_versioned_data: true      # 버전 관리 엔티티 배치 처리
+    ```
+- **효과**:
+  - 연관 엔티티 Lazy Loading 시 IN 쿼리로 최대 100개씩 배치 조회
+  - INSERT/UPDATE 작업 시 배치 처리로 네트워크 왕복 감소
+  - 전반적인 데이터베이스 성능 향상
+
+#### 4. ✅ 테스트 코드 업데이트 (10개 테스트)
+- **변경 파일**:
+  - `GroupBuyServiceTest.java` (4개 테스트):
+    - Mock 설정 변경: `findByGroupBuyOrderByDisplayOrderAsc()` → `findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder()`
+    - 영향받은 테스트: `getGroupBuyList_Success_*` (WithPagination, FilterByCategory, SearchByKeyword, FilterRecipeOnly)
+    
+  - `UserServiceTest.java` (6개 테스트):
+    - Mock 설정 변경: 동일한 패턴
+    - 영향받은 테스트: `getMyGroupBuys_*`, `getParticipatedGroupBuys_*` (all, filterByStatus, pagination)
+
+### 테스트 결과
+- ✅ 도메인 테스트: BUILD SUCCESSFUL
+  - `com.recipemate.domain.user.*`: 모든 테스트 통과
+  - `com.recipemate.domain.groupbuy.*`: 모든 테스트 통과
+  - `com.recipemate.domain.notification.*`: 모든 테스트 통과
+
+### 성능 개선
+
+#### 1. Notification 조회
+- **Before**: 10개 알림 조회 시 → 11개 쿼리 (알림 1개 + actor 10개)
+- **After**: 10개 알림 조회 시 → 1개 쿼리 (Fetch Join)
+- **개선율**: 91% 쿼리 감소
+
+#### 2. GroupBuy 이미지 조회
+- **Before**: 10개 공동구매 조회 시 → 10개 쿼리 (각 공동구매마다 이미지 조회)
+- **After**: 10개 공동구매 조회 시 → 1개 쿼리 (IN 쿼리 배치 조회)
+- **개선율**: 90% 쿼리 감소
+
+#### 3. 전체 효과
+- 목록 조회 API 응답 시간 감소 (특히 페이지당 항목 수가 많을 때)
+- 데이터베이스 부하 감소
+- 애플리케이션 확장성 향상
+
+### 최적화 패턴
+
+#### Fetch Join 패턴 (1:1, N:1 관계)
+```java
+@Query("SELECT n FROM Notification n LEFT JOIN FETCH n.actor WHERE ...")
+List<Notification> findWithActor(...);
+```
+- **사용 시점**: 연관 엔티티가 항상 필요한 경우
+- **장점**: 단일 쿼리로 모든 데이터 로드
+- **단점**: 페이징 시 메모리에서 처리 (주의 필요)
+
+#### 배치 조회 패턴 (1:N 관계)
+```java
+// 1. ID 수집
+List<Long> ids = entities.stream().map(Entity::getId).toList();
+
+// 2. IN 쿼리로 배치 조회
+List<RelatedEntity> allRelated = repository.findByEntityIdIn(ids);
+
+// 3. Map으로 그룹화
+Map<Long, List<RelatedEntity>> map = allRelated.stream()
+    .collect(Collectors.groupingBy(related -> related.getEntity().getId()));
+
+// 4. 결과 매핑
+entities.forEach(entity -> {
+    List<RelatedEntity> related = map.getOrDefault(entity.getId(), List.of());
+    // DTO 생성 등
+});
+```
+- **사용 시점**: 1:N 관계에서 N개 엔티티 조회 시
+- **장점**: 쿼리 수를 1개로 감소, 페이징 안전
+- **단점**: 코드 복잡도 약간 증가
+
+### 효과
+- ✅ N+1 쿼리 문제 해결로 데이터베이스 부하 대폭 감소
+- ✅ API 응답 속도 향상 (특히 목록 조회)
+- ✅ Hibernate 배치 설정으로 전반적인 성능 개선
+- ✅ 모든 기존 테스트 통과 (회귀 버그 없음)
+- ✅ 확장 가능한 최적화 패턴 확립
+
+### 소요 시간
+약 2시간
+
+---
+
 ## [2025-11-03] CSRF 보호 활성화 및 보안 강화
 
 ### 처리 항목
@@ -464,6 +613,7 @@ POST /group-purchases/{id}/participate/cancel
 
 | 날짜 | 작업 항목 | 우선순위 | 소요 시간 |
 |------|----------|----------|-----------|
+| 2025-11-03 | N+1 쿼리 문제 최적화 | 🔴 HIGH | 2시간 |
 | 2025-11-03 | CSRF 보호 활성화 및 보안 강화 | 🔴 HIGH | 1시간 |
 | 2025-11-03 | GroupBuy 엔티티 불변성 강화 및 Remember-Me 기능 구현 | 🟢 LOW | 1.5시간 |
 | 2025-11-03 | ParticipationService 낙관적 락 재시도 로직 개선 | 🟢 LOW | 1시간 |
@@ -473,10 +623,10 @@ POST /group-purchases/{id}/participate/cancel
 | 2025-10-31 | Controller 아키텍처 htmx 철학 정렬 리팩터링 | 🔴 HIGH | 2시간 |
 | 2025-10-31 | GroupBuy 도메인 검증 로직 및 예외 처리 개선 | 🔴 HIGH | 1.5시간 |
 | 2025-10-31 | Participation 예외 처리 표준화 | 🟡 MEDIUM | 30분 |
-| 2025-10-31 | GroupBuy 비즈니스 로직 예외 처리 표준화 | 🟡 MEDIUM | 20분 |
+| 2025-10-31 | GroupBuy 비즈니스 로직 예외 처리 표원화 | 🟡 MEDIUM | 20분 |
 | 2025-10-31 | UserService DTO 변환 로직 중복 제거 | 🟡 MEDIUM | 20분 |
 
-**총 소요 시간**: 약 12시간
+**총 소요 시간**: 약 14시간
 
 ---
 

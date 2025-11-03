@@ -651,10 +651,18 @@
   - **Comment 엔티티**: `authorId`, `groupBuyId+deletedAt+createdAt`, `postId+deletedAt+createdAt`, `parentId+deletedAt+createdAt` 추가
   - **GroupBuy 엔티티**: `deletedAt+createdAt`, `status+deletedAt+createdAt`, `category+deletedAt+createdAt` 추가
 
-#### [ ] Task 4-2-2: N+1 문제 해결
-- [ ] Fetch Join 적용
-- [ ] @EntityGraph 사용
-- [ ] Batch Size 설정
+#### [x] Task 4-2-2: N+1 문제 해결
+- [x] Fetch Join 적용
+  - NotificationRepository: actor 관계에 LEFT JOIN FETCH 추가
+- [x] Batch 쿼리 최적화
+  - GroupBuyImageRepository: `findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder()` 추가 (IN 쿼리 사용)
+  - UserService: `getMyGroupBuys()`, `getParticipatedGroupBuys()` 메서드에서 이미지 일괄 조회 패턴 적용
+  - GroupBuyService: `getGroupBuyList()` 메서드에서 이미지 일괄 조회 패턴 적용
+- [x] Hibernate Batch Size 설정 (application.yml)
+  - `hibernate.default_batch_fetch_size: 100`
+  - `hibernate.order_inserts: true`
+  - `hibernate.order_updates: true`
+  - `hibernate.batch_versioned_data: true`
 
 #### [ ] Task 4-2-3: 캐싱 전략 (선택)
 - [ ] Redis 설정

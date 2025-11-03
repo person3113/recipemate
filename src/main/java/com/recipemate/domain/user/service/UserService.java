@@ -116,11 +116,22 @@ public class UserService {
             groupBuys = groupBuyRepository.findByHostIdAndStatusIn(userId, List.of(status), pageable);
         }
 
+        // N+1 문제 해결: 모든 공구의 이미지를 한 번에 조회
+        List<Long> groupBuyIds = groupBuys.getContent().stream()
+                .map(GroupBuy::getId)
+                .toList();
+        
+        List<GroupBuyImage> allImages = groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(groupBuyIds);
+        
+        // GroupBuy ID별로 이미지를 그룹화
+        java.util.Map<Long, List<String>> imageMap = allImages.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                    img -> img.getGroupBuy().getId(),
+                    java.util.stream.Collectors.mapping(GroupBuyImage::getImageUrl, java.util.stream.Collectors.toList())
+                ));
+
         return groupBuys.map(groupBuy -> {
-            List<String> imageUrls = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy)
-                    .stream()
-                    .map(GroupBuyImage::getImageUrl)
-                    .toList();
+            List<String> imageUrls = imageMap.getOrDefault(groupBuy.getId(), List.of());
             return GroupBuyResponse.from(groupBuy, imageUrls);
         });
     }
@@ -144,12 +155,23 @@ public class UserService {
             participations = participationRepository.findByUserIdWithGroupBuyAndHost(userId, List.of(status), pageable);
         }
 
+        // N+1 문제 해결: 모든 공구의 이미지를 한 번에 조회
+        List<Long> groupBuyIds = participations.getContent().stream()
+                .map(p -> p.getGroupBuy().getId())
+                .toList();
+        
+        List<GroupBuyImage> allImages = groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(groupBuyIds);
+        
+        // GroupBuy ID별로 이미지를 그룹화
+        java.util.Map<Long, List<String>> imageMap = allImages.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                    img -> img.getGroupBuy().getId(),
+                    java.util.stream.Collectors.mapping(GroupBuyImage::getImageUrl, java.util.stream.Collectors.toList())
+                ));
+
         return participations.map(participation -> {
             GroupBuy groupBuy = participation.getGroupBuy();
-            List<String> imageUrls = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy)
-                    .stream()
-                    .map(GroupBuyImage::getImageUrl)
-                    .toList();
+            List<String> imageUrls = imageMap.getOrDefault(groupBuy.getId(), List.of());
             return GroupBuyResponse.from(groupBuy, imageUrls);
         });
     }

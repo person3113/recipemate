@@ -348,7 +348,7 @@ class GroupBuyServiceTest {
 
         given(groupBuyRepository.searchGroupBuys(any(GroupBuySearchCondition.class), eq(pageable)))
             .willReturn(groupBuyPage);
-        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+        given(groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(anyList()))
             .willReturn(new ArrayList<>());
 
         // when
@@ -393,7 +393,7 @@ class GroupBuyServiceTest {
 
         given(groupBuyRepository.searchGroupBuys(eq(condition), eq(pageable)))
             .willReturn(groupBuyPage);
-        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+        given(groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(anyList()))
             .willReturn(new ArrayList<>());
 
         // when
@@ -432,7 +432,7 @@ class GroupBuyServiceTest {
 
         given(groupBuyRepository.searchGroupBuys(eq(condition), eq(pageable)))
             .willReturn(groupBuyPage);
-        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+        given(groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(anyList()))
             .willReturn(new ArrayList<>());
 
         // when
@@ -958,7 +958,7 @@ class GroupBuyServiceTest {
 
         given(groupBuyRepository.searchGroupBuys(eq(condition), eq(pageable)))
             .willReturn(groupBuyPage);
-        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+        given(groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(anyList()))
             .willReturn(new ArrayList<>());
 
         // when

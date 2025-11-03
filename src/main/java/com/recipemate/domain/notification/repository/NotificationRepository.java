@@ -14,18 +14,22 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     /**
      * 사용자의 읽음 여부에 따른 알림 목록 조회 (최신순)
+     * Actor(행동자) 정보를 Fetch Join으로 함께 조회하여 N+1 문제 방지
      * @param userId 사용자 ID
      * @param isRead 읽음 여부
      * @return 알림 목록
      */
-    List<Notification> findByUserIdAndIsReadOrderByCreatedAtDesc(Long userId, Boolean isRead);
+    @Query("SELECT n FROM Notification n LEFT JOIN FETCH n.actor WHERE n.user.id = :userId AND n.isRead = :isRead ORDER BY n.createdAt DESC")
+    List<Notification> findByUserIdAndIsReadOrderByCreatedAtDesc(@Param("userId") Long userId, @Param("isRead") Boolean isRead);
 
     /**
      * 사용자의 모든 알림 목록 조회 (최신순)
+     * Actor(행동자) 정보를 Fetch Join으로 함께 조회하여 N+1 문제 방지
      * @param userId 사용자 ID
      * @return 알림 목록
      */
-    List<Notification> findByUserIdOrderByCreatedAtDesc(Long userId);
+    @Query("SELECT n FROM Notification n LEFT JOIN FETCH n.actor WHERE n.user.id = :userId ORDER BY n.createdAt DESC")
+    List<Notification> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
 
     /**
      * 사용자의 읽지 않은 알림 개수 조회

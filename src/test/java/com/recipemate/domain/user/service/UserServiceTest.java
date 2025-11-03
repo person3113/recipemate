@@ -243,7 +243,7 @@ class UserServiceTest {
         given(userRepository.findById(testUser.getId())).willReturn(Optional.of(testUser));
         given(groupBuyRepository.findByHostIdAndStatusIn(eq(testUser.getId()), anyList(), eq(pageable)))
             .willReturn(mockPage);
-        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+        given(groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(anyList()))
             .willReturn(List.of());
         
         // when
@@ -279,7 +279,7 @@ class UserServiceTest {
             .willReturn(imminentPage);
         given(groupBuyRepository.findByHostIdAndStatusIn(eq(testUser.getId()), eq(List.of(GroupBuyStatus.CLOSED)), eq(pageable)))
             .willReturn(closedPage);
-        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+        given(groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(anyList()))
             .willReturn(List.of());
         
         // when
@@ -331,7 +331,7 @@ class UserServiceTest {
             .willReturn(firstPageResult);
         given(groupBuyRepository.findByHostIdAndStatusIn(eq(testUser.getId()), anyList(), eq(secondPage)))
             .willReturn(secondPageResult);
-        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+        given(groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(anyList()))
             .willReturn(List.of());
         
         // when
@@ -408,7 +408,7 @@ class UserServiceTest {
         given(userRepository.findById(participant.getId())).willReturn(Optional.of(participant));
         given(participationRepository.findByUserIdWithGroupBuyAndHost(eq(participant.getId()), anyList(), eq(pageable)))
             .willReturn(mockPage);
-        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+        given(groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(anyList()))
             .willReturn(List.of());
         
         // when
@@ -466,7 +466,7 @@ class UserServiceTest {
             .willReturn(imminentPage);
         given(participationRepository.findByUserIdWithGroupBuyAndHost(eq(participant.getId()), eq(List.of(GroupBuyStatus.CLOSED)), eq(pageable)))
             .willReturn(closedPage);
-        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+        given(groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(anyList()))
             .willReturn(List.of());
         
         // when
@@ -518,7 +518,7 @@ class UserServiceTest {
             .willReturn(firstPageResult);
         given(participationRepository.findByUserIdWithGroupBuyAndHost(eq(participant.getId()), anyList(), eq(secondPage)))
             .willReturn(secondPageResult);
-        given(groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(any(GroupBuy.class)))
+        given(groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(anyList()))
             .willReturn(List.of());
         
         // when

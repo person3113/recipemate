@@ -33,6 +33,12 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
+        # N+1 문제 해결을 위한 Batch Size 설정
+        default_batch_fetch_size: 100
+        # 배치 처리 최적화
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: true
   thymeleaf:
     cache: false
 
@@ -53,5 +59,11 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        # N+1 문제 해결을 위한 Batch Size 설정
+        default_batch_fetch_size: 100
+        # 배치 처리 최적화
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: true
   thymeleaf:
     cache: true

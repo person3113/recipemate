@@ -7,11 +7,13 @@ import com.recipemate.domain.comment.entity.Comment;
 import com.recipemate.domain.comment.repository.CommentRepository;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
+import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.post.entity.Post;
 import com.recipemate.domain.post.repository.PostRepository;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.EntityType;
+import com.recipemate.global.common.NotificationType;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class CommentService {
     private final UserRepository userRepository;
     private final GroupBuyRepository groupBuyRepository;
     private final PostRepository postRepository;
+    private final NotificationService notificationService;
 
     /**
      * 댓글 작성
@@ -78,7 +81,47 @@ public class CommentService {
         comment.validateTarget();
 
         Comment savedComment = commentRepository.save(comment);
+
+        // 6. 알림 전송
+        sendCommentNotification(userId, savedComment, groupBuy, post, parent);
+
         return CommentResponse.from(savedComment);
+    }
+
+    /**
+     * 댓글/대댓글 알림 전송
+     */
+    private void sendCommentNotification(Long authorId, Comment comment, GroupBuy groupBuy, Post post, Comment parent) {
+        // 대댓글인 경우: 원댓글 작성자에게 알림
+        if (parent != null) {
+            notificationService.createNotification(
+                parent.getAuthor().getId(),
+                NotificationType.REPLY_COMMENT,
+                authorId,
+                comment.getId(),
+                EntityType.COMMENT
+            );
+        }
+        // 공구 댓글인 경우: 공구 주최자에게 알림
+        else if (groupBuy != null) {
+            notificationService.createNotification(
+                groupBuy.getHost().getId(),
+                NotificationType.COMMENT_GROUP_BUY,
+                authorId,
+                comment.getId(),
+                EntityType.COMMENT
+            );
+        }
+        // 게시글 댓글인 경우: 게시글 작성자에게 알림
+        else if (post != null) {
+            notificationService.createNotification(
+                post.getAuthor().getId(),
+                NotificationType.COMMENT_POST,
+                authorId,
+                comment.getId(),
+                EntityType.COMMENT
+            );
+        }
     }
 
     /**

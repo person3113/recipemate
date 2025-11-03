@@ -3,6 +3,7 @@ package com.recipemate.domain.review.service;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
+import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.review.dto.CreateReviewRequest;
 import com.recipemate.domain.review.dto.ReviewResponse;
 import com.recipemate.domain.review.dto.UpdateReviewRequest;
@@ -53,6 +54,9 @@ class ReviewServiceTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private NotificationService notificationService;
 
     private User reviewer;
     private User host;

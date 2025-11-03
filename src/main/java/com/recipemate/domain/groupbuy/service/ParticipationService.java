@@ -6,9 +6,12 @@ import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.Participation;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
+import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
+import com.recipemate.global.common.EntityType;
 import com.recipemate.global.common.GroupBuyStatus;
+import com.recipemate.global.common.NotificationType;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ public class ParticipationService {
     private final ParticipationRepository participationRepository;
     private final GroupBuyRepository groupBuyRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     @Retryable(
@@ -85,6 +89,15 @@ public class ParticipationService {
         if (groupBuy.isTargetReached()) {
             groupBuy.close();
         }
+
+        // 11. 주최자에게 참여 알림 전송
+        notificationService.createNotification(
+            groupBuy.getHost().getId(),
+            NotificationType.JOIN_GROUP_BUY,
+            userId,
+            groupBuyId,
+            EntityType.GROUP_BUY
+        );
     }
 
     @Transactional
@@ -119,6 +132,15 @@ public class ParticipationService {
         if (groupBuy.getStatus() == GroupBuyStatus.CLOSED && !groupBuy.isTargetReached()) {
             groupBuy.reopen();
         }
+
+        // 7. 주최자에게 취소 알림 전송
+        notificationService.createNotification(
+            groupBuy.getHost().getId(),
+            NotificationType.CANCEL_PARTICIPATION,
+            userId,
+            groupBuyId,
+            EntityType.GROUP_BUY
+        );
     }
 
     public List<ParticipantResponse> getParticipants(Long groupBuyId, Long currentUserId) {

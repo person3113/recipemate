@@ -603,12 +603,12 @@
   - `findByUserIdAndIsReadOrderByCreatedAtDesc(Long userId, Boolean isRead)`
   - `countByUserIdAndIsReadFalse(Long userId)`
 
-#### [ ] Task 3-4-2: 알림 생성 로직
-- [ ] NotificationService 구현
+#### [x] Task 3-4-2: 알림 생성 로직
+- [x] NotificationService 구현
   - `createNotification(Long userId, NotificationType type, Long actorId, Long relatedEntityId, EntityType entityType)`
   - 알림 템플릿 생성 ("OOO님이 참여했습니다")
   - 본인 행동은 알림 생성 안 함
-- [ ] 각 도메인 서비스에 알림 생성 로직 추가
+- [x] 각 도메인 서비스에 알림 생성 로직 추가
   - 참여 시: JOIN_GROUP_BUY
   - 참여 취소 시: CANCEL_PARTICIPATION
   - 댓글 작성 시: COMMENT_GROUP_BUY, COMMENT_POST

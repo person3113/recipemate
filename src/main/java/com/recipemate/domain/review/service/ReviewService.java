@@ -3,6 +3,7 @@ package com.recipemate.domain.review.service;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
+import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.review.dto.CreateReviewRequest;
 import com.recipemate.domain.review.dto.ReviewResponse;
 import com.recipemate.domain.review.dto.UpdateReviewRequest;
@@ -11,6 +12,8 @@ import com.recipemate.domain.review.repository.ReviewRepository;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.domain.user.service.UserService;
+import com.recipemate.global.common.EntityType;
+import com.recipemate.global.common.NotificationType;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,7 @@ public class ReviewService {
     private final GroupBuyRepository groupBuyRepository;
     private final ParticipationRepository participationRepository;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     /**
      * 후기 작성
@@ -72,6 +76,15 @@ public class ReviewService {
         // 7. 매너온도 반영
         double delta = savedReview.calculateMannerTemperatureDelta();
         userService.updateMannerTemperature(groupBuy.getHost().getId(), delta);
+
+        // 8. 공구 주최자에게 후기 알림 전송
+        notificationService.createNotification(
+            groupBuy.getHost().getId(),
+            NotificationType.REVIEW_GROUP_BUY,
+            userId,
+            savedReview.getId(),
+            EntityType.REVIEW
+        );
 
         return ReviewResponse.from(savedReview);
     }

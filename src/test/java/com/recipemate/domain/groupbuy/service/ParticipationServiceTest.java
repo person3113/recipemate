@@ -5,6 +5,7 @@ import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.Participation;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
+import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.DeliveryMethod;
@@ -44,6 +45,9 @@ class ParticipationServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private ParticipationService participationService;

@@ -7,6 +7,7 @@ import com.recipemate.domain.comment.entity.Comment;
 import com.recipemate.domain.comment.repository.CommentRepository;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
+import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.post.entity.Post;
 import com.recipemate.domain.post.repository.PostRepository;
 import com.recipemate.domain.user.entity.User;
@@ -47,6 +48,9 @@ class CommentServiceTest {
 
     @Mock
     private PostRepository postRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private CommentService commentService;

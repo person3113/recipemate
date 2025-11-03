@@ -559,25 +559,34 @@
   - `findByGroupBuyIdOrderByCreatedAtDesc(Long groupBuyId)`
   - `existsByReviewerIdAndGroupBuyId(Long reviewerId, Long groupBuyId)`
 
-#### [ ] Task 3-3-2: 후기 작성 및 매너온도 반영
-- [ ] 테스트 작성
+#### [x] Task 3-3-2: 후기 작성 및 매너온도 반영
+- [x] 테스트 작성 (ReviewServiceTest.java - 26개 테스트)
   - 후기 작성 시 주최자 매너온도 변동
     - 5점: +0.5, 4점: +0.3, 3점: 0, 2점: -1.0, 1점: -2.0
   - 중복 후기 방지
   - 참여 여부 확인
-- [ ] ReviewService 구현
+  - 실패 케이스: 사용자 없음, 공구 없음, 참여하지 않음, 중복 후기, CLOSED 상태 아님
+- [x] ReviewService 구현
   - `createReview(Long userId, Long purchaseId, CreateReviewRequest dto)`
+  - `updateReview(Long userId, Long reviewId, UpdateReviewRequest dto)`
+  - `deleteReview(Long userId, Long reviewId)`
+  - `getReviewsByGroupBuy(Long purchaseId)`
   - 참여 여부 확인 (Participation 조회)
   - 공구 상태 확인 (CLOSED)
   - 매너온도 업데이트 로직
-- [ ] GroupBuyController 구현
-  - `POST /group-purchases/{purchaseId}/reviews` (후기 작성 폼 제출)
-  - `POST /group-purchases/{purchaseId}/reviews/{reviewId}/edit` (후기 수정)
-  - `POST /group-purchases/{purchaseId}/reviews/{reviewId}/delete` (후기 삭제)
+- [x] DTOs 작성
+  - CreateReviewRequest.java (rating, content)
+  - UpdateReviewRequest.java (rating, content)
+  - ReviewResponse.java (후기 정보 + 작성자 + 공구 + 타임스탬프)
+- [x] UserService 확장
+  - `updateMannerTemperature(Long userId, Double delta)` 메서드 추가
 
-#### [ ] Task 3-3-3: 후기 목록 조회
-- [ ] GroupBuyController 구현
-  - `GET /group-purchases/{purchaseId}/reviews` (후기 목록 페이지)
+#### [x] Task 3-3-3: 후기 목록 조회
+- [x] ReviewController 구현
+  - **Form Endpoints**: `POST /group-purchases/{purchaseId}/reviews` (후기 작성 폼 제출)
+    - `POST /group-purchases/{purchaseId}/reviews/{reviewId}/edit` (후기 수정)
+    - `POST /group-purchases/{purchaseId}/reviews/{reviewId}/delete` (후기 삭제)
+  - ReviewService의 `getReviewsByGroupBuy()` 메서드 사용
 
 ---
 

@@ -153,4 +153,16 @@ public class UserService {
             return GroupBuyResponse.from(groupBuy, imageUrls);
         });
     }
+
+    /**
+     * 매너온도 업데이트
+     * - 후기 작성 시 호출됨
+     */
+    @Transactional
+    public void updateMannerTemperature(Long userId, double delta) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        user.updateMannerTemperature(delta);
+    }
 }

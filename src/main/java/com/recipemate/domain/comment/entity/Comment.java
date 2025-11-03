@@ -16,7 +16,11 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "comments", indexes = {
         @Index(name = "idx_comment_group_buy_id", columnList = "group_buy_id"),
         @Index(name = "idx_comment_post_id", columnList = "post_id"),
-        @Index(name = "idx_comment_parent_id", columnList = "parent_id")
+        @Index(name = "idx_comment_parent_id", columnList = "parent_id"),
+        @Index(name = "idx_comment_author_id", columnList = "author_id"),
+        @Index(name = "idx_comment_group_buy_deleted", columnList = "group_buy_id, deleted_at, created_at"),
+        @Index(name = "idx_comment_post_deleted", columnList = "post_id, deleted_at, created_at"),
+        @Index(name = "idx_comment_parent_deleted", columnList = "parent_id, deleted_at, created_at")
 })
 @Getter
 @SuperBuilder

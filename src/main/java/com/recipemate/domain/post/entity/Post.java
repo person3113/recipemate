@@ -14,7 +14,9 @@ import lombok.experimental.SuperBuilder;
 @Entity
 @Table(name = "posts", indexes = {
         @Index(name = "idx_post_category_created_at", columnList = "category, created_at"),
-        @Index(name = "idx_post_author_id", columnList = "author_id")
+        @Index(name = "idx_post_author_id", columnList = "author_id"),
+        @Index(name = "idx_post_deleted_at_created_at", columnList = "deleted_at, created_at"),
+        @Index(name = "idx_post_category_deleted_at", columnList = "category, deleted_at, created_at")
 })
 @Getter
 @SuperBuilder

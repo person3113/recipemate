@@ -23,7 +23,10 @@ import java.util.List;
         @Index(name = "idx_groupbuy_status_deadline", columnList = "status, deadline"),
         @Index(name = "idx_groupbuy_recipe_api_id", columnList = "recipe_api_id"),
         @Index(name = "idx_groupbuy_category", columnList = "category"),
-        @Index(name = "idx_groupbuy_host_id", columnList = "host_id")
+        @Index(name = "idx_groupbuy_host_id", columnList = "host_id"),
+        @Index(name = "idx_groupbuy_deleted_created", columnList = "deleted_at, created_at"),
+        @Index(name = "idx_groupbuy_status_deleted", columnList = "status, deleted_at, created_at"),
+        @Index(name = "idx_groupbuy_category_deleted", columnList = "category, deleted_at, created_at")
 })
 @Getter
 @SuperBuilder

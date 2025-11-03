@@ -643,10 +643,13 @@
 
 ### 4.2. 성능 최적화
 
-#### [ ] Task 4-2-1: 인덱스 최적화
-- [ ] 실제 쿼리 프로파일링
-- [ ] Slow Query 분석
-- [ ] 복합 인덱스 추가/조정
+#### [x] Task 4-2-1: 인덱스 최적화
+- [x] 실제 쿼리 프로파일링
+- [x] Slow Query 분석
+- [x] 복합 인덱스 추가/조정
+  - **Post 엔티티**: `deletedAt+createdAt`, `category+deletedAt+createdAt` 추가
+  - **Comment 엔티티**: `authorId`, `groupBuyId+deletedAt+createdAt`, `postId+deletedAt+createdAt`, `parentId+deletedAt+createdAt` 추가
+  - **GroupBuy 엔티티**: `deletedAt+createdAt`, `status+deletedAt+createdAt`, `category+deletedAt+createdAt` 추가
 
 #### [ ] Task 4-2-2: N+1 문제 해결
 - [ ] Fetch Join 적용

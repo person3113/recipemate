@@ -13,7 +13,6 @@ import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.common.UserRole;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
-import jakarta.persistence.OptimisticLockException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

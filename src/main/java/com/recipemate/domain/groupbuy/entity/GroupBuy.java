@@ -27,7 +27,7 @@ import java.util.List;
 })
 @Getter
 @SuperBuilder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED, force = true)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class GroupBuy extends BaseEntity {
 
@@ -37,7 +37,7 @@ public class GroupBuy extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "host_id", nullable = false, foreignKey = @ForeignKey(name = "fk_groupbuy_host"))
-    private User host;
+    private final User host;
 
     @Version
     private Long version;
@@ -85,13 +85,13 @@ public class GroupBuy extends BaseEntity {
     private GroupBuyStatus status = GroupBuyStatus.RECRUITING;
 
     @Column(length = 100)
-    private String recipeApiId;
+    private final String recipeApiId;
 
     @Column(length = 200)
-    private String recipeName;
+    private final String recipeName;
 
     @Column(length = 500)
-    private String recipeImageUrl;
+    private final String recipeImageUrl;
 
     @Builder.Default
     @OneToMany(mappedBy = "groupBuy", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -221,8 +221,11 @@ public class GroupBuy extends BaseEntity {
         }
     }
 
-    public void updateStatus(GroupBuyStatus status) {
-        this.status = status;
+    public void updateStatus(GroupBuyStatus newStatus) {
+        if (newStatus == null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        this.status = newStatus;
     }
 
     public boolean isHost(User user) {

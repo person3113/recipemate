@@ -1,16 +1,23 @@
 package com.recipemate.global.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final UserDetailsService userDetailsService;
+    private final PersistentTokenRepository persistentTokenRepository;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -47,6 +54,14 @@ public class SecurityConfig {
                         
                         // All other requests require authentication
                         .anyRequest().authenticated()
+                )
+                .rememberMe(remember -> remember
+                        .key("recipemate-remember-me-key")
+                        .tokenRepository(persistentTokenRepository)
+                        .userDetailsService(userDetailsService)
+                        .tokenValiditySeconds(7 * 24 * 60 * 60) // 7일
+                        .rememberMeParameter("rememberMe")
+                        .rememberMeCookieName("recipemate-remember-me")
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 

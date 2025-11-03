@@ -4,6 +4,82 @@
 
 ---
 
+## [2025-11-03] GroupBuy 엔티티 불변성 강화 및 Remember-Me 기능 구현
+
+### 처리 항목
+
+#### 1. ✅ GroupBuy 엔티티 불변성 강화
+- **변경 파일**:
+  - `GroupBuy.java`:
+    - `host` 필드 `final`로 선언 (공동구매 개설자 불변)
+    - `recipeApiId`, `recipeName`, `recipeImageUrl` 필드 `final`로 선언 (레시피 연동 정보 불변)
+    - `@NoArgsConstructor(force = true)` 적용 (JPA 기본 생성자와 final 필드 호환)
+    - `updateStatus()` 메서드에 null 검증 추가
+- **효과**: 
+  - 도메인 객체 불변성 보장
+  - 의도하지 않은 상태 변경 방지
+  - 레시피 기반 공동구매의 레시피 정보 무결성 보장
+
+#### 2. ✅ Remember-Me 기능 구현
+- **신규 파일**:
+  - `PersistentToken.java`: JPA 엔티티로 remember-me 토큰 영속화
+  - `PersistentTokenJpaRepository.java`: JPA 레포지토리 인터페이스
+  - `JpaPersistentTokenRepository.java`: Spring Security `PersistentTokenRepository` 어댑터 구현
+  
+- **변경 파일**:
+  - `SecurityConfig.java`:
+    - Remember-Me 설정 추가 (7일 토큰 유효 기간)
+    - 커스텀 토큰 레포지토리 연동
+    - Remember-me 쿠키명: "recipemate-remember-me"
+    - `UserDetailsService`와 `PersistentTokenRepository` 의존성 주입
+  - `LoginRequest.java`:
+    - `rememberMe` Boolean 필드 추가 (기본값: false)
+    - `@Builder` 어노테이션 추가로 생성 편의성 향상
+
+- **효과**:
+  - 사용자가 "로그인 상태 유지" 선택 시 7일간 자동 로그인
+  - 토큰 기반 인증으로 세션 만료 후에도 인증 유지
+  - 데이터베이스 영속화로 서버 재시작 시에도 토큰 보존
+
+### 테스트 결과
+- ✅ 전체 컴파일 성공 (BUILD SUCCESSFUL)
+- ✅ QueryDSL Q-types 자동 생성 확인
+- ✅ GroupBuy 관련 모든 테스트 통과
+
+### 효과
+- ✅ 도메인 엔티티 불변성 강화로 데이터 무결성 보장
+- ✅ Remember-Me 기능으로 사용자 편의성 향상
+- ✅ 프로덕션 배포 준비 완료
+
+### 소요 시간
+약 1.5시간
+
+---
+
+## [2025-11-03] ParticipationService 낙관적 락 재시도 로직 개선
+
+### 처리 항목
+
+#### ✅ 재시도 로직 강화 및 로깅 추가
+- **변경 파일**:
+  - `ErrorCode.java`: `CONCURRENCY_FAILURE` 에러 코드 추가
+  - `ParticipationService.java`:
+    - `@Slf4j` 추가
+    - Exponential backoff 적용 (`@Backoff(delay = 100, multiplier = 2)`)
+    - `@Recover` 메서드 2개 추가 (participate, cancelParticipation)
+    - 재시도 실패 시 로깅 및 CONCURRENCY_FAILURE 예외 발생
+
+### 효과
+- ✅ 동시성 충돌 시 재시도 간격: 100ms → 200ms → 400ms (지수 백오프)
+- ✅ 재시도 실패 시 명확한 에러 메시지 제공
+- ✅ 재시도 실패 로그로 모니터링 가능
+- ✅ 모든 기존 테스트 통과 (ParticipationServiceTest 12/12)
+
+### 소요 시간
+약 1시간
+
+---
+
 ## [2025-11-01] 테스트 리팩토링 및 Security 통합 테스트 추가
 
 ### 처리 항목
@@ -310,6 +386,8 @@ POST /group-purchases/{id}/participate/cancel
 
 | 날짜 | 작업 항목 | 우선순위 | 소요 시간 |
 |------|----------|----------|-----------|
+| 2025-11-03 | GroupBuy 엔티티 불변성 강화 및 Remember-Me 기능 구현 | 🟢 LOW | 1.5시간 |
+| 2025-11-03 | ParticipationService 낙관적 락 재시도 로직 개선 | 🟢 LOW | 1시간 |
 | 2025-11-01 | FoodSafetyClientTest 리팩토링 + SecurityConfigIntegrationTest 추가 | 🔴 HIGH | 1.5시간 |
 | 2025-11-01 | Controller 테스트 슬라이스 테스트 전환 | 🟡 MEDIUM | 1.5시간 |
 | 2025-10-31 | GroupBuyController Form-Based 리팩터링 | 🔴 HIGH | 1시간 |
@@ -319,7 +397,7 @@ POST /group-purchases/{id}/participate/cancel
 | 2025-10-31 | GroupBuy 비즈니스 로직 예외 처리 표준화 | 🟡 MEDIUM | 20분 |
 | 2025-10-31 | UserService DTO 변환 로직 중복 제거 | 🟡 MEDIUM | 20분 |
 
-**총 소요 시간**: 약 8.5시간
+**총 소요 시간**: 약 11시간
 
 ---
 

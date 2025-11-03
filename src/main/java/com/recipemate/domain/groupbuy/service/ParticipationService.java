@@ -15,8 +15,10 @@ import com.recipemate.global.common.NotificationType;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -40,7 +43,7 @@ public class ParticipationService {
     @Retryable(
         retryFor = ObjectOptimisticLockingFailureException.class,
         maxAttempts = 3,
-        backoff = @Backoff(delay = 100)
+        backoff = @Backoff(delay = 100, multiplier = 2)
     )
     public void participate(Long userId, Long groupBuyId, ParticipateRequest request) {
         // 1. 사용자 조회
@@ -104,7 +107,7 @@ public class ParticipationService {
     @Retryable(
         retryFor = ObjectOptimisticLockingFailureException.class,
         maxAttempts = 3,
-        backoff = @Backoff(delay = 100)
+        backoff = @Backoff(delay = 100, multiplier = 2)
     )
     public void cancelParticipation(Long userId, Long groupBuyId) {
         // 1. 참여 기록 조회
@@ -141,6 +144,18 @@ public class ParticipationService {
             groupBuyId,
             EntityType.GROUP_BUY
         );
+    }
+
+    @Recover
+    public void participate(ObjectOptimisticLockingFailureException e, Long userId, Long groupBuyId, ParticipateRequest request) {
+        log.error("공구 참여 재시도 실패 - userId: {}, groupBuyId: {}, 최대 재시도 횟수 초과", userId, groupBuyId, e);
+        throw new CustomException(ErrorCode.CONCURRENCY_FAILURE);
+    }
+
+    @Recover
+    public void cancelParticipation(ObjectOptimisticLockingFailureException e, Long userId, Long groupBuyId) {
+        log.error("공구 참여 취소 재시도 실패 - userId: {}, groupBuyId: {}, 최대 재시도 횟수 초과", userId, groupBuyId, e);
+        throw new CustomException(ErrorCode.CONCURRENCY_FAILURE);
     }
 
     public List<ParticipantResponse> getParticipants(Long groupBuyId, Long currentUserId) {

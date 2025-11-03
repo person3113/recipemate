@@ -221,6 +221,10 @@ public class GroupBuy extends BaseEntity {
         }
     }
 
+    public void updateStatus(GroupBuyStatus status) {
+        this.status = status;
+    }
+
     public boolean isHost(User user) {
         return this.host.equals(user);
     }

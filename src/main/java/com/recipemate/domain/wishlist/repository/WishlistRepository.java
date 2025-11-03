@@ -14,4 +14,6 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
     List<Wishlist> findByUserIdOrderByWishedAtDesc(Long userId, Pageable pageable);
 
     boolean existsByUserIdAndGroupBuyId(Long userId, Long groupBuyId);
+
+    List<Wishlist> findByGroupBuyId(Long groupBuyId);
 }

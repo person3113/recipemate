@@ -61,4 +61,14 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSp
 
     @Query("SELECT g FROM GroupBuy g LEFT JOIN FETCH g.host WHERE g.id = :id")
     Optional<GroupBuy> findByIdWithHostAndImages(@Param("id") Long id);
+
+    // 배치 작업용 쿼리 메서드
+    @Query("SELECT g FROM GroupBuy g WHERE g.status IN :statuses AND g.deadline < :now")
+    List<GroupBuy> findByStatusInAndDeadlineBefore(@Param("statuses") List<GroupBuyStatus> statuses,
+                                                    @Param("now") LocalDateTime now);
+
+    @Query("SELECT g FROM GroupBuy g WHERE g.status = :status AND g.deadline BETWEEN :start AND :end")
+    List<GroupBuy> findByStatusAndDeadlineBetween(@Param("status") GroupBuyStatus status,
+                                                   @Param("start") LocalDateTime start,
+                                                   @Param("end") LocalDateTime end);
 }

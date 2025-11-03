@@ -38,4 +38,15 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      * @param userId 사용자 ID
      */
     void deleteByUserId(Long userId);
+
+    /**
+     * 특정 사용자, 타입, 관련 엔티티로 알림 존재 여부 확인
+     * @param userId 사용자 ID
+     * @param type 알림 타입
+     * @param relatedEntityId 관련 엔티티 ID
+     * @return 알림 존재 여부
+     */
+    boolean existsByUserIdAndTypeAndRelatedEntityId(Long userId, 
+                                                    com.recipemate.global.common.NotificationType type, 
+                                                    Long relatedEntityId);
 }

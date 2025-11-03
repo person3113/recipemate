@@ -4,5 +4,6 @@ public enum EntityType {
     GROUP_BUY,
     POST,
     COMMENT,
-    REVIEW
+    REVIEW,
+    RECIPE
 }

@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>검색 결과</title>
+</head>
+<body>
+    <h1>검색 결과</h1>
+    <p th:text="'검색어: ' + ${query}">검색어</p>
+    <p th:text="'전체 결과: ' + ${totalResults} + '개'">전체 결과</p>
+</body>
+</html>

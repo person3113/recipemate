@@ -727,16 +727,25 @@
 
 ### 4.5. 확장 기능 (4순위 - 선택적, 시간 여유 시)
 
-#### [ ] Task 4-5-1: 통합 검색 기능 구현
-- [ ] 테스트 작성
+#### [x] Task 4-5-1: 통합 검색 기능 구현
+- [x] 테스트 작성
     - 공동구매, 커뮤니티 게시글, 레시피 동시 검색
     - 검색 결과 타입별 그룹화
-- [ ] SearchService 구현
+    - SearchServiceTest.java (5개 테스트 - 모든 도메인 검색, 개별 도메인 검색, 빈 결과, 페이징)
+    - SearchControllerTest.java (10개 테스트 - 통합 검색 페이지, htmx 프래그먼트, 유효성 검증)
+- [x] SearchService 구현
     - 각 도메인 Repository에서 키워드 검색
     - 검색 결과를 통합 DTO로 조합
-- [ ] SearchController 구현
+    - `unifiedSearch(String query, Pageable pageable)` 메서드
+- [x] SearchController 구현
     - `GET /search?query={keyword}` (통합 검색 결과 페이지)
     - `GET /search/fragments?query={keyword}&type={type}` (htmx용 검색 결과 조각)
+- [x] DTOs 작성
+    - SearchResultResponse.java (id, title, content, entityType, createdAt)
+    - UnifiedSearchResponse.java (query, groupBuys, posts, recipes, totalResults)
+- [x] Thymeleaf 템플릿
+    - templates/search/results.html (통합 검색 결과 페이지)
+    - templates/search/fragments.html (groupBuyResults, postResults, recipeResults 프래그먼트)
 
 #### [ ] Task 4-5-2: 뱃지 시스템
 - [ ] Badge 엔티티 작성

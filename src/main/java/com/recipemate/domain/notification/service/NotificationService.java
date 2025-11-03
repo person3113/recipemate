@@ -167,6 +167,7 @@ public class NotificationService {
             case POST -> "/posts/" + entityId;
             case COMMENT -> "/comments/" + entityId;
             case REVIEW -> "/reviews/" + entityId;
+            case RECIPE -> "/recipes/" + entityId;
         };
     }
 }

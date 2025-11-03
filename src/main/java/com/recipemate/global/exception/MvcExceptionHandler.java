@@ -80,6 +80,26 @@ public class MvcExceptionHandler {
     }
 
     /**
+     * IllegalArgumentException 처리
+     * 잘못된 요청 파라미터
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ModelAndView handleIllegalArgumentException(IllegalArgumentException e) {
+        return createErrorView(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    /**
+     * MissingServletRequestParameterException 처리
+     * 필수 요청 파라미터 누락
+     */
+    @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
+    public ModelAndView handleMissingServletRequestParameterException(
+            org.springframework.web.bind.MissingServletRequestParameterException e
+    ) {
+        return createErrorView(HttpStatus.BAD_REQUEST, "필수 파라미터가 누락되었습니다: " + e.getParameterName());
+    }
+
+    /**
      * 일반 예외 처리
      * 예상하지 못한 서버 오류
      */

@@ -592,14 +592,14 @@
 
 ### 3.4. 알림 시스템 (Notification Domain)
 
-#### [ ] Task 3-4-1: Notification 엔티티 작성
-- [ ] 테스트 작성
+#### [x] Task 3-4-1: Notification 엔티티 작성
+- [x] 테스트 작성
   - 알림 생성 시 actor, relatedEntityId 저장
   - 읽지 않은 알림만 조회
-- [ ] Notification 엔티티 구현
+- [x] Notification 엔티티 구현
   - 필드: id, user(FK), actor(FK), content, url, isRead, type, relatedEntityId, relatedEntityType
   - 인덱스: userId+isRead+createdAt, userId+createdAt
-- [ ] NotificationRepository 작성
+- [x] NotificationRepository 작성
   - `findByUserIdAndIsReadOrderByCreatedAtDesc(Long userId, Boolean isRead)`
   - `countByUserIdAndIsReadFalse(Long userId)`
 

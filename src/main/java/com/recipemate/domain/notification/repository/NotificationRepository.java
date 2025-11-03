@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -49,4 +50,11 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     boolean existsByUserIdAndTypeAndRelatedEntityId(Long userId, 
                                                     com.recipemate.global.common.NotificationType type, 
                                                     Long relatedEntityId);
+
+    /**
+     * 읽은 알림 중 특정 날짜 이전에 생성된 알림 목록 조회
+     * @param dateTime 기준 날짜
+     * @return 삭제 대상 알림 목록
+     */
+    List<Notification> findByIsReadTrueAndCreatedAtBefore(LocalDateTime dateTime);
 }

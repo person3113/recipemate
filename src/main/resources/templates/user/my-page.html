@@ -24,6 +24,7 @@
         
         <h3>프로필 수정</h3>
         <form th:action="@{/users/me}" method="post">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
             <label>닉네임: <input type="text" name="nickname" th:value="*{nickname}" /></label><br/>
             <label>전화번호: <input type="text" name="phoneNumber" th:value="*{phoneNumber}" /></label><br/>
             <label>프로필 이미지 URL: <input type="text" name="profileImageUrl" th:value="*{profileImageUrl}" /></label><br/>
@@ -32,6 +33,7 @@
         
         <h3>비밀번호 변경</h3>
         <form th:action="@{/users/me/password}" method="post">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
             <label>현재 비밀번호: <input type="password" name="currentPassword" /></label><br/>
             <label>새 비밀번호: <input type="password" name="newPassword" /></label><br/>
             <button type="submit">변경</button>

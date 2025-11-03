@@ -29,6 +29,7 @@
             <a th:href="@{/group-purchases/{id}(id=${wishlist.groupBuyId})}">상세보기</a>
             
             <form th:action="@{/group-purchases/{id}/bookmarks/cancel(id=${wishlist.groupBuyId})}" method="post" style="display:inline;">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                 <button type="submit">찜 취소</button>
             </form>
         </div>

@@ -25,6 +25,7 @@
                             내 공구
                         </a>
                         <form th:action="@{/api/auth/logout}" method="post" class="inline">
+                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <button type="submit" class="text-gray-700 hover:text-red-600">
                                 로그아웃
                             </button>

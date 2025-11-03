@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.logout;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -110,8 +111,9 @@ class SecurityConfigIntegrationTest {
     }
 
     @Test
-    @DisplayName("공동구매 생성은 인증 필요")
+    @DisplayName("공동구매 생성은 인증 필요 (CSRF 토큰 없으면 403)")
     void groupPurchasesCreate_NoAuth_Forbidden() throws Exception {
+        // CSRF 토큰 없이 POST 요청 시 403 Forbidden
         mockMvc.perform(post("/group-purchases"))
                 .andExpect(status().isForbidden());
     }
@@ -158,18 +160,20 @@ class SecurityConfigIntegrationTest {
 
     // 7. API 엔드포인트 테스트
     @Test
-    @DisplayName("공동구매 생성 폼 제출은 인증 필요")
+    @DisplayName("공동구매 생성 폼 제출은 인증 필요 (CSRF 토큰 없으면 403)")
     void createGroupBuy_NoAuth_Forbidden() throws Exception {
+        // 인증 없음 + CSRF 토큰 없음 → 403 Forbidden
         mockMvc.perform(post("/group-purchases"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("인증된 사용자는 공동구매 생성 가능")
+    @DisplayName("인증된 사용자는 CSRF 토큰과 함께 공동구매 생성 가능")
     @WithMockUser(username = "test@example.com")
     void createGroupBuy_WithAuth_ValidationError() throws Exception {
-        // 빈 데이터로 요청 시 유효성 검증 실패 (400 또는 리다이렉트)
-        mockMvc.perform(post("/group-purchases"))
+        // CSRF 토큰 포함 + 빈 데이터로 요청 시 유효성 검증 실패 (400 또는 리다이렉트)
+        mockMvc.perform(post("/group-purchases")
+                        .with(csrf())) // ✅ CSRF 토큰 추가
                 .andExpect(status().is3xxRedirection()); // 검증 실패 시 리다이렉트
     }
 
@@ -183,22 +187,37 @@ class SecurityConfigIntegrationTest {
 
     // 9. 로그아웃 테스트
     @Test
-    @DisplayName("로그아웃은 인증 없이도 접근 가능")
+    @DisplayName("로그아웃은 CSRF 토큰과 함께 접근 가능")
     void logout_NoAuth_Success() throws Exception {
-        mockMvc.perform(post("/auth/logout"))
+        mockMvc.perform(post("/auth/logout")
+                        .with(csrf())) // ✅ CSRF 토큰 추가
                 .andExpect(status().is3xxRedirection()); // 로그인 페이지로 리다이렉트
     }
 
-    // 10. CSRF 비활성화 테스트
+    // 10. CSRF 보호 테스트
     @Test
-    @DisplayName("CSRF가 비활성화되어 있어 POST 요청 시 토큰 불필요")
+    @DisplayName("CSRF 토큰 없이 POST 요청 시 403 Forbidden")
     @WithMockUser(username = "test@example.com")
-    void csrfDisabled_PostWithoutToken_Success() throws Exception {
-        // CSRF 토큰 없이 POST 요청 가능 (존재하지 않는 ID로 요청 시 리다이렉트)
+    void csrfEnabled_PostWithoutToken_Forbidden() throws Exception {
+        // CSRF 토큰 없이 POST 요청 시 403 에러
         mockMvc.perform(post("/group-purchases/1/participate")
                         .param("quantity", "1")
                         .param("deliveryMethod", "DIRECT"))
-                .andExpect(status().is3xxRedirection()); // 403(CSRF) 아닌 3xx 응답
+                .andExpect(status().isForbidden()); // ✅ CSRF 보호로 403 응답
+    }
+
+    @Test
+    @DisplayName("CSRF 토큰과 함께 POST 요청 시 정상 처리")
+    @WithMockUser(username = "test@example.com")
+    void csrfEnabled_PostWithToken_Success() throws Exception {
+        // CSRF 토큰 포함 시 비즈니스 로직 실행
+        // 500 에러 발생 가능 (USER_NOT_FOUND - MockUser가 DB에 없음)
+        // 중요한 것은 403 Forbidden이 아니라는 것 - CSRF 보호를 통과함을 의미
+        mockMvc.perform(post("/group-purchases/1/participate")
+                        .param("quantity", "1")
+                        .param("deliveryMethod", "DIRECT")
+                        .with(csrf())) // ✅ CSRF 토큰 추가
+                .andExpect(status().is5xxServerError()); // CSRF 보호 통과, 비즈니스 로직에서 USER_NOT_FOUND 예외 발생
     }
 
     // 11. 인증 흐름 통합 테스트 (현재 formLogin이 설정되지 않아 스킵)

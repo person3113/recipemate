@@ -17,6 +17,7 @@
     
     <!-- Post Form -->
     <form method="post" th:action="${post != null ? '/community-posts/' + post.id : '/community-posts'}">
+        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
         <div>
             <label for="title">제목</label>
             <input type="text" id="title" name="title" th:value="${post?.title}" required>

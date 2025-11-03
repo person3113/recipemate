@@ -27,7 +27,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                // CSRF 보호 활성화 (세션 기반 폼 로그인 보호)
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/h2-console/**") // H2 콘솔만 제외
+                )
                 .authorizeHttpRequests(auth -> auth
                         // Static resources
                         .requestMatchers(

@@ -27,6 +27,7 @@
         <!-- Actions -->
         <a th:href="@{/community-posts/{id}/edit(id=${post.id})}">수정</a>
         <form method="post" th:action="@{/community-posts/{id}/delete(id=${post.id})}" style="display: inline;">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
             <button type="submit">삭제</button>
         </form>
     </div>

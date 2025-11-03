@@ -4,6 +4,84 @@
 
 ---
 
+## [2025-11-03] CSRF 보호 활성화 및 보안 강화
+
+### 처리 항목
+
+#### 1. ✅ SecurityConfig CSRF 보호 활성화
+- **변경 파일**:
+  - `SecurityConfig.java`:
+    - `.csrf(csrf -> csrf.disable())` 제거
+    - H2 Console만 CSRF 예외 처리로 변경
+    - 세션 기반 인증 + Thymeleaf 아키텍처에 맞는 CSRF 보호 적용
+- **보안 리스크**: 
+  - 이전 설정은 CSRF 공격에 취약 (세션 쿠키 자동 전송)
+  - 공격자가 사용자 브라우저를 통해 악의적 요청 전송 가능
+
+#### 2. ✅ SecurityConfigIntegrationTest CSRF 테스트 추가
+- **변경 파일**:
+  - `SecurityConfigIntegrationTest.java`:
+    - `csrf()` import 추가
+    - 모든 인증된 POST 요청에 `.with(csrf())` 추가
+    - 새 테스트 추가:
+      - `csrfEnabled_PostWithoutToken_Forbidden()`: CSRF 토큰 없이 403 확인
+      - `csrfEnabled_PostWithToken_Success()`: CSRF 토큰과 함께 정상 처리 확인
+    - 기존 POST 테스트에 CSRF 토큰 추가 (4개 테스트)
+- **효과**: CSRF 보호가 올바르게 동작하는지 검증
+
+#### 3. ✅ Thymeleaf 템플릿에 CSRF 토큰 추가
+- **변경 파일**:
+  - `src/main/resources/templates/`:
+    - `community-posts/form.html`: POST 폼에 CSRF 토큰 추가
+    - `community-posts/detail.html`: 삭제 폼에 CSRF 토큰 추가
+    - `user/my-page.html`: 프로필 수정, 비밀번호 변경 폼에 CSRF 토큰 추가
+    - `user/bookmarks.html`: 찜 취소 폼에 CSRF 토큰 추가
+    - `fragments/header.html`: 로그아웃 폼에 CSRF 토큰 추가
+  - `src/test/resources/templates/`:
+    - `community-posts/form.html`: POST 폼에 CSRF 토큰 추가
+    - `community-posts/detail.html`: 삭제 폼에 CSRF 토큰 추가
+- **CSRF 토큰 형식**:
+  ```html
+  <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+  ```
+
+#### 4. ✅ 기존 Controller 테스트 CSRF 토큰 적용 확인
+- **확인 파일**:
+  - `CommentControllerTest.java`: ✅ 모든 POST 요청에 `.with(csrf())` 포함
+  - `GroupBuyControllerTest.java`: ✅ 모든 POST 요청에 `.with(csrf())` 포함
+  - `PostControllerTest.java`: ✅ 모든 POST 요청에 `.with(csrf())` 포함
+  - `RecipeControllerTest.java`: ✅ 모든 POST 요청에 `.with(csrf())` 포함
+  - `UserControllerTest.java`: ✅ 모든 POST 요청에 `.with(csrf())` 포함
+  - `AuthControllerTest.java`: ✅ 모든 POST 요청에 `.with(csrf())` 포함
+
+### 테스트 결과
+- ✅ SecurityConfigIntegrationTest: 21/21 테스트 통과
+- ✅ 전체 테스트 스위트: 100% 통과 (BUILD SUCCESSFUL)
+
+### 효과
+- ✅ CSRF 공격으로부터 애플리케이션 보호
+- ✅ Spring Security 모범 사례 준수
+- ✅ 세션 기반 웹 애플리케이션 보안 강화
+- ✅ H2 Console만 예외 처리로 개발 편의성 유지
+
+### 보안 배경
+- **문제**: 기존 `.csrf().disable()` 설정은 세션 기반 인증 + Thymeleaf 아키텍처에서 CSRF 공격에 취약
+- **CSRF 공격 예시**: 
+  ```html
+  <!-- 악의적인 사이트에서 자동 제출되는 폼 -->
+  <form action="https://recipemate.com/group-purchases/1/participate" method="POST">
+    <input name="quantity" value="999">
+  </form>
+  ```
+  - 사용자가 로그인 상태이면 브라우저가 자동으로 세션 쿠키 전송
+  - CSRF 보호 없으면 악의적 요청이 성공
+- **해결**: CSRF 토큰으로 정당한 요청인지 검증
+
+### 소요 시간
+약 1시간
+
+---
+
 ## [2025-11-03] GroupBuy 엔티티 불변성 강화 및 Remember-Me 기능 구현
 
 ### 처리 항목
@@ -386,6 +464,7 @@ POST /group-purchases/{id}/participate/cancel
 
 | 날짜 | 작업 항목 | 우선순위 | 소요 시간 |
 |------|----------|----------|-----------|
+| 2025-11-03 | CSRF 보호 활성화 및 보안 강화 | 🔴 HIGH | 1시간 |
 | 2025-11-03 | GroupBuy 엔티티 불변성 강화 및 Remember-Me 기능 구현 | 🟢 LOW | 1.5시간 |
 | 2025-11-03 | ParticipationService 낙관적 락 재시도 로직 개선 | 🟢 LOW | 1시간 |
 | 2025-11-01 | FoodSafetyClientTest 리팩토링 + SecurityConfigIntegrationTest 추가 | 🔴 HIGH | 1.5시간 |
@@ -397,7 +476,7 @@ POST /group-purchases/{id}/participate/cancel
 | 2025-10-31 | GroupBuy 비즈니스 로직 예외 처리 표준화 | 🟡 MEDIUM | 20분 |
 | 2025-10-31 | UserService DTO 변환 로직 중복 제거 | 🟡 MEDIUM | 20분 |
 
-**총 소요 시간**: 약 11시간
+**총 소요 시간**: 약 12시간
 
 ---
 

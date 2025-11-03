@@ -1,0 +1,16 @@
+spring:
+  cache:
+    type: simple
+  
+  data:
+    redis:
+      # 테스트 환경에서는 Redis 연결 시도하지 않음
+      host: localhost
+      port: 6379
+
+# 캐시 설정 (simple 캐시는 TTL을 지원하지 않으므로 주석)
+# cache:
+#   ttl:
+#     recipes: 3600
+#     popular-group-buys: 300
+#     view-counts: 60

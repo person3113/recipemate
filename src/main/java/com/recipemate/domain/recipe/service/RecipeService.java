@@ -7,10 +7,12 @@ import com.recipemate.domain.recipe.client.FoodSafetyClient;
 import com.recipemate.domain.recipe.client.TheMealDBClient;
 import com.recipemate.domain.recipe.dto.*;
 import com.recipemate.global.common.GroupBuyStatus;
+import com.recipemate.global.config.CacheConfig;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -42,6 +44,7 @@ public class RecipeService {
      * @param keyword 검색어
      * @return 통합된 레시피 목록
      */
+    @Cacheable(value = CacheConfig.RECIPES_CACHE, key = "'search:' + #keyword")
     public RecipeListResponse searchRecipes(String keyword) {
         validateKeyword(keyword);
 
@@ -78,6 +81,7 @@ public class RecipeService {
      * @param apiId API ID (meal-{id} 또는 food-{id} 형식)
      * @return 레시피 상세 정보
      */
+    @Cacheable(value = CacheConfig.RECIPES_CACHE, key = "'detail:' + #apiId")
     public RecipeDetailResponse getRecipeDetail(String apiId) {
         validateApiId(apiId);
 
@@ -121,6 +125,7 @@ public class RecipeService {
      * @param count 조회할 레시피 개수
      * @return 랜덤 레시피 목록
      */
+    @Cacheable(value = CacheConfig.RECIPES_CACHE, key = "'random:' + #count")
     public RecipeListResponse getRandomRecipes(int count) {
         validateRandomCount(count);
 
@@ -142,6 +147,7 @@ public class RecipeService {
      * TheMealDB API의 카테고리 목록 반환
      * @return 카테고리 목록
      */
+    @Cacheable(value = CacheConfig.RECIPES_CACHE, key = "'categories'")
     public List<CategoryResponse> getCategories() {
         return theMealDBClient.getCategories();
     }

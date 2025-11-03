@@ -10,11 +10,15 @@ import com.recipemate.domain.groupbuy.repository.GroupBuyImageRepository;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
+import com.recipemate.global.common.GroupBuyStatus;
+import com.recipemate.global.config.CacheConfig;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import com.recipemate.global.util.ImageUploadUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -295,6 +299,45 @@ public class GroupBuyService {
         
         // 5. 소프트 삭제
         groupBuy.delete();
+    }
+
+    /**
+     * 인기 공구 목록 조회 (참여자 수 기준)
+     * RECRUITING, IMMINENT 상태의 공구만 조회하며, 5분간 캐싱됩니다.
+     * 
+     * @param limit 조회할 공구 개수
+     * @return 인기 공구 목록
+     */
+    @Cacheable(value = CacheConfig.POPULAR_GROUP_BUYS_CACHE, key = "'popular:' + #limit")
+    public List<GroupBuyResponse> getPopularGroupBuys(int limit) {
+        // RECRUITING, IMMINENT 상태의 공구 조회
+        List<GroupBuyStatus> activeStatuses = List.of(GroupBuyStatus.RECRUITING, GroupBuyStatus.IMMINENT);
+        
+        // 참여자 수 기준 내림차순 정렬하여 조회
+        Pageable pageable = PageRequest.of(0, limit);
+        List<GroupBuy> popularGroupBuys = groupBuyRepository.findPopularGroupBuys(activeStatuses, pageable);
+        
+        // N+1 문제 해결: 모든 공구의 이미지를 한 번에 조회
+        List<Long> groupBuyIds = popularGroupBuys.stream()
+                .map(GroupBuy::getId)
+                .toList();
+        
+        List<GroupBuyImage> allImages = groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(groupBuyIds);
+        
+        // GroupBuy ID별로 이미지를 그룹화
+        java.util.Map<Long, List<String>> imageMap = allImages.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                    img -> img.getGroupBuy().getId(),
+                    java.util.stream.Collectors.mapping(GroupBuyImage::getImageUrl, java.util.stream.Collectors.toList())
+                ));
+        
+        // Response DTO로 변환
+        return popularGroupBuys.stream()
+                .map(groupBuy -> {
+                    List<String> imageUrls = imageMap.getOrDefault(groupBuy.getId(), List.of());
+                    return mapToResponse(groupBuy, imageUrls);
+                })
+                .toList();
     }
 
     /**

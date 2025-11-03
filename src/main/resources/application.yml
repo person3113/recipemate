@@ -3,6 +3,10 @@ spring:
     name: RecipeMate
   profiles:
     active: dev
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000  # 1 hour in milliseconds
 
 # 식품안전나라 API 설정
 food:
@@ -21,6 +25,11 @@ spring:
     url: jdbc:h2:mem:testdb
     username: sa
     password:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3000
   h2:
     console:
       enabled: true
@@ -52,6 +61,12 @@ spring:
     url: jdbc:postgresql://localhost:5432/recipemate
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000
   jpa:
     hibernate:
       ddl-auto: validate

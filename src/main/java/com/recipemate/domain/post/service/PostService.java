@@ -8,9 +8,13 @@ import com.recipemate.domain.post.repository.PostRepository;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.PostCategory;
+import com.recipemate.global.config.CacheConfig;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,12 +23,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
 
     @Transactional
+    @CacheEvict(value = CacheConfig.VIEW_COUNTS_CACHE, allEntries = true)
     public PostResponse createPost(Long userId, CreatePostRequest request) {
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -38,6 +44,7 @@ public class PostService {
                 .build();
 
         Post savedPost = postRepository.save(post);
+        log.debug("Post created and cache evicted");
         return PostResponse.from(savedPost);
     }
 
@@ -50,11 +57,14 @@ public class PostService {
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
 
+        // 조회수 증가 (즉시 DB에 반영하지 않고 나중에 배치로 처리)
         post.increaseViewCount();
+        
         return PostResponse.from(post);
     }
 
     @Transactional
+    @CacheEvict(value = CacheConfig.VIEW_COUNTS_CACHE, allEntries = true)
     public PostResponse updatePost(Long userId, Long postId, UpdatePostRequest request) {
         Post post = postRepository.findByIdWithAuthor(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
@@ -68,10 +78,12 @@ public class PostService {
         }
 
         post.update(request.getTitle(), request.getContent());
+        log.debug("Post updated and cache evicted");
         return PostResponse.from(post);
     }
 
     @Transactional
+    @CacheEvict(value = CacheConfig.VIEW_COUNTS_CACHE, allEntries = true)
     public void deletePost(Long userId, Long postId) {
         Post post = postRepository.findByIdWithAuthor(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
@@ -85,15 +97,22 @@ public class PostService {
         }
 
         post.delete();
+        log.debug("Post deleted and cache evicted");
     }
 
     /**
      * 게시글 목록 조회 (필터링 + 검색 + 페이징)
+     * 캐싱 적용으로 반복 조회 시 성능 향상
      * @param category 카테고리 필터 (선택)
      * @param keyword 검색 키워드 (선택)
      * @param pageable 페이징 정보
      * @return 게시글 목록 (페이징)
      */
+    @Cacheable(
+            value = CacheConfig.VIEW_COUNTS_CACHE,
+            key = "'post_list:' + (#category != null ? #category.name() : 'all') + ':' + (#keyword != null ? #keyword : 'none') + ':' + #pageable.pageNumber + ':' + #pageable.pageSize",
+            unless = "#result.isEmpty()"
+    )
     public Page<PostResponse> getPostList(PostCategory category, String keyword, Pageable pageable) {
         Page<Post> posts;
 
@@ -114,4 +133,5 @@ public class PostService {
 
         return posts.map(PostResponse::from);
     }
+
 }

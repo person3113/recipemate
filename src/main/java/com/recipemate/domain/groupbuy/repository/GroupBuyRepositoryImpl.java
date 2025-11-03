@@ -8,6 +8,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.QGroupBuy;
+import com.recipemate.global.common.GroupBuyStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -101,5 +102,22 @@ public class GroupBuyRepositoryImpl implements GroupBuyRepositoryCustom {
         List<GroupBuy> content = query.fetch();
 
         return new PageImpl<>(content, pageable, total);
+    }
+
+    @Override
+    public List<GroupBuy> findPopularGroupBuys(List<GroupBuyStatus> statuses, Pageable pageable) {
+        QGroupBuy groupBuy = QGroupBuy.groupBuy;
+
+        return queryFactory
+                .selectFrom(groupBuy)
+                .leftJoin(groupBuy.host).fetchJoin()
+                .where(
+                    groupBuy.status.in(statuses)
+                    .and(groupBuy.deletedAt.isNull())
+                )
+                .orderBy(groupBuy.currentHeadcount.desc(), groupBuy.createdAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
     }
 }

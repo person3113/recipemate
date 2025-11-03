@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: RecipeMate
+  profiles:
+    active: test
+  
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: false
+    show-sql: false
+  
+  h2:
+    console:
+      enabled: true
+  
+  # 테스트 환경에서는 simple 캐시 사용 (Redis 불필요)
+  cache:
+    type: simple
+  
+  # Redis 설정 비활성화
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+# 식품안전나라 API 설정
+food:
+  safety:
+    api:
+      key: test-api-key
+      base-url: http://openapi.foodsafetykorea.go.kr/api
+
+# 로깅 설정
+logging:
+  level:
+    com.recipemate: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

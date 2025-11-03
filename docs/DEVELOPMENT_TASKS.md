@@ -664,11 +664,15 @@
   - `hibernate.order_updates: true`
   - `hibernate.batch_versioned_data: true`
 
-#### [ ] Task 4-2-3: 캐싱 전략 (선택)
-- [ ] Redis 설정
-- [ ] 레시피 API 응답 캐싱
-- [ ] 인기 공구 목록 캐싱
-- [ ] 조회수 캐싱
+#### [x] Task 4-2-3: 캐싱 전략 구현
+- [x] CacheConfig 설정 및 캐시 정의 (RECIPES_CACHE, POPULAR_GROUP_BUYS_CACHE, VIEW_COUNTS_CACHE)
+- [x] RecipeService 캐싱 구현 (검색, 상세, 랜덤, 카테고리)
+- [x] GroupBuyService 인기 공구 목록 캐싱
+- [x] PostService 게시글 목록 캐싱 및 캐시 무효화
+- [x] Spring AOP 프록시 이슈 해결 (@CacheEvict 직접 적용)
+- [x] 캐시 테스트 작성 (PostServiceCacheTest, GroupBuyServiceCacheTest, RecipeServiceCacheTest)
+- [x] Redis 조건부 설정 (dev/prod: Redis, test: Simple cache)
+- [x] 모든 테스트 통과 확인
 
 ---
 

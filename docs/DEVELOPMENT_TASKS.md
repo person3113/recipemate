@@ -615,8 +615,8 @@
   - 대댓글 작성 시: REPLY_COMMENT
   - 후기 작성 시: REVIEW_GROUP_BUY
 
-#### [ ] Task 3-4-3: 알림 조회/읽음 처리/삭제
-- [ ] UserController 구현
+#### [x] Task 3-4-3: 알림 조회/읽음 처리/삭제
+- [x] UserController 구현
   - `GET /users/me/notifications` (알림 목록 페이지)
   - `POST /users/me/notifications/{notificationId}/read` (읽음 처리)
   - `POST /users/me/notifications/delete-all` (전체 삭제)

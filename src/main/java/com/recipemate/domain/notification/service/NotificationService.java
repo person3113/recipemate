@@ -1,5 +1,6 @@
 package com.recipemate.domain.notification.service;
 
+import com.recipemate.domain.notification.dto.NotificationResponse;
 import com.recipemate.domain.notification.entity.Notification;
 import com.recipemate.domain.notification.repository.NotificationRepository;
 import com.recipemate.domain.user.entity.User;
@@ -11,6 +12,9 @@ import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -70,6 +74,66 @@ public class NotificationService {
         );
 
         notificationRepository.save(notification);
+    }
+
+    /**
+     * 알림 목록 조회
+     *
+     * @param userId 사용자 ID
+     * @param isRead 읽음 여부 (null이면 전체 조회)
+     * @return 알림 목록
+     */
+    @Transactional(readOnly = true)
+    public List<NotificationResponse> getNotifications(Long userId, Boolean isRead) {
+        List<Notification> notifications;
+        
+        if (isRead == null) {
+            notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        } else {
+            notifications = notificationRepository.findByUserIdAndIsReadOrderByCreatedAtDesc(userId, isRead);
+        }
+        
+        return notifications.stream()
+                .map(NotificationResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 알림 읽음 처리
+     *
+     * @param userId         사용자 ID
+     * @param notificationId 알림 ID
+     */
+    public void markNotificationAsRead(Long userId, Long notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
+
+        // 권한 확인
+        if (!notification.getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        notification.markAsRead();
+    }
+
+    /**
+     * 전체 알림 삭제
+     *
+     * @param userId 사용자 ID
+     */
+    public void deleteAllNotifications(Long userId) {
+        notificationRepository.deleteByUserId(userId);
+    }
+
+    /**
+     * 읽지 않은 알림 개수 조회
+     *
+     * @param userId 사용자 ID
+     * @return 읽지 않은 알림 개수
+     */
+    @Transactional(readOnly = true)
+    public Long getUnreadCount(Long userId) {
+        return notificationRepository.countByUserIdAndIsReadFalse(userId);
     }
 
     /**

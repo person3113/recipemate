@@ -1,5 +1,6 @@
 package com.recipemate.domain.user.controller;
 
+import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.user.dto.UserResponse;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
@@ -51,6 +52,9 @@ class UserControllerTest {
     
     @MockitoBean
     private WishlistService wishlistService;
+    
+    @MockitoBean
+    private NotificationService notificationService;
     
     @MockitoBean
     private UserRepository userRepository;

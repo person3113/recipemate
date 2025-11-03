@@ -1,6 +1,7 @@
 package com.recipemate.domain.notification.service;
 
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
+import com.recipemate.domain.notification.dto.NotificationResponse;
 import com.recipemate.domain.notification.entity.Notification;
 import com.recipemate.domain.notification.repository.NotificationRepository;
 import com.recipemate.domain.post.entity.Post;
@@ -22,11 +23,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -371,5 +375,200 @@ class NotificationServiceTest {
 
         Notification savedNotification = captor.getValue();
         assertThat(savedNotification.getContent()).contains("참여한 공구가 목표 인원을 달성했습니다");
+    }
+
+    @Test
+    @DisplayName("알림 목록 조회 - 전체 조회")
+    void getNotifications_AllNotifications_Success() {
+        // given
+        Long userId = recipient.getId();
+        List<Notification> notifications = createMockNotifications();
+
+        given(notificationRepository.findByUserIdOrderByCreatedAtDesc(userId))
+                .willReturn(notifications);
+
+        // when
+        List<NotificationResponse> result = notificationService.getNotifications(userId, null);
+
+        // then
+        assertThat(result).hasSize(3);
+        assertThat(result.get(0).getContent()).contains("참여했습니다");
+        assertThat(result.get(1).getContent()).contains("댓글을 작성했습니다");
+        assertThat(result.get(2).getContent()).contains("곧 마감됩니다");
+    }
+
+    @Test
+    @DisplayName("알림 목록 조회 - 읽지 않은 알림만")
+    void getNotifications_UnreadOnly_Success() {
+        // given
+        Long userId = recipient.getId();
+        List<Notification> unreadNotifications = createMockNotifications().stream()
+                .filter(n -> !n.getIsRead())
+                .toList();
+
+        given(notificationRepository.findByUserIdAndIsReadOrderByCreatedAtDesc(userId, false))
+                .willReturn(unreadNotifications);
+
+        // when
+        List<NotificationResponse> result = notificationService.getNotifications(userId, false);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result).allMatch(n -> !n.getIsRead());
+    }
+
+    @Test
+    @DisplayName("알림 목록 조회 - 읽은 알림만")
+    void getNotifications_ReadOnly_Success() {
+        // given
+        Long userId = recipient.getId();
+        List<Notification> readNotifications = createMockNotifications().stream()
+                .filter(Notification::getIsRead)
+                .toList();
+
+        given(notificationRepository.findByUserIdAndIsReadOrderByCreatedAtDesc(userId, true))
+                .willReturn(readNotifications);
+
+        // when
+        List<NotificationResponse> result = notificationService.getNotifications(userId, true);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result).allMatch(NotificationResponse::getIsRead);
+    }
+
+    @Test
+    @DisplayName("알림 읽음 처리 - 성공")
+    void markNotificationAsRead_Success() {
+        // given
+        Long userId = recipient.getId();
+        Long notificationId = 1L;
+
+        Notification notification = Notification.builder()
+                .id(notificationId)
+                .user(recipient)
+                .actor(actor)
+                .content("테스트 알림")
+                .type(NotificationType.JOIN_GROUP_BUY)
+                .isRead(false)
+                .build();
+
+        given(notificationRepository.findById(notificationId)).willReturn(Optional.of(notification));
+
+        // when
+        notificationService.markNotificationAsRead(userId, notificationId);
+
+        // then
+        assertThat(notification.getIsRead()).isTrue();
+    }
+
+    @Test
+    @DisplayName("알림 읽음 처리 - 알림 없음")
+    void markNotificationAsRead_NotificationNotFound_ThrowsException() {
+        // given
+        Long userId = recipient.getId();
+        Long notificationId = 999L;
+
+        given(notificationRepository.findById(notificationId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> notificationService.markNotificationAsRead(userId, notificationId))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOTIFICATION_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("알림 읽음 처리 - 권한 없음")
+    void markNotificationAsRead_Unauthorized_ThrowsException() {
+        // given
+        Long userId = 999L;
+        Long notificationId = 1L;
+
+        Notification notification = Notification.builder()
+                .id(notificationId)
+                .user(recipient)
+                .actor(actor)
+                .content("테스트 알림")
+                .type(NotificationType.JOIN_GROUP_BUY)
+                .isRead(false)
+                .build();
+
+        given(notificationRepository.findById(notificationId)).willReturn(Optional.of(notification));
+
+        // when & then
+        assertThatThrownBy(() -> notificationService.markNotificationAsRead(userId, notificationId))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNAUTHORIZED);
+    }
+
+    @Test
+    @DisplayName("전체 알림 삭제 - 성공")
+    void deleteAllNotifications_Success() {
+        // given
+        Long userId = recipient.getId();
+
+        // when
+        notificationService.deleteAllNotifications(userId);
+
+        // then
+        then(notificationRepository).should().deleteByUserId(userId);
+    }
+
+    @Test
+    @DisplayName("읽지 않은 알림 개수 조회 - 성공")
+    void getUnreadCount_Success() {
+        // given
+        Long userId = recipient.getId();
+        Long expectedCount = 5L;
+
+        given(notificationRepository.countByUserIdAndIsReadFalse(userId)).willReturn(expectedCount);
+
+        // when
+        Long result = notificationService.getUnreadCount(userId);
+
+        // then
+        assertThat(result).isEqualTo(expectedCount);
+    }
+
+    private List<Notification> createMockNotifications() {
+        List<Notification> notifications = new ArrayList<>();
+
+        notifications.add(Notification.builder()
+                .id(1L)
+                .user(recipient)
+                .actor(actor)
+                .content("행동자님이 공구에 참여했습니다.")
+                .type(NotificationType.JOIN_GROUP_BUY)
+                .url("/group-purchases/100")
+                .isRead(false)
+                .relatedEntityId(100L)
+                .relatedEntityType(EntityType.GROUP_BUY)
+                .build());
+
+        notifications.add(Notification.builder()
+                .id(2L)
+                .user(recipient)
+                .actor(actor)
+                .content("행동자님이 공구에 댓글을 작성했습니다.")
+                .type(NotificationType.COMMENT_GROUP_BUY)
+                .url("/comments/300")
+                .isRead(false)
+                .relatedEntityId(300L)
+                .relatedEntityType(EntityType.COMMENT)
+                .build());
+
+        notifications.add(Notification.builder()
+                .id(3L)
+                .user(recipient)
+                .actor(null)
+                .content("찜한 공구가 곧 마감됩니다.")
+                .type(NotificationType.GROUP_BUY_DEADLINE)
+                .url("/group-purchases/100")
+                .isRead(true)
+                .relatedEntityId(100L)
+                .relatedEntityType(EntityType.GROUP_BUY)
+                .build());
+
+        return notifications;
     }
 }

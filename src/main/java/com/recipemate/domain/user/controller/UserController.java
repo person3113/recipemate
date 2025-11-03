@@ -1,5 +1,7 @@
 package com.recipemate.domain.user.controller;
 
+import com.recipemate.domain.notification.dto.NotificationResponse;
+import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.user.dto.ChangePasswordRequest;
 import com.recipemate.domain.user.dto.UpdateProfileRequest;
 import com.recipemate.domain.user.dto.UserResponse;
@@ -23,6 +25,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/users")
 @RequiredArgsConstructor
@@ -30,6 +34,7 @@ public class UserController {
 
     private final UserService userService;
     private final WishlistService wishlistService;
+    private final NotificationService notificationService;
     private final UserRepository userRepository;
 
     /**
@@ -87,6 +92,60 @@ public class UserController {
         model.addAttribute("wishlists", wishlists);
         return "user/bookmarks";
     }
+
+    /**
+     * 내 알림 목록 페이지 렌더링
+     * GET /users/me/notifications
+     */
+    @GetMapping("/me/notifications")
+    public String myNotificationsPage(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(required = false) Boolean isRead,
+            Model model) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        List<NotificationResponse> notifications = notificationService.getNotifications(user.getId(), isRead);
+        Long unreadCount = notificationService.getUnreadCount(user.getId());
+        
+        model.addAttribute("notifications", notifications);
+        model.addAttribute("unreadCount", unreadCount);
+        model.addAttribute("currentFilter", isRead);
+        return "user/notifications";
+    }
+
+    /**
+     * 알림 읽음 처리
+     * POST /users/me/notifications/{notificationId}/read
+     */
+    @PostMapping("/me/notifications/{notificationId}/read")
+    public String markNotificationAsRead(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long notificationId,
+            RedirectAttributes redirectAttributes) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        notificationService.markNotificationAsRead(user.getId(), notificationId);
+        redirectAttributes.addFlashAttribute("message", "알림을 읽음 처리했습니다.");
+        return "redirect:/users/me/notifications";
+    }
+
+    /**
+     * 전체 알림 삭제
+     * POST /users/me/notifications/delete-all
+     */
+    @PostMapping("/me/notifications/delete-all")
+    public String deleteAllNotifications(
+            @AuthenticationPrincipal UserDetails userDetails,
+            RedirectAttributes redirectAttributes) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        notificationService.deleteAllNotifications(user.getId());
+        redirectAttributes.addFlashAttribute("message", "모든 알림이 삭제되었습니다.");
+        return "redirect:/users/me/notifications";
+    }
     
     // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========
     // TODO: htmx 통합 시 아래 엔드포인트 구현
@@ -94,4 +153,5 @@ public class UserController {
     // @PostMapping("/me/fragments/profile") - 프로필 수정 폼 처리 후 HTML 조각 반환
     // @GetMapping("/me/fragments/group-purchases") - 내 공구 목록 HTML 조각
     // @GetMapping("/me/fragments/participations") - 내 참여 공구 목록 HTML 조각
+    // @GetMapping("/me/fragments/notifications") - 알림 목록 HTML 조각
 }

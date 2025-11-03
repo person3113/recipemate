@@ -545,17 +545,17 @@
 
 ### 3.3. 후기 및 매너온도 시스템 (Review Domain)
 
-#### [ ] Task 3-3-1: Review 엔티티 작성
-- [ ] 테스트 작성
+#### [x] Task 3-3-1: Review 엔티티 작성
+- [x] 테스트 작성
   - 중복 후기 방지 (reviewer + groupBuy 유니크)
   - 별점 1~5 범위 제한
   - 참여자만 후기 작성 가능
   - 완료된 공구만 후기 작성 가능
-- [ ] Review 엔티티 구현
+- [x] Review 엔티티 구현
   - 필드: id, reviewer(User FK), groupBuy(FK), rating, content
   - 제약조건: UNIQUE(reviewerId, groupBuyId), CHECK (rating BETWEEN 1 AND 5)
   - 인덱스: groupBuyId, reviewerId
-- [ ] ReviewRepository 작성
+- [x] ReviewRepository 작성
   - `findByGroupBuyIdOrderByCreatedAtDesc(Long groupBuyId)`
   - `existsByReviewerIdAndGroupBuyId(Long reviewerId, Long groupBuyId)`
 

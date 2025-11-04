@@ -49,14 +49,31 @@ public class SecurityConfig {
                             "/auth/logout"        // Logout API
                         ).permitAll()
                         
-                        // Public group purchase pages (read-only)
+                        // Public pages (anyone can view)
                         .requestMatchers(
-                            "/group-purchases/list",              // List page (HTML)
-                            "/group-purchases/{id:[0-9]+}"        // Detail page (HTML)
+                            "/",                                  // Home page
+                            "/recipes",                           // Recipe search page
+                            "/recipes/**",                        // All recipe pages
+                            "/group-purchases/list",              // Group purchase list
+                            "/group-purchases/{id:[0-9]+}",       // Group purchase detail
+                            "/community-posts/list",              // Community post list
+                            "/community-posts/{id:[0-9]+}",       // Community post detail
+                            "/search/**"                          // Search pages
                         ).permitAll()
                         
                         // All other requests require authentication
                         .anyRequest().authenticated()
+                )
+                .formLogin(form -> form
+                        .loginPage("/auth/login")
+                        .loginProcessingUrl("/auth/login")
+                        .defaultSuccessUrl("/", true)
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/auth/logout")
+                        .logoutSuccessUrl("/")
+                        .permitAll()
                 )
                 .rememberMe(remember -> remember
                         .key("recipemate-remember-me-key")

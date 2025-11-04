@@ -2,48 +2,61 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
     <!-- Header Fragment -->
-    <header th:fragment="header" class="bg-white shadow-md">
-        <nav class="container mx-auto px-4 py-4">
-            <div class="flex items-center justify-between">
-                <!-- Logo -->
-                <a th:href="@{/}" class="text-2xl font-bold text-green-600">
-                    RecipeMate
-                </a>
-                
-                <!-- Navigation Links -->
-                <div class="flex items-center space-x-6">
-                    <a th:href="@{/group-purchases}" class="text-gray-700 hover:text-green-600">
-                        공동구매
-                    </a>
+    <header th:fragment="header" class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+        <div class="container">
+            <a th:href="@{/}" class="navbar-brand fw-bold" style="color: #FF6B35;">
+                <i class="bi bi-basket"></i> RecipeMate
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a th:href="@{/recipes}" class="nav-link">레시피</a>
+                    </li>
+                    <li class="nav-item">
+                        <a th:href="@{/group-purchases/list}" class="nav-link">공동구매</a>
+                    </li>
+                    <li class="nav-item">
+                        <a th:href="@{/community-posts/list}" class="nav-link">커뮤니티</a>
+                    </li>
                     
                     <!-- Authenticated User Menu -->
-                    <div sec:authorize="isAuthenticated()" class="flex items-center space-x-4">
-                        <a th:href="@{/users/me}" class="text-gray-700 hover:text-green-600">
-                            내 프로필
+                    <li sec:authorize="isAuthenticated()" class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> 내 메뉴
                         </a>
-                        <a th:href="@{/users/me/group-purchases}" class="text-gray-700 hover:text-green-600">
-                            내 공구
-                        </a>
-                        <form th:action="@{/api/auth/logout}" method="post" class="inline">
-                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                            <button type="submit" class="text-gray-700 hover:text-red-600">
-                                로그아웃
-                            </button>
-                        </form>
-                    </div>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a th:href="@{/users/me}" class="dropdown-item"><i class="bi bi-person"></i> 마이페이지</a></li>
+                            <li><a th:href="@{/users/me/notifications}" class="dropdown-item"><i class="bi bi-bell"></i> 알림</a></li>
+                            <li><a th:href="@{/users/me/bookmarks}" class="dropdown-item"><i class="bi bi-heart"></i> 찜 목록</a></li>
+                            <li><a th:href="@{/users/me/participations}" class="dropdown-item"><i class="bi bi-cart-check"></i> 참여중인 공구</a></li>
+                            <li><a th:href="@{/users/me/group-purchases}" class="dropdown-item"><i class="bi bi-shop"></i> 내가 만든 공구</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form th:action="@{/auth/logout}" method="post" class="d-inline">
+                                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="bi bi-box-arrow-right"></i> 로그아웃
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
                     
                     <!-- Anonymous User Menu -->
-                    <div sec:authorize="!isAuthenticated()" class="flex items-center space-x-4">
-                        <a th:href="@{/auth/login}" class="text-gray-700 hover:text-green-600">
-                            로그인
-                        </a>
-                        <a th:href="@{/auth/signup}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                            회원가입
-                        </a>
-                    </div>
-                </div>
+                    <li sec:authorize="!isAuthenticated()" class="nav-item">
+                        <a th:href="@{/auth/login}" class="nav-link">로그인</a>
+                    </li>
+                    <li sec:authorize="!isAuthenticated()" class="nav-item">
+                        <a th:href="@{/auth/signup}" class="btn btn-primary btn-sm ms-2">회원가입</a>
+                    </li>
+                </ul>
             </div>
-        </nav>
+        </div>
     </header>
 </body>
 </html>

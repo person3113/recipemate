@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>알림 - RecipeMate</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body class="bg-light">
+    <div th:replace="~{fragments/header :: header}"></div>
+    
+    <main class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 mb-0"><i class="bi bi-bell"></i> 알림</h1>
+                    <form th:action="@{/api/notifications/read-all}" method="post" class="d-inline">
+                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-check-all"></i> 모두 읽음 처리
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Success Message -->
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle"></i> <span th:text="${successMessage}">성공</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <!-- Notifications List -->
+                <div th:if="${notifications != null and !notifications.isEmpty()}" class="vstack gap-3">
+                    <div th:each="notification : ${notifications}" 
+                         class="card"
+                         th:classappend="${notification.isRead} ? 'notification-read' : 'notification-unread'">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start">
+                                <!-- Notification Icon -->
+                                <div class="me-3 fs-2">
+                                    <span th:if="${notification.type.name() == 'GROUP_BUY_PARTICIPATION'}">👥</span>
+                                    <span th:if="${notification.type.name() == 'GROUP_BUY_CLOSED'}">✅</span>
+                                    <span th:if="${notification.type.name() == 'COMMENT_REPLY'}">💬</span>
+                                    <span th:if="${notification.type.name() == 'REVIEW_REMINDER'}">⭐</span>
+                                    <span th:if="${notification.type.name() == 'MANNER_EVALUATION'}">🌡️</span>
+                                    <span th:if="${notification.type.name() == 'BADGE_EARNED'}">🏆</span>
+                                    <span th:if="${notification.type.name() == 'SYSTEM'}">📢</span>
+                                </div>
+                                
+                                <!-- Notification Content -->
+                                <div class="flex-grow-1">
+                                    <p class="mb-1 fw-semibold" th:text="${notification.message}">알림 메시지</p>
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock"></i> 
+                                        <span th:text="${#temporals.format(notification.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</span>
+                                    </small>
+                                    
+                                    <!-- Related Link -->
+                                    <div th:if="${notification.relatedEntityId != null}" class="mt-2">
+                                        <a th:if="${notification.type.name() == 'GROUP_BUY_PARTICIPATION' or notification.type.name() == 'GROUP_BUY_CLOSED'}"
+                                           th:href="@{/group-purchases/{id}(id=${notification.relatedEntityId})}" 
+                                           class="text-primary text-decoration-none">
+                                            공동구매 보기 <i class="bi bi-arrow-right"></i>
+                                        </a>
+                                        <a th:if="${notification.type.name() == 'COMMENT_REPLY'}"
+                                           th:href="@{/community-posts/{id}(id=${notification.relatedEntityId})}" 
+                                           class="text-primary text-decoration-none">
+                                            댓글 보기 <i class="bi bi-arrow-right"></i>
+                                        </a>
+                                        <a th:if="${notification.type.name() == 'REVIEW_REMINDER'}"
+                                           th:href="@{/group-purchases/{id}(id=${notification.relatedEntityId})}" 
+                                           class="text-primary text-decoration-none">
+                                            후기 작성하기 <i class="bi bi-arrow-right"></i>
+                                        </a>
+                                        <a th:if="${notification.type.name() == 'BADGE_EARNED'}"
+                                           th:href="@{/users/me/badges}" 
+                                           class="text-primary text-decoration-none">
+                                            배지 확인하기 <i class="bi bi-arrow-right"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <!-- Actions -->
+                                <div class="dropdown">
+                                    <button class="btn btn-link text-secondary" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li th:if="${!notification.isRead}">
+                                            <form th:action="@{/api/notifications/{id}/read(id=${notification.id})}" 
+                                                  method="post" 
+                                                  class="d-inline">
+                                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                                <button type="submit" class="dropdown-item">
+                                                    <i class="bi bi-check"></i> 읽음 처리
+                                                </button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form th:action="@{/api/notifications/{id}(id=${notification.id})}" 
+                                                  method="post"
+                                                  onsubmit="return confirm('알림을 삭제하시겠습니까?')">
+                                                <input type="hidden" name="_method" value="delete"/>
+                                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                                <button type="submit" class="dropdown-item text-danger">
+                                                    <i class="bi bi-trash"></i> 삭제
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Empty State -->
+                <div th:if="${notifications == null or notifications.isEmpty()}" class="card text-center py-5">
+                    <div class="card-body">
+                        <i class="bi bi-bell-slash display-1 text-muted"></i>
+                        <h5 class="mt-3">알림이 없습니다</h5>
+                        <p class="text-muted">새로운 알림이 오면 여기에 표시됩니다</p>
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                <nav th:if="${notifications != null and (notifications.hasPrevious() or notifications.hasNext())}" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" th:classappend="${!notifications.hasPrevious()} ? 'disabled'">
+                            <a class="page-link" th:href="@{/users/me/notifications(page=${notifications.number - 1})}">
+                                <i class="bi bi-chevron-left"></i> 이전
+                            </a>
+                        </li>
+                        <li class="page-item active">
+                            <span class="page-link">
+                                <span th:text="${notifications.number + 1}">1</span> / <span th:text="${notifications.totalPages}">1</span>
+                            </span>
+                        </li>
+                        <li class="page-item" th:classappend="${!notifications.hasNext()} ? 'disabled'">
+                            <a class="page-link" th:href="@{/users/me/notifications(page=${notifications.number + 1})}">
+                                다음 <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </main>
+    
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

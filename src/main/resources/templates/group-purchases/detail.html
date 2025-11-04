@@ -1,80 +1,270 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <title th:text="${groupBuy.title} + ' - RecipeMate'"></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${groupBuy.title} + ' - RecipeMate'">공동구매 - RecipeMate</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
-<body>
-    <h1 th:text="${groupBuy.title}"></h1>
+<body class="bg-light">
+    <!-- Header Fragment -->
+    <div th:replace="~{fragments/header :: header}"></div>
     
-    <!-- Flash Messages -->
-    <div th:if="${successMessage}" class="alert alert-success">
-        <p th:text="${successMessage}"></p>
-    </div>
-    <div th:if="${errorMessage}" class="alert alert-error">
-        <p th:text="${errorMessage}"></p>
-    </div>
-    
-    <!-- Group Buy Details -->
-    <div class="group-buy-detail">
-        <p><strong>카테고리:</strong> <span th:text="${groupBuy.category}"></span></p>
-        <p><strong>내용:</strong> <span th:text="${groupBuy.content}"></span></p>
-        <p><strong>총 가격:</strong> <span th:text="${groupBuy.totalPrice}"></span>원</p>
-        <p><strong>목표 인원:</strong> <span th:text="${groupBuy.targetHeadcount}"></span>명</p>
-        <p><strong>현재 인원:</strong> <span th:text="${groupBuy.currentHeadcount}"></span>명</p>
-        <p><strong>상태:</strong> <span th:text="${groupBuy.status}"></span></p>
-        <p><strong>배송 방법:</strong> <span th:text="${groupBuy.deliveryMethod}"></span></p>
-        <p th:if="${groupBuy.meetupLocation}"><strong>만남 장소:</strong> <span th:text="${groupBuy.meetupLocation}"></span></p>
-        <p th:if="${groupBuy.parcelFee}"><strong>택배비:</strong> <span th:text="${groupBuy.parcelFee}"></span>원</p>
-        <p><strong>마감일:</strong> <span th:text="${groupBuy.deadline}"></span></p>
-        <p><strong>주최자:</strong> <span th:text="${groupBuy.hostNickname}"></span> (매너온도: <span th:text="${groupBuy.hostMannerTemperature}"></span>)</p>
-        
-        <!-- Recipe Info (if recipe-based) -->
-        <div th:if="${groupBuy.recipeApiId}">
-            <h3>레시피 정보</h3>
-            <p><strong>레시피 이름:</strong> <span th:text="${groupBuy.recipeName}"></span></p>
-            <img th:if="${groupBuy.recipeImageUrl}" th:src="${groupBuy.recipeImageUrl}" alt="Recipe Image">
+    <main class="container my-5">
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         
-        <!-- Images -->
-        <div th:if="${groupBuy.imageUrls != null && !groupBuy.imageUrls.isEmpty()}">
-            <h3>사진</h3>
-            <div th:each="imageUrl : ${groupBuy.imageUrls}">
-                <img th:src="${imageUrl}" alt="Group Buy Image">
+        <!-- Back Button -->
+        <div class="mb-3">
+            <a th:href="@{/group-purchases/list}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> 목록으로
+            </a>
+        </div>
+        
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                <!-- Group Buy Header Card -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <span th:if="${groupBuy.category}" class="badge bg-primary me-2" th:text="${groupBuy.category}">카테고리</span>
+                                <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge progress-bar-info">모집중</span>
+                                <span th:if="${groupBuy.status.name() == 'CLOSED'}" class="badge bg-secondary">마감</span>
+                                <span th:if="${groupBuy.status.name() == 'COMPLETED'}" class="badge bg-success">완료</span>
+                                <span th:if="${groupBuy.status.name() == 'CANCELLED'}" class="badge bg-danger">취소됨</span>
+                            </div>
+                        </div>
+                        
+                        <h1 class="fw-bold mb-4" th:text="${groupBuy.title}">공동구매 제목</h1>
+                        
+                        <!-- Progress Bar -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between text-sm mb-2">
+                                <span class="text-muted">참여 인원</span>
+                                <span class="fw-semibold">
+                                    <span th:text="${groupBuy.currentHeadcount}">0</span> / 
+                                    <span th:text="${groupBuy.targetHeadcount}">10</span>명
+                                    (<span th:text="${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)}">0</span>%)
+                                </span>
+                            </div>
+                            <div class="progress" style="height: 12px;">
+                                <div class="progress-bar" 
+                                     th:classappend="${groupBuy.currentHeadcount >= groupBuy.targetHeadcount} ? 'progress-bar-green' : (${groupBuy.currentHeadcount >= groupBuy.targetHeadcount * 0.6} ? 'progress-bar-blue' : 'progress-bar-gray')"
+                                     th:style="'width: ' + ${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)} + '%'">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Host Info -->
+                        <div class="d-flex align-items-center border-top border-bottom py-3 mb-4">
+                            <i class="bi bi-person-circle fs-3 me-3"></i>
+                            <div>
+                                <div class="fw-semibold" th:text="${groupBuy.host?.username ?: '알 수 없음'}">주최자</div>
+                                <div class="text-muted small">
+                                    매너온도 
+                                    <span class="text-primary fw-semibold" th:text="${groupBuy.host?.mannerTemperature ?: 36.5} + '°C'">36.5°C</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Images -->
+                        <div th:if="${groupBuy.imageUrls != null and !groupBuy.imageUrls.isEmpty()}" class="mb-4">
+                            <div id="carouselImages" class="carousel slide" data-bs-ride="carousel">
+                                <div class="carousel-inner rounded">
+                                     <div th:each="imageUrl, iterStat : ${groupBuy.imageUrls}" 
+                                         class="carousel-item" 
+                                         th:classappend="${iterStat.first} ? 'active'">
+                                        <img th:src="${imageUrl}" class="d-block w-100 group-purchase-img" alt="공구 사진">
+                                    </div>
+                                </div>
+                                <button class="carousel-control-prev" type="button" data-bs-target="#carouselImages" data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon"></span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#carouselImages" data-bs-slide="next">
+                                    <span class="carousel-control-next-icon"></span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="border-top pt-4">
+                            <h5 class="fw-bold mb-3">상세 설명</h5>
+                            <p class="text-pre-wrap" th:text="${groupBuy.content}">공동구매 내용</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recipe Info Card (if recipe-based) -->
+                <div th:if="${groupBuy.recipe != null}" class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-book"></i> 연관 레시피
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div th:if="${groupBuy.recipe.imageUrl}" class="col-md-4">
+                                <img th:src="${groupBuy.recipe.imageUrl}" class="img-fluid rounded" alt="레시피 이미지">
+                            </div>
+                            <div class="col-md-8">
+                                <h6 class="fw-bold mb-2" th:text="${groupBuy.recipe.name}">레시피 이름</h6>
+                                <p class="text-muted small mb-3" th:if="${groupBuy.recipe.description}" th:text="${groupBuy.recipe.description}">레시피 설명</p>
+                                <a th:href="@{/recipes/{id}(id=${groupBuy.recipe.id})}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-arrow-right"></i> 레시피 보기
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Purchase Info Card -->
+                <div class="card shadow-sm mb-4 sticky-top floating-buttons">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0 fw-bold">구매 정보</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">총 금액</span>
+                                <span class="fs-4 fw-bold text-primary" th:text="${#numbers.formatInteger(groupBuy.totalPrice, 0, 'COMMA')} + '원'">10,000원</span>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted"><i class="bi bi-people"></i> 목표 인원</span>
+                                <span class="fw-semibold" th:text="${groupBuy.targetHeadcount} + '명'">10명</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted"><i class="bi bi-person-check"></i> 현재 인원</span>
+                                <span class="fw-semibold" th:text="${groupBuy.currentHeadcount} + '명'">5명</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted"><i class="bi bi-calendar-event"></i> 마감일</span>
+                                <span class="fw-semibold" th:text="${#temporals.format(groupBuy.deadline, 'yyyy-MM-dd')}">2024-01-01</span>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted"><i class="bi bi-truck"></i> 배송 방법</span>
+                                <span class="fw-semibold" th:text="${groupBuy.deliveryMethod == 'DIRECT' ? '직거래' : '택배'}">직거래</span>
+                            </div>
+                            <div th:if="${groupBuy.deliveryMethod == 'DIRECT' and groupBuy.meetupLocation}" class="d-flex justify-content-between mb-2">
+                                <span class="text-muted"><i class="bi bi-geo-alt"></i> 만남 장소</span>
+                                <span class="fw-semibold small" th:text="${groupBuy.meetupLocation}">장소</span>
+                            </div>
+                            <div th:if="${groupBuy.deliveryMethod == 'PARCEL' and groupBuy.parcelFee != null}" class="d-flex justify-content-between mb-2">
+                                <span class="text-muted"><i class="bi bi-cash"></i> 택배비</span>
+                                <span class="fw-semibold" th:text="${#numbers.formatInteger(groupBuy.parcelFee, 0, 'COMMA')} + '원'">3,000원</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div sec:authorize="isAuthenticated()">
+                            <div th:if="${groupBuy.status.name() == 'RECRUITING'}" class="d-grid gap-2 mb-2">
+                                <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#participateModal">
+                                    <i class="bi bi-basket3"></i> 참여하기
+                                </button>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                                    <i class="bi bi-x-circle"></i> 참여 취소
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div sec:authorize="!isAuthenticated()">
+                            <a th:href="@{/auth/login}" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-box-arrow-in-right"></i> 로그인하고 참여하기
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Participate Modal -->
+    <div class="modal fade" id="participateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">공동구매 참여</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" th:action="@{/group-purchases/{id}/participate(id=${groupBuy.id})}">
+                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">수량</label>
+                            <input type="number" id="quantity" name="quantity" class="form-control" min="1" value="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="deliveryMethod" class="form-label">배송 방법</label>
+                            <select id="deliveryMethod" name="deliveryMethod" class="form-select" required>
+                                <option value="DIRECT">직거래</option>
+                                <option value="PARCEL">택배</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="submit" class="btn btn-primary">참여하기</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
     
-    <!-- Action Buttons (Only for authenticated users) -->
-    <div sec:authorize="isAuthenticated()">
-        <!-- Participate Form -->
-        <div th:if="${groupBuy.status.name() == 'RECRUITING'}">
-            <h3>참여하기</h3>
-            <form method="post" th:action="@{/group-purchases/{id}/participate(id=${groupBuy.id})}">
-                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                <label>
-                    수량:
-                    <input type="number" name="quantity" min="1" value="1" required>
-                </label>
-                <label>
-                    배송 방법:
-                    <select name="deliveryMethod" required>
-                        <option value="DIRECT">직거래</option>
-                        <option value="PARCEL">택배</option>
-                    </select>
-                </label>
-                <button type="submit">참여하기</button>
-            </form>
+    <!-- Cancel Modal -->
+    <div class="modal fade" id="cancelModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">참여 취소</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>정말로 이 공동구매 참여를 취소하시겠습니까?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                    <form method="post" th:action="@{/group-purchases/{id}/participate/cancel(id=${groupBuy.id})}" class="d-inline">
+                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit" class="btn btn-danger">취소하기</button>
+                    </form>
+                </div>
+            </div>
         </div>
-        
-        <!-- Cancel Participation -->
-        <form method="post" th:action="@{/group-purchases/{id}/participate/cancel(id=${groupBuy.id})}">
-            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <button type="submit">참여 취소</button>
-        </form>
     </div>
     
-    <a href="/group-purchases/list">목록으로</a>
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -2,64 +2,177 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>포인트 내역</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포인트 내역 - RecipeMate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
 <body>
-    <h1>포인트 내역</h1>
-    
-    <div class="current-points">
-        <h2>현재 포인트: <span th:text="${currentPoints}">0</span>P</h2>
-    </div>
-    
-    <div th:if="${message}" class="alert alert-success">
-        <p th:text="${message}"></p>
-    </div>
-    
-    <div th:if="${error}" class="alert alert-danger">
-        <p th:text="${error}"></p>
-    </div>
-    
-    <div th:if="${pointHistory != null and pointHistory.hasContent()}">
-        <table>
-            <thead>
-                <tr>
-                    <th>날짜</th>
-                    <th>구분</th>
-                    <th>내용</th>
-                    <th>포인트</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="history : ${pointHistory.content}">
-                    <td th:text="${#temporals.format(history.createdAt, 'yyyy-MM-dd HH:mm')}">날짜</td>
-                    <td th:text="${history.type == T(com.recipemate.global.common.PointType).EARN ? '적립' : '사용'}">구분</td>
-                    <td th:text="${history.description}">내용</td>
-                    <td th:class="${history.type == T(com.recipemate.global.common.PointType).EARN ? 'earn' : 'use'}">
-                        <span th:text="${history.type == T(com.recipemate.global.common.PointType).EARN ? '+' : '-'} + ${history.amount} + 'P'">포인트</span>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        
-        <!-- 페이지네이션 -->
-        <div th:if="${pointHistory.totalPages > 1}" class="pagination">
-            <a th:if="${!pointHistory.first}" 
-               th:href="@{/users/me/points(page=${pointHistory.number - 1})}"
-               class="page-link">이전</a>
-            
-            <span th:text="${pointHistory.number + 1} + ' / ' + ${pointHistory.totalPages}">1 / 10</span>
-            
-            <a th:if="${!pointHistory.last}" 
-               th:href="@{/users/me/points(page=${pointHistory.number + 1})}"
-               class="page-link">다음</a>
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-5">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <!-- Page Header -->
+                <div class="mb-4">
+                    <h1 class="display-6 fw-bold">
+                        <i class="bi bi-coin text-warning"></i> 포인트 내역
+                    </h1>
+                    <p class="text-muted">활동으로 적립하고 사용한 포인트를 확인하세요!</p>
+                </div>
+
+                <!-- Current Points Card -->
+                <div class="card shadow-sm mb-4 border-warning">
+                    <div class="card-body text-center py-4">
+                        <h5 class="text-muted mb-2">현재 보유 포인트</h5>
+                        <h2 class="display-4 text-warning fw-bold mb-0">
+                            <i class="bi bi-coin"></i>
+                            <span th:text="${#numbers.formatInteger(currentPoints, 0, 'COMMA')}">0</span>P
+                        </h2>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span th:text="${message}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Point History Table -->
+                <div th:if="${pointHistory != null and pointHistory.hasContent()}" class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history"></i> 포인트 변동 내역
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">날짜</th>
+                                        <th scope="col">구분</th>
+                                        <th scope="col">내용</th>
+                                        <th scope="col" class="text-end">포인트</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="history : ${pointHistory.content}">
+                                        <td>
+                                            <i class="bi bi-calendar3 text-muted"></i>
+                                            <span th:text="${#temporals.format(history.createdAt, 'yyyy-MM-dd HH:mm')}">
+                                                2024-01-01 12:00
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${history.type == T(com.recipemate.global.common.PointType).EARN}" 
+                                                  class="badge bg-success">
+                                                <i class="bi bi-plus-circle"></i> 적립
+                                            </span>
+                                            <span th:unless="${history.type == T(com.recipemate.global.common.PointType).EARN}" 
+                                                  class="badge bg-danger">
+                                                <i class="bi bi-dash-circle"></i> 사용
+                                            </span>
+                                        </td>
+                                        <td th:text="${history.description}">내용</td>
+                                        <td class="text-end">
+                                            <span th:if="${history.type == T(com.recipemate.global.common.PointType).EARN}" 
+                                                  class="text-success fw-bold">
+                                                +<span th:text="${#numbers.formatInteger(history.amount, 0, 'COMMA')}">100</span>P
+                                            </span>
+                                            <span th:unless="${history.type == T(com.recipemate.global.common.PointType).EARN}" 
+                                                  class="text-danger fw-bold">
+                                                -<span th:text="${#numbers.formatInteger(history.amount, 0, 'COMMA')}">50</span>P
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <nav th:if="${pointHistory != null and pointHistory.totalPages > 1}" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" th:classappend="${pointHistory.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/users/me/points(page=${pointHistory.number - 1})}">
+                                <i class="bi bi-chevron-left"></i> 이전
+                            </a>
+                        </li>
+                        <li class="page-item active">
+                            <span class="page-link">
+                                <span th:text="${pointHistory.number + 1}">1</span> / 
+                                <span th:text="${pointHistory.totalPages}">10</span>
+                            </span>
+                        </li>
+                        <li class="page-item" th:classappend="${pointHistory.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/users/me/points(page=${pointHistory.number + 1})}">
+                                다음 <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- Empty State -->
+                <div th:if="${pointHistory == null or !pointHistory.hasContent()}" class="card text-center py-5 shadow-sm">
+                    <div class="card-body">
+                        <i class="bi bi-coin display-1 text-muted"></i>
+                        <h3 class="mt-4 mb-3">아직 포인트 내역이 없습니다</h3>
+                        <p class="text-muted mb-4">
+                            공구를 생성하거나 참여하고,<br>
+                            후기를 작성하여 포인트를 획득해보세요!
+                        </p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="/group-purchases/new" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> 공구 만들기
+                            </a>
+                            <a href="/group-purchases" class="btn btn-outline-primary">
+                                <i class="bi bi-cart"></i> 공구 참여하기
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Card -->
+                <div class="card shadow-sm mt-4 bg-light">
+                    <div class="card-body">
+                        <h6 class="mb-3">
+                            <i class="bi bi-info-circle text-primary"></i> 포인트 획득 방법
+                        </h6>
+                        <ul class="mb-0 small">
+                            <li>공동구매 생성: 100P</li>
+                            <li>공동구매 참여: 50P</li>
+                            <li>후기 작성: 30P</li>
+                            <li>댓글 작성: 10P</li>
+                            <li>출석 체크: 5P</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Back Button -->
+                <div class="mt-4 text-center">
+                    <a th:href="@{/users/me}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 마이페이지로 돌아가기
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
-    
-    <div th:if="${pointHistory == null or !pointHistory.hasContent()}">
-        <p>아직 포인트 내역이 없습니다.</p>
-        <p>공구를 생성하거나 참여하고, 후기를 작성하여 포인트를 획득해보세요!</p>
-    </div>
-    
-    <a th:href="@{/users/me}">마이페이지로 돌아가기</a>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -1,66 +1,155 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>공동구매 목록 - RecipeMate</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
-<body>
-    <h1>공동구매 목록</h1>
+<body class="bg-light">
+    <!-- Header Fragment -->
+    <div th:replace="~{fragments/header :: header}"></div>
     
-    <!-- Flash Messages -->
-    <div th:if="${successMessage}" class="alert alert-success">
-        <p th:text="${successMessage}"></p>
-    </div>
-    <div th:if="${errorMessage}" class="alert alert-error">
-        <p th:text="${errorMessage}"></p>
-    </div>
-    
-    <!-- Search Form -->
-    <form method="get" action="/group-purchases/list">
-        <input type="text" name="keyword" th:value="${searchCondition.keyword}" placeholder="검색어 입력">
-        <select name="category">
-            <option value="">전체 카테고리</option>
-            <option value="육류" th:selected="${searchCondition.category == '육류'}">육류</option>
-            <option value="채소" th:selected="${searchCondition.category == '채소'}">채소</option>
-            <option value="과일" th:selected="${searchCondition.category == '과일'}">과일</option>
-        </select>
-        <select name="status">
-            <option value="">전체 상태</option>
-            <option value="RECRUITING" th:selected="${searchCondition.status?.name() == 'RECRUITING'}">모집중</option>
-            <option value="CLOSED" th:selected="${searchCondition.status?.name() == 'CLOSED'}">마감</option>
-        </select>
-        <label>
-            <input type="checkbox" name="recipeOnly" th:checked="${searchCondition.recipeOnly}">
-            레시피 기반만
-        </label>
-        <button type="submit">검색</button>
-    </form>
-    
-    <!-- Create Button -->
-    <a href="/group-purchases/new">새 공동구매 만들기</a>
-    
-    <!-- Group Buy List -->
-    <div th:if="${groupBuys.isEmpty()}">
-        <p>공동구매가 없습니다.</p>
-    </div>
-    
-    <div th:if="${!groupBuys.isEmpty()}">
-        <div th:each="groupBuy : ${groupBuys}" class="group-buy-item">
-            <h3><a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" th:text="${groupBuy.title}"></a></h3>
-            <p th:text="${groupBuy.content}"></p>
-            <p>카테고리: <span th:text="${groupBuy.category}"></span></p>
-            <p>가격: <span th:text="${groupBuy.totalPrice}"></span>원</p>
-            <p>인원: <span th:text="${groupBuy.currentHeadcount}"></span> / <span th:text="${groupBuy.targetHeadcount}"></span></p>
-            <p>상태: <span th:text="${groupBuy.status}"></span></p>
-            <p>주최자: <span th:text="${groupBuy.hostNickname}"></span></p>
+    <!-- Main Content -->
+    <main class="container py-4">
+        <h1 class="mb-4">공동구매 목록</h1>
+        
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <!-- Search Form -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" action="/group-purchases/list" class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" name="keyword" class="form-control" 
+                               th:value="${searchCondition.keyword}" placeholder="검색어 입력">
+                    </div>
+                    <div class="col-md-2">
+                        <select name="category" class="form-select">
+                            <option value="">전체 카테고리</option>
+                            <option value="육류" th:selected="${searchCondition.category == '육류'}">육류</option>
+                            <option value="채소" th:selected="${searchCondition.category == '채소'}">채소</option>
+                            <option value="과일" th:selected="${searchCondition.category == '과일'}">과일</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="status" class="form-select">
+                            <option value="">전체 상태</option>
+                            <option value="RECRUITING" th:selected="${searchCondition.status?.name() == 'RECRUITING'}">모집중</option>
+                            <option value="CLOSED" th:selected="${searchCondition.status?.name() == 'CLOSED'}">마감</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check mt-2">
+                            <input type="checkbox" name="recipeOnly" class="form-check-input" id="recipeOnly"
+                                   th:checked="${searchCondition.recipeOnly}">
+                            <label class="form-check-label" for="recipeOnly">레시피 기반만</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> 검색
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Create Button -->
+        <div class="mb-4">
+            <a href="/group-purchases/new" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> 새 공동구매 만들기
+            </a>
+        </div>
+        
+        <!-- Group Buy List -->
+        <div th:if="${groupBuys.isEmpty()}" class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            공동구매가 없습니다.
+        </div>
+        
+        <div th:if="${!groupBuys.isEmpty()}" class="row">
+            <div th:each="groupBuy : ${groupBuys}" class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 shadow-sm group-buy-item">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">
+                                <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" 
+                                   class="text-decoration-none text-dark"
+                                   th:text="${groupBuy.title}"></a>
+                            </h5>
+                            <span class="badge" 
+                                  th:classappend="${groupBuy.status.name() == 'RECRUITING'} ? 'bg-success' : 'bg-secondary'"
+                                  th:text="${groupBuy.status.name() == 'RECRUITING' ? '모집중' : '마감'}"></span>
+                        </div>
+                        <p class="card-text text-muted small" th:text="${groupBuy.content}"></p>
+                        <div class="mb-2">
+                            <span class="badge bg-light text-dark border">
+                                <i class="bi bi-tag"></i> <span th:text="${groupBuy.category}"></span>
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-primary fw-bold">
+                                <span th:text="${#numbers.formatInteger(groupBuy.totalPrice, 0, 'COMMA')}"></span>원
+                            </span>
+                            <span class="text-muted small">
+                                <i class="bi bi-people"></i>
+                                <span th:text="${groupBuy.currentHeadcount}"></span> / <span th:text="${groupBuy.targetHeadcount}"></span>
+                            </span>
+                        </div>
+                        <div class="mt-2 text-muted small">
+                            <i class="bi bi-person"></i> <span th:text="${groupBuy.hostNickname}"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- Pagination -->
-        <div class="pagination">
-            <span>Page <span th:text="${groupBuys.number + 1}"></span> of <span th:text="${groupBuys.totalPages}"></span></span>
-            <a th:if="${groupBuys.hasPrevious()}" th:href="@{/group-purchases/list(page=${groupBuys.number - 1})}">이전</a>
-            <a th:if="${groupBuys.hasNext()}" th:href="@{/group-purchases/list(page=${groupBuys.number + 1})}">다음</a>
-        </div>
-    </div>
+        <nav th:if="${!groupBuys.isEmpty()}" aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item" th:classappend="${!groupBuys.hasPrevious()} ? 'disabled'">
+                    <a class="page-link" th:href="@{/group-purchases/list(page=${groupBuys.number - 1})}">
+                        <i class="bi bi-chevron-left"></i> 이전
+                    </a>
+                </li>
+                <li class="page-item active">
+                    <span class="page-link">
+                        <span th:text="${groupBuys.number + 1}"></span> / <span th:text="${groupBuys.totalPages}"></span>
+                    </span>
+                </li>
+                <li class="page-item" th:classappend="${!groupBuys.hasNext()} ? 'disabled'">
+                    <a class="page-link" th:href="@{/group-purchases/list(page=${groupBuys.number + 1})}">
+                        다음 <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </main>
+    
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

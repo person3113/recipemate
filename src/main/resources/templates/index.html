@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RecipeMate - 레시피 기반 공동구매 플랫폼</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-light">
+    <!-- Header Fragment -->
+    <div th:replace="~{fragments/header :: header}"></div>
+    
+    <!-- Hero Section -->
+    <section class="hero-section text-center">
+        <div class="container">
+            <h1 class="display-3 fw-bold mb-4">RecipeMate</h1>
+            <p class="lead mb-5">레시피 기반 공동구매로 똑똑한 장보기</p>
+            <div class="d-flex justify-content-center gap-3">
+                <a th:href="@{/group-purchases/list}" class="btn btn-light btn-lg px-5">
+                    <i class="bi bi-basket3"></i> 공동구매 둘러보기
+                </a>
+                <a th:href="@{/recipes}" class="btn btn-outline-light btn-lg px-5">
+                    <i class="bi bi-book"></i> 레시피 찾기
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Features Section -->
+    <section class="py-5 bg-white">
+        <div class="container">
+            <h2 class="text-center fw-bold mb-5">RecipeMate의 특별함</h2>
+            <div class="row g-4">
+                <!-- Feature 1 -->
+                <div class="col-md-4">
+                    <div class="card feature-card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <div class="display-1 mb-3">🍳</div>
+                            <h5 class="card-title fw-bold mb-3">레시피 기반 공구</h5>
+                            <p class="card-text text-muted">
+                                레시피에 필요한 식재료를 한 번에 구매하세요. 
+                                국내외 레시피 API 연동으로 다양한 요리 제공
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="col-md-4">
+                    <div class="card feature-card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <div class="display-1 mb-3">💰</div>
+                            <h5 class="card-title fw-bold mb-3">합리적인 가격</h5>
+                            <p class="card-text text-muted">
+                                대량 구매로 단가를 낮추고, 
+                                신선한 식재료를 저렴하게 구입하세요
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="col-md-4">
+                    <div class="card feature-card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <div class="display-1 mb-3">🤝</div>
+                            <h5 class="card-title fw-bold mb-3">신뢰할 수 있는 커뮤니티</h5>
+                            <p class="card-text text-muted">
+                                매너온도 시스템으로 신뢰도를 관리하고, 
+                                안전한 거래를 보장합니다
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Hot Group Purchases Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold mb-0"><i class="bi bi-fire text-danger"></i> 인기 공동구매</h2>
+                <a th:href="@{/group-purchases/list}" class="text-primary text-decoration-none fw-semibold">
+                    전체 보기 <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div th:if="${hotGroupBuys != null and !hotGroupBuys.isEmpty()}" class="row g-4">
+                <div th:each="groupBuy : ${hotGroupBuys}" class="col-md-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-img-top bg-gradient p-5 text-center text-white" style="background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);">
+                            <i class="bi bi-basket3 display-1"></i>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title fw-bold mb-0" th:text="${groupBuy.title}">공구 제목</h5>
+                                <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge" style="background-color: #2196F3;">모집중</span>
+                                <span th:if="${groupBuy.status.name() == 'CLOSED'}" class="badge bg-secondary">마감</span>
+                            </div>
+                            <p class="card-text text-muted small" th:text="${groupBuy.content}">공구 설명</p>
+                            
+                            <!-- Progress Bar -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-between text-sm text-muted mb-1">
+                                    <small th:text="${groupBuy.currentHeadcount} + '/' + ${groupBuy.targetHeadcount} + '명'">0/10명</small>
+                                    <small th:text="${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)} + '%'">0%</small>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" 
+                                         th:classappend="${groupBuy.currentHeadcount >= groupBuy.targetHeadcount} ? 'progress-bar-green' : (${groupBuy.currentHeadcount >= groupBuy.targetHeadcount * 0.6} ? 'progress-bar-blue' : 'progress-bar-gray')"
+                                         th:style="'width: ' + ${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)} + '%'">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-primary fw-bold fs-5" th:text="${#numbers.formatInteger(groupBuy.totalPrice, 0, 'COMMA')} + '원'">10,000원</span>
+                                <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" class="btn btn-primary btn-sm">
+                                    자세히 보기
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div th:if="${hotGroupBuys == null or hotGroupBuys.isEmpty()}" class="text-center py-5">
+                <i class="bi bi-basket3 display-1 text-muted"></i>
+                <p class="fs-5 text-muted mt-3">현재 진행 중인 공동구매가 없습니다.</p>
+                <a th:href="@{/group-purchases/new}" class="btn btn-primary mt-3">
+                    <i class="bi bi-plus-circle"></i> 첫 공동구매 시작하기
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Random Recipe Section -->
+    <section class="py-5 bg-white">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold mb-0"><i class="bi bi-dice-5"></i> 오늘의 추천 레시피</h2>
+                <a th:href="@{/recipes/random}" class="text-primary text-decoration-none fw-semibold">
+                    다른 레시피 보기 <i class="bi bi-arrow-repeat"></i>
+                </a>
+            </div>
+            
+            <div th:if="${randomRecipe != null}" class="card shadow-sm overflow-hidden">
+                <div class="row g-0">
+                    <!-- Recipe Image -->
+                    <div class="col-md-5">
+                        <div th:if="${randomRecipe.imageUrl != null}" class="h-100">
+                            <img th:src="${randomRecipe.imageUrl}" 
+                                 th:alt="${randomRecipe.name}"
+                                 class="img-fluid h-100 w-100 object-fit-cover">
+                        </div>
+                        <div th:unless="${randomRecipe.imageUrl != null}" class="bg-gradient h-100 d-flex align-items-center justify-content-center text-white" style="background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%); min-height: 300px;">
+                            <i class="bi bi-egg-fried display-1"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Recipe Info -->
+                    <div class="col-md-7">
+                        <div class="card-body p-4">
+                            <span class="badge bg-primary mb-3" th:text="${randomRecipe.category}">카테고리</span>
+                            <h3 class="card-title fw-bold mb-3" th:text="${randomRecipe.name}">레시피 이름</h3>
+                            <p class="card-text text-muted mb-4" th:if="${randomRecipe.ingredients != null}" th:text="'재료: ' + ${randomRecipe.ingredients}">재료 목록</p>
+                            
+                            <div class="d-grid gap-2">
+                                <a th:href="@{/recipes/{id}(id=${randomRecipe.id})}" 
+                                   class="btn btn-primary">
+                                    <i class="bi bi-book"></i> 레시피 상세보기
+                                </a>
+                                <a th:href="@{/group-purchases/new(recipeId=${randomRecipe.id})}" 
+                                   class="btn btn-outline-primary">
+                                    <i class="bi bi-basket3"></i> 이 레시피로 공구 만들기
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- CTA Section -->
+    <section sec:authorize="!isAuthenticated()" class="py-5 text-white" style="background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);">
+        <div class="container text-center">
+            <h2 class="fw-bold mb-3">지금 바로 시작하세요!</h2>
+            <p class="lead mb-4">회원가입하고 합리적인 공동구매의 세계로</p>
+            <div class="d-flex justify-content-center gap-3">
+                <a th:href="@{/auth/signup}" class="btn btn-light btn-lg px-5">
+                    <i class="bi bi-person-plus"></i> 회원가입
+                </a>
+                <a th:href="@{/auth/login}" class="btn btn-outline-light btn-lg px-5">
+                    <i class="bi bi-box-arrow-in-right"></i> 로그인
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

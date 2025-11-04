@@ -1,41 +1,161 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>랜덤 레시피 - RecipeMate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
 <body>
-    <h1>랜덤 레시피 추천</h1>
-    
-    <!-- Count Form -->
-    <form method="get" action="/recipes/random">
-        <label for="count">개수:</label>
-        <input type="number" id="count" name="count" th:value="${count}" min="1" max="100" value="5">
-        <button type="submit">다시 추천받기</button>
-    </form>
-    
-    <!-- Random Recipe List -->
-    <div th:if="${recipes != null}">
-        <p>총 <span th:text="${recipes.totalCount}"></span>개의 랜덤 레시피를 추천합니다.</p>
-        
-        <div th:if="${!recipes.recipes.isEmpty()}">
-            <div th:each="recipe : ${recipes.recipes}" class="recipe-item">
-                <h3><a th:href="@{/recipes/{id}(id=${recipe.id})}" th:text="${recipe.name}"></a></h3>
-                <img th:if="${recipe.imageUrl != null}" th:src="${recipe.imageUrl}" th:alt="${recipe.name}" width="200">
-                <p>카테고리: <span th:text="${recipe.category}"></span></p>
-                <p>출처: <span th:text="${recipe.source}"></span></p>
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-5">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h1 class="display-5 fw-bold">
+                            <i class="bi bi-shuffle text-primary"></i> 랜덤 레시피 추천
+                        </h1>
+                        <p class="text-muted">운에 맡기고 새로운 레시피를 발견해보세요!</p>
+                    </div>
+                </div>
             </div>
         </div>
-        
-        <div th:if="${recipes.recipes.isEmpty()}">
-            <p>랜덤 레시피를 가져올 수 없습니다. 다시 시도해주세요.</p>
+
+        <!-- Random Count Form -->
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <form method="get" action="/recipes/random" class="row g-3 align-items-center">
+                            <div class="col-auto">
+                                <label for="count" class="col-form-label fw-semibold">
+                                    <i class="bi bi-list-ol"></i> 추천 개수:
+                                </label>
+                            </div>
+                            <div class="col-auto">
+                                <input type="number" 
+                                       id="count" 
+                                       name="count" 
+                                       class="form-control filter-select" 
+                                       th:value="${count}" 
+                                       min="1" 
+                                       max="100" 
+                                       value="5">
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-arrow-clockwise"></i> 다시 추천받기
+                                </button>
+                            </div>
+                            <div class="col-auto ms-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> 1~100개까지 선택 가능
+                                </small>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-    
-    <hr>
-    <div>
-        <a href="/recipes">레시피 검색</a> | 
-        <a href="/recipes/categories">카테고리 보기</a>
-    </div>
+
+        <!-- Random Recipe Results -->
+        <div th:if="${recipes != null}">
+            <!-- Result Count -->
+            <div class="alert alert-info mb-4" role="alert">
+                <i class="bi bi-check-circle-fill"></i>
+                총 <strong th:text="${recipes.totalCount}"></strong>개의 랜덤 레시피를 추천합니다.
+            </div>
+
+            <!-- Recipe Cards -->
+            <div th:if="${!recipes.recipes.isEmpty()}" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                <div class="col" th:each="recipe : ${recipes.recipes}">
+                    <div class="card h-100 shadow-sm card-hover">
+                        <!-- Recipe Image -->
+                        <div th:if="${recipe.imageUrl != null}" class="position-relative">
+                            <img th:src="${recipe.imageUrl}" 
+                                 th:alt="${recipe.name}" 
+                                 class="card-img-top recipe-card-img">
+                            <span class="position-absolute top-0 end-0 m-2 badge bg-primary">
+                                <i class="bi bi-shuffle"></i> 랜덤
+                            </span>
+                        </div>
+                        <div th:unless="${recipe.imageUrl != null}" 
+                             class="card-img-top bg-light d-flex align-items-center justify-content-center recipe-card-placeholder">
+                            <i class="bi bi-image text-muted recipe-placeholder-icon"></i>
+                        </div>
+
+                        <!-- Recipe Content -->
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">
+                                <a th:href="@{/recipes/{id}(id=${recipe.id})}" 
+                                   th:text="${recipe.name}" 
+                                   class="text-decoration-none text-dark stretched-link"></a>
+                            </h5>
+                            <div class="mt-auto">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-bookmark-fill"></i>
+                                        <span th:text="${recipe.category}"></span>
+                                    </span>
+                                </div>
+                                <p class="text-muted small mb-0">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                    출처: <span th:text="${recipe.source}"></span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div th:if="${recipes.recipes.isEmpty()}" class="text-center py-5">
+                <div class="mb-4">
+                    <i class="bi bi-exclamation-circle text-warning" style="font-size: 4rem;"></i>
+                </div>
+                <h3 class="mb-3">랜덤 레시피를 가져올 수 없습니다</h3>
+                <p class="text-muted mb-4">다시 시도해주세요.</p>
+                <a href="/recipes/random" class="btn btn-primary">
+                    <i class="bi bi-arrow-clockwise"></i> 다시 시도
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="row mt-5">
+            <div class="col-lg-12">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">
+                            <i class="bi bi-link-45deg"></i> 다른 메뉴 보기
+                        </h5>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="/recipes" class="btn btn-outline-primary">
+                                <i class="bi bi-search"></i> 레시피 검색
+                            </a>
+                            <a href="/recipes/categories" class="btn btn-outline-primary">
+                                <i class="bi bi-grid-3x3-gap"></i> 카테고리 보기
+                            </a>
+                            <a href="/" class="btn btn-outline-secondary">
+                                <i class="bi bi-house"></i> 홈으로
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>참여중인 공구 - RecipeMate</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body class="bg-light">
+    <div th:replace="~{fragments/header :: header}"></div>
+    
+    <main class="container py-4">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <h1 class="h3 mb-4"><i class="bi bi-cart-check"></i> 참여중인 공동구매</h1>
+                
+                <!-- Filter Tabs -->
+                <ul class="nav nav-tabs mb-4">
+                    <li class="nav-item">
+                        <a class="nav-link" 
+                           th:href="@{/users/me/participations}"
+                           th:classappend="${status == null or status == ''} ? 'active' : ''">
+                            전체
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" 
+                           th:href="@{/users/me/participations(status='RECRUITING')}"
+                           th:classappend="${status == 'RECRUITING'} ? 'active' : ''">
+                            모집중
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" 
+                           th:href="@{/users/me/participations(status='CLOSED')}"
+                           th:classappend="${status == 'CLOSED'} ? 'active' : ''">
+                            마감
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" 
+                           th:href="@{/users/me/participations(status='COMPLETED')}"
+                           th:classappend="${status == 'COMPLETED'} ? 'active' : ''">
+                            완료
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- Participations List -->
+                <div th:if="${participations != null and !participations.isEmpty()}" class="row g-4">
+                    <div th:each="participation : ${participations}" class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <!-- Status Badge -->
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0" th:text="${participation.groupBuyTitle}">공구 제목</h5>
+                                    <span class="badge" 
+                                          th:classappend="${participation.groupBuyStatus == 'RECRUITING'} ? 'bg-info' : (${participation.groupBuyStatus == 'CLOSED'} ? 'bg-secondary' : 'bg-success')"
+                                          th:text="${participation.groupBuyStatus == 'RECRUITING'} ? '모집중' : (${participation.groupBuyStatus == 'CLOSED'} ? '마감' : '완료')">
+                                        상태
+                                    </span>
+                                </div>
+                                
+                                <p class="card-text text-muted small mb-3" th:text="${participation.groupBuyContent}">공구 설명</p>
+                                
+                                <!-- Progress Bar -->
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between text-muted small mb-1">
+                                        <span th:text="${participation.currentHeadcount} + '/' + ${participation.targetHeadcount} + '명'">0/10명</span>
+                                        <span th:text="${#numbers.formatInteger((participation.currentHeadcount * 100 / participation.targetHeadcount), 0)} + '%'">0%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar" 
+                                             th:classappend="${participation.currentHeadcount >= participation.targetHeadcount} ? 'progress-bar-green' : (${participation.currentHeadcount >= participation.targetHeadcount * 0.6} ? 'progress-bar-blue' : 'progress-bar-gray')"
+                                             th:style="'width: ' + ${#numbers.formatInteger((participation.currentHeadcount * 100 / participation.targetHeadcount), 0)} + '%'">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Participation Info -->
+                                <div class="mb-3">
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar"></i> 
+                                        참여일: <span th:text="${#temporals.format(participation.createdAt, 'yyyy-MM-dd')}">2024-01-01</span>
+                                    </small>
+                                </div>
+                                
+                                <!-- Actions -->
+                                <div class="d-grid gap-2">
+                                    <a th:href="@{/group-purchases/{id}(id=${participation.groupBuyId})}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-eye"></i> 상세보기
+                                    </a>
+                                    
+                                    <!-- Cancel Participation Button (Only for RECRUITING status) -->
+                                    <form th:if="${participation.groupBuyStatus == 'RECRUITING'}" 
+                                          th:action="@{/api/group-purchases/{id}/participations(id=${participation.groupBuyId})}" 
+                                          method="post"
+                                          onsubmit="return confirm('참여를 취소하시겠습니까?')">
+                                        <input type="hidden" name="_method" value="delete"/>
+                                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                            <i class="bi bi-x-circle"></i> 참여 취소
+                                        </button>
+                                    </form>
+                                    
+                                    <!-- Review Button (Only for COMPLETED status without review) -->
+                                    <a th:if="${participation.groupBuyStatus == 'COMPLETED' and !participation.hasReview}" 
+                                       th:href="@{/group-purchases/{id}/reviews/new(id=${participation.groupBuyId})}" 
+                                       class="btn btn-warning btn-sm">
+                                        <i class="bi bi-star"></i> 후기 작성
+                                    </a>
+                                    <span th:if="${participation.groupBuyStatus == 'COMPLETED' and participation.hasReview}" 
+                                          class="badge bg-success w-100 py-2">
+                                        <i class="bi bi-check-circle"></i> 후기 작성 완료
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Empty State -->
+                <div th:if="${participations == null or participations.isEmpty()}" class="card text-center py-5">
+                    <div class="card-body">
+                        <i class="bi bi-cart-x display-1 text-muted"></i>
+                        <h5 class="mt-3">참여중인 공동구매가 없습니다</h5>
+                        <p class="text-muted">관심있는 공동구매에 참여해보세요!</p>
+                        <a th:href="@{/group-purchases}" class="btn btn-primary mt-3">
+                            <i class="bi bi-basket3"></i> 공동구매 둘러보기
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                <nav th:if="${participations != null and (participations.hasPrevious() or participations.hasNext())}" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" th:classappend="${!participations.hasPrevious()} ? 'disabled'">
+                            <a class="page-link" th:href="@{/users/me/participations(page=${participations.number - 1}, status=${status})}">
+                                <i class="bi bi-chevron-left"></i> 이전
+                            </a>
+                        </li>
+                        <li class="page-item active">
+                            <span class="page-link">
+                                <span th:text="${participations.number + 1}">1</span> / <span th:text="${participations.totalPages}">1</span>
+                            </span>
+                        </li>
+                        <li class="page-item" th:classappend="${!participations.hasNext()} ? 'disabled'">
+                            <a class="page-link" th:href="@{/users/me/participations(page=${participations.number + 1}, status=${status})}">
+                                다음 <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </main>
+    
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

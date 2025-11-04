@@ -2,25 +2,144 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>커뮤니티 게시글 목록 - RecipeMate</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>커뮤니티 - RecipeMate</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
-<body>
-    <h1>커뮤니티 게시글 목록</h1>
+<body class="bg-light">
+    <!-- Header Fragment -->
+    <div th:replace="~{fragments/header :: header}"></div>
     
-    <!-- Flash Messages -->
-    <div th:if="${successMessage}" class="alert alert-success">
-        <p th:text="${successMessage}"></p>
-    </div>
-    <div th:if="${errorMessage}" class="alert alert-error">
-        <p th:text="${errorMessage}"></p>
-    </div>
+    <main class="container my-5">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="fw-bold mb-2"><i class="bi bi-chat-dots"></i> 커뮤니티</h1>
+                <p class="text-muted">레시피와 공동구매에 대한 이야기를 나눠보세요</p>
+            </div>
+            <a th:href="@{/community-posts/new}" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> 글쓰기
+            </a>
+        </div>
+        
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <!-- Search Form -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <form th:action="@{/community-posts/list}" method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="category" class="form-label">카테고리</label>
+                        <select name="category" id="category" class="form-select">
+                            <option value="">전체</option>
+                            <option value="GENERAL">일반</option>
+                            <option value="RECIPE">레시피</option>
+                            <option value="GROUP_BUY">공동구매</option>
+                            <option value="REVIEW">후기</option>
+                        </select>
+                    </div>
+                    <div class="col-md-7">
+                        <label for="keyword" class="form-label">검색어</label>
+                        <input type="text" name="keyword" id="keyword" class="form-control" 
+                               placeholder="제목 또는 내용으로 검색">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> 검색
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Post List -->
+        <div th:if="${posts != null and !posts.isEmpty()}">
+            <div th:each="post : ${posts}" class="card shadow-sm mb-3 card-hover">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="flex-grow-1">
+                            <span th:if="${post.category != null}" 
+                                  class="badge bg-primary me-2" 
+                                  th:text="${post.category}">카테고리</span>
+                            <a th:href="@{/community-posts/{id}(id=${post.id})}" 
+                               class="text-decoration-none">
+                                <h5 class="d-inline fw-bold" th:text="${post.title}">게시글 제목</h5>
+                            </a>
+                        </div>
+                        <small class="text-muted" th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</small>
+                    </div>
+                    
+                    <p class="card-text text-muted mb-3" th:text="${#strings.abbreviate(post.content, 150)}">
+                        게시글 내용 미리보기...
+                    </p>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted small">
+                            <i class="bi bi-person"></i> 
+                            <span th:text="${post.author?.username ?: '알 수 없음'}">작성자</span>
+                        </div>
+                        <div class="text-muted small">
+                            <i class="bi bi-eye"></i> <span th:text="${post.viewCount ?: 0}">0</span>
+                            <i class="bi bi-chat ms-3"></i> <span th:text="${post.commentCount ?: 0}">0</span>
+                            <i class="bi bi-hand-thumbs-up ms-3"></i> <span th:text="${post.likeCount ?: 0}">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Empty State -->
+        <div th:if="${posts == null or posts.isEmpty()}" class="text-center py-5">
+            <i class="bi bi-chat-dots display-1 text-muted"></i>
+            <h4 class="mt-3 text-muted">게시글이 없습니다</h4>
+            <p class="text-muted">첫 번째 게시글을 작성해보세요!</p>
+            <a th:href="@{/community-posts/new}" class="btn btn-primary mt-3">
+                <i class="bi bi-pencil"></i> 글쓰기
+            </a>
+        </div>
+        
+        <!-- Pagination -->
+        <nav th:if="${posts != null and !posts.isEmpty() and totalPages > 1}" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                    <a class="page-link" th:href="@{/community-posts/list(page=${currentPage - 1}, size=${size})}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                
+                <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                    class="page-item" 
+                    th:classappend="${i == currentPage} ? 'active'">
+                    <a class="page-link" th:href="@{/community-posts/list(page=${i}, size=${size})}" th:text="${i + 1}">1</a>
+                </li>
+                
+                <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                    <a class="page-link" th:href="@{/community-posts/list(page=${currentPage + 1}, size=${size})}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </main>
     
-    <!-- Create Button -->
-    <a href="/community-posts/new">새 게시글 작성</a>
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
     
-    <!-- Post List Placeholder -->
-    <div>
-        <p>게시글 목록이 여기에 표시됩니다.</p>
-    </div>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

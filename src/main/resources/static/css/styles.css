@@ -1,0 +1,375 @@
+/* RecipeMate - Common Styles */
+
+/* Color Variables */
+:root {
+    --primary-color: #FF6B35;
+    --primary-hover: #E55A2A;
+    --success-color: #4CAF50;
+    --info-color: #2196F3;
+    --danger-color: #F44336;
+    --neutral-color: #9E9E9E;
+    --text-dark: #212529;
+    --text-muted: #6c757d;
+    --bg-light: #f8f9fa;
+    --border-color: #dee2e6;
+}
+
+/* Primary Button Overrides */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+    box-shadow: 0 0 0 0.25rem rgba(255, 107, 53, 0.25);
+}
+
+/* Text Colors */
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.bg-primary {
+    background-color: var(--primary-color) !important;
+}
+
+/* Link Colors */
+a {
+    color: var(--primary-color);
+}
+
+a:hover {
+    color: var(--primary-hover);
+}
+
+/* Card Hover Effects */
+.card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Progress Bar Custom Colors */
+.progress-bar-custom {
+    background-color: var(--primary-color);
+}
+
+.progress-bar-gray {
+    background-color: var(--neutral-color);
+}
+
+.progress-bar-blue {
+    background-color: var(--info-color);
+}
+
+.progress-bar-green {
+    background-color: var(--success-color);
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #FF8C5A 100%);
+    color: white;
+    padding: 80px 0;
+}
+
+/* Feature Cards */
+.feature-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Recipe Item Cards */
+.recipe-item {
+    transition: transform 0.2s ease;
+}
+
+.recipe-item:hover {
+    transform: translateY(-2px);
+}
+
+.recipe-img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+/* Group Buy Item Cards */
+.group-buy-item {
+    transition: transform 0.2s ease;
+}
+
+.group-buy-item:hover {
+    transform: translateY(-2px);
+}
+
+/* Badge Styles */
+.badge-recruiting {
+    background-color: var(--success-color);
+}
+
+.badge-closed {
+    background-color: var(--neutral-color);
+}
+
+/* Alert Styles */
+.alert-icon {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Form Styles */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(255, 107, 53, 0.15);
+}
+
+/* Footer Styles */
+footer {
+    background-color: #2c3e50;
+    color: #ecf0f1;
+    margin-top: 4rem;
+}
+
+footer a {
+    color: #ecf0f1;
+    text-decoration: none;
+}
+
+footer a:hover {
+    color: var(--primary-color);
+}
+
+/* Navbar Brand */
+.navbar-brand {
+    color: var(--primary-color) !important;
+    font-weight: bold;
+}
+
+/* Sticky Footer */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1;
+}
+
+/* Loading Spinner */
+.spinner-primary {
+    color: var(--primary-color);
+}
+
+/* Image Placeholder */
+.image-placeholder {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #FF8C5A 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item:hover {
+    background-color: var(--bg-light);
+    color: var(--primary-color);
+}
+
+/* Pagination */
+.pagination .page-link {
+    color: var(--primary-color);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.pagination .page-link:hover {
+    color: var(--primary-hover);
+    background-color: var(--bg-light);
+}
+
+/* Utility Classes */
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+.object-fit-cover {
+    object-fit: cover;
+}
+
+/* Profile Image Styles */
+.profile-img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+}
+
+.profile-placeholder {
+    width: 120px;
+    height: 120px;
+}
+
+.profile-icon {
+    font-size: 5rem;
+}
+
+/* Section Icon Styles */
+.section-icon {
+    font-size: 1.5rem;
+}
+
+/* Recipe Random Page Styles */
+.filter-select {
+    width: 100px;
+}
+
+.recipe-card-img {
+    height: 200px;
+    object-fit: cover;
+}
+
+.recipe-card-placeholder {
+    height: 200px;
+}
+
+.recipe-placeholder-icon {
+    font-size: 3rem;
+}
+
+/* Recipe Detail Page Styles */
+.recipe-detail-img {
+    max-height: 400px;
+    object-fit: cover;
+}
+
+.recipe-detail-placeholder {
+    height: 300px;
+}
+
+.difficulty-icon {
+    font-size: 0.5rem;
+}
+
+/* Floating Action Buttons */
+.floating-buttons {
+    position: fixed;
+    top: 20px;
+}
+
+/* Group Purchase Detail Styles */
+.group-purchase-img {
+    max-height: 500px;
+    object-fit: cover;
+}
+
+.progress-bar-info {
+    background-color: #2196F3;
+}
+
+/* Comment Styles */
+.comment-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+}
+
+.reply-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+}
+
+/* Notification Styles */
+.notification-unread {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+.notification-read {
+    background-color: #f8f9fa;
+    border-left: 4px solid #dee2e6;
+}
+
+/* Auth Page Styles */
+.auth-card {
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.auth-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #FF8C5A 100%);
+    border-radius: 15px 15px 0 0;
+}
+
+/* Search Highlight Styles */
+.highlight {
+    background-color: #fff3cd;
+    font-weight: bold;
+}
+
+/* Tab Styles for Search */
+.nav-tabs .nav-link {
+    border: none;
+    color: var(--text-muted);
+    border-bottom: 3px solid transparent;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    font-weight: 600;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+/* Empty State Styles */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: var(--neutral-color);
+    margin-bottom: 1.5rem;
+}
+
+/* Responsive Spacing */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 60px 0;
+    }
+    
+    .hero-section h1 {
+        font-size: 2.5rem;
+    }
+}

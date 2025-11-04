@@ -2,91 +2,274 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title th:text="${groupBuy != null ? '공동구매 수정' : '공동구매 작성'} + ' - RecipeMate'"></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${groupBuy != null ? '공동구매 수정' : '공동구매 작성'} + ' - RecipeMate'">공동구매 작성 - RecipeMate</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
-<body>
-    <h1 th:text="${groupBuy != null ? '공동구매 수정' : '공동구매 작성'}"></h1>
+<body class="bg-light">
+    <!-- Header Fragment -->
+    <div th:replace="~{fragments/header :: header}"></div>
     
-    <!-- Flash Messages -->
-    <div th:if="${errorMessage}" class="alert alert-error">
-        <p th:text="${errorMessage}"></p>
-    </div>
+    <main class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- Page Header -->
+                <div class="mb-4">
+                    <h1 class="fw-bold">
+                        <i class="bi bi-basket3"></i>
+                        <span th:text="${groupBuy != null ? '공동구매 수정' : '공동구매 작성'}">공동구매 작성</span>
+                    </h1>
+                    <p class="text-muted">함께 구매할 상품의 정보를 입력해주세요</p>
+                </div>
+                
+                <!-- Flash Messages -->
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <!-- Form Card -->
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <form method="post" 
+                              th:action="${groupBuy != null ? '/group-purchases/' + groupBuy.id : '/group-purchases'}"
+                              enctype="multipart/form-data">
+                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            
+                            <!-- Title -->
+                            <div class="mb-4">
+                                <label for="title" class="form-label fw-semibold">
+                                    제목 <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       id="title" 
+                                       name="title" 
+                                       class="form-control" 
+                                       th:value="${groupBuy?.title}"
+                                       placeholder="공동구매 제목을 입력하세요"
+                                       required
+                                       maxlength="100">
+                            </div>
+                            
+                            <!-- Category -->
+                            <div class="mb-4">
+                                <label for="category" class="form-label fw-semibold">
+                                    카테고리 <span class="text-danger">*</span>
+                                </label>
+                                <select id="category" name="category" class="form-select" required>
+                                    <option value="">카테고리를 선택하세요</option>
+                                    <option value="육류" th:selected="${groupBuy?.category == '육류'}">육류</option>
+                                    <option value="채소" th:selected="${groupBuy?.category == '채소'}">채소</option>
+                                    <option value="과일" th:selected="${groupBuy?.category == '과일'}">과일</option>
+                                    <option value="수산물" th:selected="${groupBuy?.category == '수산물'}">수산물</option>
+                                    <option value="유제품" th:selected="${groupBuy?.category == '유제품'}">유제품</option>
+                                    <option value="기타" th:selected="${groupBuy?.category == '기타'}">기타</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Content -->
+                            <div class="mb-4">
+                                <label for="content" class="form-label fw-semibold">
+                                    상세 설명 <span class="text-danger">*</span>
+                                </label>
+                                <textarea id="content" 
+                                          name="content" 
+                                          class="form-control" 
+                                          rows="8"
+                                          placeholder="공동구매에 대한 상세한 설명을 입력하세요"
+                                          required
+                                          th:text="${groupBuy?.content}"></textarea>
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle"></i> 상품의 상태, 수령 방법 등을 자세히 작성해주세요.
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <!-- Total Price -->
+                                <div class="col-md-6 mb-4">
+                                    <label for="totalPrice" class="form-label fw-semibold">
+                                        총 가격 <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" 
+                                               id="totalPrice" 
+                                               name="totalPrice" 
+                                               class="form-control" 
+                                               th:value="${groupBuy?.totalPrice}" 
+                                               min="0" 
+                                               step="1000"
+                                               placeholder="0"
+                                               required>
+                                        <span class="input-group-text">원</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Target Headcount -->
+                                <div class="col-md-6 mb-4">
+                                    <label for="targetHeadcount" class="form-label fw-semibold">
+                                        목표 인원 <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" 
+                                               id="targetHeadcount" 
+                                               name="targetHeadcount" 
+                                               class="form-control" 
+                                               th:value="${groupBuy?.targetHeadcount}" 
+                                               min="2" 
+                                               max="100"
+                                               placeholder="2"
+                                               required>
+                                        <span class="input-group-text">명</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Deadline -->
+                            <div class="mb-4">
+                                <label for="deadline" class="form-label fw-semibold">
+                                    마감일 <span class="text-danger">*</span>
+                                </label>
+                                <input type="datetime-local" 
+                                       id="deadline" 
+                                       name="deadline" 
+                                       class="form-control"
+                                       th:value="${groupBuy != null and groupBuy.deadline != null ? #temporals.format(groupBuy.deadline, 'yyyy-MM-dd''T''HH:mm') : ''}" 
+                                       required>
+                            </div>
+                            
+                            <hr class="my-4">
+                            
+                            <h5 class="fw-bold mb-3">배송 정보</h5>
+                            
+                            <!-- Delivery Method -->
+                            <div class="mb-4">
+                                <label for="deliveryMethod" class="form-label fw-semibold">
+                                    배송 방법 <span class="text-danger">*</span>
+                                </label>
+                                <select id="deliveryMethod" name="deliveryMethod" class="form-select" required>
+                                    <option value="">배송 방법을 선택하세요</option>
+                                    <option value="DIRECT" th:selected="${groupBuy?.deliveryMethod?.name() == 'DIRECT'}">
+                                        <i class="bi bi-person-arms-up"></i> 직거래
+                                    </option>
+                                    <option value="PARCEL" th:selected="${groupBuy?.deliveryMethod?.name() == 'PARCEL'}">
+                                        <i class="bi bi-box-seam"></i> 택배
+                                    </option>
+                                    <option value="BOTH" th:selected="${groupBuy?.deliveryMethod?.name() == 'BOTH'}">
+                                        <i class="bi bi-check-all"></i> 둘 다 가능
+                                    </option>
+                                </select>
+                            </div>
+                            
+                            <!-- Meetup Location -->
+                            <div class="mb-4">
+                                <label for="meetupLocation" class="form-label fw-semibold">
+                                    만남 장소 <span class="text-muted small">(직거래 시)</span>
+                                </label>
+                                <input type="text" 
+                                       id="meetupLocation" 
+                                       name="meetupLocation" 
+                                       class="form-control" 
+                                       th:value="${groupBuy?.meetupLocation}"
+                                       placeholder="예: 서울역 3번 출구">
+                                <div class="form-text">
+                                    <i class="bi bi-geo-alt"></i> 구체적인 만남 장소를 입력해주세요.
+                                </div>
+                            </div>
+                            
+                            <!-- Parcel Fee -->
+                            <div class="mb-4">
+                                <label for="parcelFee" class="form-label fw-semibold">
+                                    택배비 <span class="text-muted small">(택배 배송 시)</span>
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" 
+                                           id="parcelFee" 
+                                           name="parcelFee" 
+                                           class="form-control" 
+                                           th:value="${groupBuy?.parcelFee}" 
+                                           min="0"
+                                           step="500"
+                                           placeholder="0">
+                                    <span class="input-group-text">원</span>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-4">
+                            
+                            <!-- Participant List Public -->
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input type="checkbox" 
+                                           class="form-check-input" 
+                                           id="isParticipantListPublic" 
+                                           name="isParticipantListPublic"
+                                           th:checked="${groupBuy?.isParticipantListPublic}">
+                                    <label class="form-check-label" for="isParticipantListPublic">
+                                        <i class="bi bi-people"></i> 참여자 명단 공개
+                                    </label>
+                                    <div class="form-text">참여자 목록을 다른 사용자에게 공개합니다.</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Image Upload (only for new posts) -->
+                            <div th:if="${groupBuy == null}" class="mb-4">
+                                <label for="imageFiles" class="form-label fw-semibold">
+                                    이미지 업로드 <span class="text-muted small">(최대 3장)</span>
+                                </label>
+                                <input type="file" 
+                                       id="imageFiles" 
+                                       name="imageFiles" 
+                                       class="form-control" 
+                                       multiple 
+                                       accept="image/*">
+                                <div class="form-text">
+                                    <i class="bi bi-image"></i> JPG, PNG 형식의 이미지를 업로드할 수 있습니다.
+                                </div>
+                            </div>
+                            
+                            <!-- Form Actions -->
+                            <div class="d-flex gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary px-4">
+                                    <i class="bi bi-check-circle"></i>
+                                    <span th:text="${groupBuy != null ? '수정하기' : '작성하기'}">작성하기</span>
+                                </button>
+                                <a th:href="${groupBuy != null ? '/group-purchases/' + groupBuy.id : '/group-purchases/list'}" 
+                                   class="btn btn-outline-secondary px-4">
+                                    <i class="bi bi-x-circle"></i> 취소
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Help Card -->
+                <div class="card border-0 bg-light mt-3">
+                    <div class="card-body">
+                        <h6 class="fw-semibold mb-2">
+                            <i class="bi bi-lightbulb text-warning"></i> 작성 가이드
+                        </h6>
+                        <ul class="small text-muted mb-0">
+                            <li>신선한 식재료의 경우 수령 가능한 날짜와 시간을 명시해주세요.</li>
+                            <li>목표 인원은 실제 구매 가능한 인원으로 설정해주세요.</li>
+                            <li>배송 방법을 명확히 하여 참여자들의 혼란을 방지하세요.</li>
+                            <li>상품의 상태, 브랜드, 원산지 등을 자세히 작성하면 참여율이 높아집니다.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
     
-    <form method="post" 
-          th:action="${groupBuy != null ? '/group-purchases/' + groupBuy.id : '/group-purchases'}"
-          enctype="multipart/form-data">
-        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-        
-        <label>
-            제목:
-            <input type="text" name="title" th:value="${groupBuy?.title}" required>
-        </label>
-        
-        <label>
-            내용:
-            <textarea name="content" rows="5" required th:text="${groupBuy?.content}"></textarea>
-        </label>
-        
-        <label>
-            카테고리:
-            <select name="category" required>
-                <option value="육류" th:selected="${groupBuy?.category == '육류'}">육류</option>
-                <option value="채소" th:selected="${groupBuy?.category == '채소'}">채소</option>
-                <option value="과일" th:selected="${groupBuy?.category == '과일'}">과일</option>
-                <option value="수산물" th:selected="${groupBuy?.category == '수산물'}">수산물</option>
-                <option value="기타" th:selected="${groupBuy?.category == '기타'}">기타</option>
-            </select>
-        </label>
-        
-        <label>
-            총 가격 (원):
-            <input type="number" name="totalPrice" th:value="${groupBuy?.totalPrice}" min="0" required>
-        </label>
-        
-        <label>
-            목표 인원:
-            <input type="number" name="targetHeadcount" th:value="${groupBuy?.targetHeadcount}" min="2" required>
-        </label>
-        
-        <label>
-            마감일:
-            <input type="datetime-local" name="deadline" 
-                   th:value="${groupBuy != null and groupBuy.deadline != null ? #temporals.format(groupBuy.deadline, 'yyyy-MM-dd''T''HH:mm') : ''}" 
-                   required>
-        </label>
-        
-        <label>
-            배송 방법:
-            <select name="deliveryMethod" required>
-                <option value="DIRECT" th:selected="${groupBuy?.deliveryMethod?.name() == 'DIRECT'}">직거래</option>
-                <option value="PARCEL" th:selected="${groupBuy?.deliveryMethod?.name() == 'PARCEL'}">택배</option>
-                <option value="BOTH" th:selected="${groupBuy?.deliveryMethod?.name() == 'BOTH'}">둘 다 가능</option>
-            </select>
-        </label>
-        
-        <label>
-            만남 장소 (직거래 시):
-            <input type="text" name="meetupLocation" th:value="${groupBuy?.meetupLocation}">
-        </label>
-        
-        <label>
-            택배비 (원):
-            <input type="number" name="parcelFee" th:value="${groupBuy?.parcelFee}" min="0">
-        </label>
-        
-        <label>
-            <input type="checkbox" name="isParticipantListPublic" 
-                   th:checked="${groupBuy?.isParticipantListPublic}">
-            참여자 명단 공개
-        </label>
-        
-        <label th:if="${groupBuy == null}">
-            이미지 업로드 (최대 3장):
-            <input type="file" name="imageFiles" multiple accept="image/*">
-        </label>
-        
-        <button type="submit" th:text="${groupBuy != null ? '수정' : '작성'}"></button>
-        <a th:href="${groupBuy != null ? '/group-purchases/' + groupBuy.id : '/group-purchases/list'}">취소</a>
-    </form>
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

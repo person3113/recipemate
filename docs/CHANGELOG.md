@@ -4,6 +4,97 @@
 
 ---
 
+## [2025-11-04] Bootstrap 5 통합 완료
+
+### 처리 항목
+
+#### ✅ 모든 템플릿 Bootstrap 5 통합 및 인라인 스타일 제거
+- **변경 파일** (30개 HTML 파일):
+  - 모든 템플릿에 Bootstrap 5.3.2 CDN 및 Bootstrap Icons 1.11.1 적용
+  - `/css/styles.css` 외부 CSS 파일 참조 통합
+  - 인라인 스타일 제거 및 CSS 클래스로 대체 (13개 파일)
+  
+- **주요 변경사항**:
+  1. **User 템플릿** (8개):
+     - `my-page.html`: 프로필 이미지, 통계 아이콘 스타일 클래스화
+     - `notifications.html`: `<style>` 태그 제거, CSS 클래스 사용
+     - `badges.html`, `bookmarks.html`, `points.html`, `my-group-purchases.html`, `participations.html`: 모두 Bootstrap 카드 기반 레이아웃
+  
+  2. **Recipe 템플릿** (4개):
+     - `random.html`: 필터 선택, 카드 이미지 스타일 클래스화
+     - `categories.html`: 카테고리 카드 이미지 스타일 클래스화
+     - `detail.html`: 상세 이미지, 난이도 아이콘, floating 버튼 스타일 클래스화
+     - `list.html`: `<style>` 태그 완전 제거
+  
+  3. **Group Purchase 템플릿** (3개):
+     - `list.html`: `<style>` 태그 완전 제거
+     - `detail.html`: 이미지, progress bar, floating 버튼 스타일 클래스화
+     - `form.html`: 이미 Bootstrap 사용 중 (검증 완료)
+  
+  4. **Auth 템플릿** (4개):
+     - `login.html`, `signup.html`: 이미 Bootstrap 사용 중 (검증 완료)
+     - `password/reset-form.html`, `password/reset-request.html`: `<style>` 태그 제거, auth-card/auth-header 클래스 적용
+  
+  5. **기타 템플릿**:
+     - `search/results.html`: 이미지 스타일, nav-tabs 스타일 클래스화
+     - `fragments/comments.html`: 아바타 크기 스타일 클래스화
+     - `fragments/header.html`, `fragments/footer.html`: 이미 Bootstrap 사용 중 (검증 완료)
+     - `index.html`: 이미 Bootstrap 사용 중 (검증 완료)
+
+#### ✅ styles.css 통합 스타일 시트 작성
+- **변경 파일**:
+  - `static/css/styles.css`: 모든 커스텀 스타일 중앙 집중화
+  
+- **추가된 CSS 클래스**:
+  - **프로필 관련**: `.profile-img`, `.profile-placeholder`, `.profile-icon`
+  - **섹션 아이콘**: `.section-icon` (1.5rem)
+  - **레시피 카드**: `.recipe-card-img`, `.recipe-card-placeholder`, `.recipe-placeholder-icon`
+  - **레시피 상세**: `.recipe-detail-img`, `.recipe-detail-placeholder`, `.difficulty-icon`
+  - **공동구매**: `.group-purchase-img`, `.progress-bar-info`
+  - **댓글**: `.comment-avatar`, `.reply-avatar`
+  - **알림**: `.notification-unread`, `.notification-read`
+  - **인증 페이지**: `.auth-card`, `.auth-header`
+  - **검색**: `.highlight`, `.nav-tabs` (커스텀)
+  - **기타**: `.filter-select`, `.floating-buttons`, `.empty-state`, `.empty-icon`
+
+#### ✅ 디자인 시스템 표준화
+- **Color Variables**:
+  - Primary: `#FF6B35` (오렌지)
+  - Success: `#4CAF50` (녹색)
+  - Info: `#2196F3` (파란색)
+  - Warning: `#FFC107` (노란색)
+  - Danger: `#F44336` (빨간색)
+  - Neutral: `#9E9E9E` (회색)
+
+- **공통 컴포넌트 패턴**:
+  - Card hover effects
+  - Progress bars (custom, gray, blue, green)
+  - Badges (recruiting, closed)
+  - Image placeholders
+  - Empty states
+  - Pagination styles
+  - Form focus styles
+
+### 검증 결과
+- ✅ 30개 HTML 파일 모두 Bootstrap 5.3.2 + Bootstrap Icons 1.11.1 사용
+- ✅ 모든 파일 `/css/styles.css` 외부 CSS 참조
+- ✅ 인라인 스타일 제거 완료 (13개 파일 수정)
+- ✅ `<style>` 태그 제거 완료 (6개 파일 수정)
+- ✅ Header/Footer 프래그먼트 정상 참조 확인
+
+### 효과
+- ✅ 일관된 디자인 시스템 구축
+- ✅ 유지보수성 향상 (스타일 중앙 집중화)
+- ✅ 코드 가독성 개선 (HTML과 CSS 분리)
+- ✅ 재사용 가능한 CSS 클래스 체계 확립
+- ✅ 반응형 디자인 일관성 확보
+- ✅ Bootstrap 5 모범 사례 준수
+
+### 소요 시간
+약 2시간
+
+---
+
 ## [2025-11-04] Task 4-2-3 캐싱 전략 구현 완료
 
 ### 처리 항목

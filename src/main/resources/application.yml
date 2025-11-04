@@ -3,10 +3,6 @@ spring:
     name: RecipeMate
   profiles:
     active: dev
-  cache:
-    type: redis
-    redis:
-      time-to-live: 3600000  # 1 hour in milliseconds
 
 # 식품안전나라 API 설정
 food:
@@ -20,6 +16,8 @@ spring:
   config:
     activate:
       on-profile: dev
+  cache:
+    type: none  # Disable cache for dev environment
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:testdb
@@ -56,6 +54,10 @@ spring:
   config:
     activate:
       on-profile: prod
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000  # 1 hour in milliseconds
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/recipemate

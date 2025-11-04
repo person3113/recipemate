@@ -795,21 +795,28 @@
   - `GET /users/me/points`
   - `GET /users/me/points/history`
 
-#### [ ] Task 4-5-4: 이미지 최적화
-- [ ] Thumbnailator 라이브러리 추가
-  - build.gradle 의존성 추가
-- [ ] 테스트 작성
-  - 원본 이미지 → 썸네일 생성
-  - JPEG/PNG → WebP 변환
-  - 파일 크기 감소 확인
-- [ ] ImageOptimizationService 구현
-  - `createThumbnail(MultipartFile file, int width, int height)`
-  - `convertToWebP(MultipartFile file)`
-  - `optimizeImage(MultipartFile file, float quality)`
-- [ ] 기존 이미지 업로드 로직에 통합
+#### [x] Task 4-5-4: 이미지 최적화
+- [x] Thumbnailator 라이브러리 추가
+  - build.gradle 의존성 추가 (net.coobird:thumbnailator:0.4.19)
+- [x] 테스트 작성
+  - 원본 이미지 → 썸네일 생성 (createThumbnail)
+  - 이미지 최적화 (리사이즈 + 압축)
+  - JPEG/PNG 형식 지원
+  - 파일 크기 감소 및 유효성 검증
+  - ImageOptimizationServiceTest.java (10개 테스트)
+  - ImageUploadIntegrationTest.java (8개 통합 테스트)
+- [x] ImageOptimizationService 구현
+  - `optimizeImage(byte[] imageData, String fileName)` - 이미지 최적화 (최대 1920x1920, 85% 품질)
+  - `createThumbnail(byte[] imageData, int width, int height)` - 썸네일 생성 (비율 유지)
+  - `convertToWebP(byte[] imageData)` - WebP 변환 (현재는 고품질 JPEG로 구현)
+- [x] 기존 이미지 업로드 로직에 통합
+  - ImageUploadUtil에 ImageOptimizationService 주입
+  - 업로드 시 자동으로 이미지 최적화 적용
   - GroupBuyImage, PostImage 업로드 시 자동 최적화
-  - 원본 + 썸네일 2종 저장 (선택)
-  - CDN 연동 고려 (선택)
+  - 최적화 전후 크기 로깅
+  - [ ] 원본 + 썸네일 2종 저장 (향후 개선)
+  - [ ] 실제 WebP 형식 변환 (webp-imageio 라이브러리 추가)
+  - [ ] CDN 연동 고려 (향후 개선)
 
 #### [ ] Task 4-5-5: 지도 API 연동 (만남 장소 표시)
 - [ ] 테스트 작성

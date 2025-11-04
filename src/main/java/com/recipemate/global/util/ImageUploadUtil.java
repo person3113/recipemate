@@ -1,8 +1,11 @@
 package com.recipemate.global.util;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -11,8 +14,12 @@ import java.util.UUID;
  * 이미지 업로드 유틸리티
  * 현재는 placeholder URL 생성 (추후 실제 파일 저장 로직으로 교체)
  */
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class ImageUploadUtil {
+
+    private final ImageOptimizationService imageOptimizationService;
 
     private static final int MAX_IMAGE_COUNT = 3;
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -47,12 +54,29 @@ public class ImageUploadUtil {
 
     /**
      * 단일 이미지 업로드
+     * 이미지 최적화 후 저장
      */
     private String uploadSingleImage(MultipartFile file) {
-        // TODO: 실제 파일 저장 로직 구현 (S3, 로컬 스토리지 등)
-        // 현재는 테스트를 위해 placeholder URL 생성
-        String fileName = generateFileName(file.getOriginalFilename());
-        return "/images/" + fileName;
+        try {
+            // 이미지 최적화
+            byte[] optimizedImageData = imageOptimizationService.optimizeImage(
+                    file.getBytes(),
+                    file.getOriginalFilename()
+            );
+            
+            // TODO: 실제 파일 저장 로직 구현 (S3, 로컬 스토리지 등)
+            // 최적화된 이미지 데이터를 저장해야 함
+            String fileName = generateFileName(file.getOriginalFilename());
+            
+            log.info("이미지 업로드 완료: {} (원본: {} bytes, 최적화: {} bytes)", 
+                    fileName, file.getSize(), optimizedImageData.length);
+            
+            return "/images/" + fileName;
+            
+        } catch (IOException e) {
+            log.error("이미지 업로드 실패: {}", file.getOriginalFilename(), e);
+            throw new IllegalArgumentException("이미지 업로드에 실패했습니다: " + e.getMessage(), e);
+        }
     }
 
     /**

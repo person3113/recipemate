@@ -36,6 +36,7 @@ public class GroupBuyService {
     private final UserRepository userRepository;
     private final ImageUploadUtil imageUploadUtil;
     private final com.recipemate.domain.recipe.service.RecipeService recipeService;
+    private final com.recipemate.domain.badge.service.BadgeService badgeService;
 
     /**
      * 일반 공구 생성
@@ -93,7 +94,10 @@ public class GroupBuyService {
         // 5. 이미지 엔티티 생성 및 저장
         saveGroupBuyImages(savedGroupBuy, imageUrls);
 
-        // 6. 응답 DTO 생성
+        // 6. 첫 공구 생성 시 배지 수여
+        checkAndAwardFirstGroupBuyBadge(userId);
+
+        // 7. 응답 DTO 생성
         return mapToResponse(savedGroupBuy, imageUrls);
     }
 
@@ -414,6 +418,16 @@ public class GroupBuyService {
         }
         if (request.getDeliveryMethod() == null) {
             throw new CustomException(ErrorCode.INVALID_DELIVERY_METHOD);
+        }
+    }
+
+    /**
+     * 첫 공구 생성 배지 확인 및 수여
+     */
+    private void checkAndAwardFirstGroupBuyBadge(Long userId) {
+        long groupBuyCount = groupBuyRepository.countByHostIdAndStatus(userId, GroupBuyStatus.RECRUITING);
+        if (groupBuyCount == 1) {
+            badgeService.checkAndAwardBadge(userId, com.recipemate.global.common.BadgeType.FIRST_GROUP_BUY);
         }
     }
 }

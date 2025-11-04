@@ -34,6 +34,7 @@ public class ReviewService {
     private final ParticipationRepository participationRepository;
     private final UserService userService;
     private final NotificationService notificationService;
+    private final com.recipemate.domain.badge.service.BadgeService badgeService;
 
     /**
      * 후기 작성
@@ -85,6 +86,12 @@ public class ReviewService {
             savedReview.getId(),
             EntityType.REVIEW
         );
+
+        // 9. 후기 작성자에게 REVIEWER 배지 확인 및 수여
+        checkAndAwardReviewerBadge(userId);
+
+        // 10. 공구 주최자에게 POPULAR_HOST 배지 확인 및 수여
+        checkAndAwardPopularHostBadge(groupBuy.getHost().getId());
 
         return ReviewResponse.from(savedReview);
     }
@@ -152,5 +159,33 @@ public class ReviewService {
         return reviews.stream()
                 .map(ReviewResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * REVIEWER 배지 확인 및 수여 (5개 이상 후기 작성)
+     */
+    private void checkAndAwardReviewerBadge(Long userId) {
+        long count = reviewRepository.countByReviewerId(userId);
+        if (count >= 5) {
+            badgeService.checkAndAwardBadge(userId, com.recipemate.global.common.BadgeType.REVIEWER);
+        }
+    }
+
+    /**
+     * POPULAR_HOST 배지 확인 및 수여 (10개 이상 후기 & 평균 평점 4.5 이상)
+     */
+    private void checkAndAwardPopularHostBadge(Long hostId) {
+        List<Review> hostReviews = reviewRepository.findByGroupBuyHostId(hostId);
+        
+        if (hostReviews.size() >= 10) {
+            double avgRating = hostReviews.stream()
+                    .mapToInt(Review::getRating)
+                    .average()
+                    .orElse(0.0);
+            
+            if (avgRating >= 4.5) {
+                badgeService.checkAndAwardBadge(hostId, com.recipemate.global.common.BadgeType.POPULAR_HOST);
+            }
+        }
     }
 }

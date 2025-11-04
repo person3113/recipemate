@@ -38,6 +38,7 @@ public class ParticipationService {
     private final GroupBuyRepository groupBuyRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final com.recipemate.domain.badge.service.BadgeService badgeService;
 
     @Transactional
     @Retryable(
@@ -101,6 +102,9 @@ public class ParticipationService {
             groupBuyId,
             EntityType.GROUP_BUY
         );
+
+        // 12. 10회 참여 배지 확인 및 수여
+        checkAndAwardTenParticipationsBadge(userId);
     }
 
     @Transactional
@@ -177,5 +181,15 @@ public class ParticipationService {
         return participations.stream()
             .map(ParticipantResponse::from)
             .collect(Collectors.toList());
+    }
+
+    /**
+     * 10회 참여 배지 확인 및 수여
+     */
+    private void checkAndAwardTenParticipationsBadge(Long userId) {
+        long count = participationRepository.countByUserId(userId);
+        if (count >= 10) {
+            badgeService.checkAndAwardBadge(userId, com.recipemate.global.common.BadgeType.TEN_PARTICIPATIONS);
+        }
     }
 }

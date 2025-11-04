@@ -1,5 +1,6 @@
 package com.recipemate.domain.user.controller;
 
+import com.recipemate.domain.badge.dto.BadgeResponse;
 import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.user.dto.UserResponse;
 import com.recipemate.domain.user.entity.User;
@@ -7,6 +8,7 @@ import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.domain.user.service.UserService;
 import com.recipemate.domain.wishlist.dto.WishlistResponse;
 import com.recipemate.domain.wishlist.service.WishlistService;
+import com.recipemate.global.common.BadgeType;
 import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.config.TestSecurityConfig;
@@ -27,6 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -61,6 +64,9 @@ class UserControllerTest {
     
     @MockitoBean
     private com.recipemate.domain.user.service.CustomUserDetailsService customUserDetailsService;
+    
+    @MockitoBean
+    private com.recipemate.domain.badge.service.BadgeService badgeService;
 
     @Test
     @DisplayName("내 프로필 페이지 렌더링 성공")
@@ -191,6 +197,51 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("user/bookmarks"))
                 .andExpect(model().attributeExists("wishlists"));
+    }
+
+    // ========== 배지 목록 조회 테스트 ==========
+
+    @Test
+    @DisplayName("내 배지 목록 페이지 렌더링 성공")
+    @WithMockUser(username = "test@example.com")
+    void myBadgesPage_Success() throws Exception {
+        // given
+        User mockUser = User.create("test@example.com", "password", "테스트유저", "010-1234-5678");
+        BadgeResponse mockBadge = BadgeResponse.builder()
+            .id(1L)
+            .badgeType(BadgeType.FIRST_GROUP_BUY)
+            .displayName(BadgeType.FIRST_GROUP_BUY.getDisplayName())
+            .description(BadgeType.FIRST_GROUP_BUY.getDescription())
+            .acquiredAt(LocalDateTime.now())
+            .build();
+        List<BadgeResponse> mockBadges = List.of(mockBadge);
+        
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+        given(badgeService.getUserBadges(any())).willReturn(mockBadges);
+
+        // when & then
+        mockMvc.perform(get("/users/me/badges"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("user/badges"))
+                .andExpect(model().attributeExists("badges"));
+    }
+
+    @Test
+    @DisplayName("내 배지 목록 페이지 렌더링 - 빈 목록")
+    @WithMockUser(username = "test@example.com")
+    void myBadgesPage_EmptyList() throws Exception {
+        // given
+        User mockUser = User.create("test@example.com", "password", "테스트유저", "010-1234-5678");
+        List<BadgeResponse> emptyBadges = Collections.emptyList();
+        
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+        given(badgeService.getUserBadges(any())).willReturn(emptyBadges);
+
+        // when & then
+        mockMvc.perform(get("/users/me/badges"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("user/badges"))
+                .andExpect(model().attributeExists("badges"));
     }
 }
 

@@ -747,8 +747,8 @@
     - templates/search/results.html (통합 검색 결과 페이지)
     - templates/search/fragments.html (groupBuyResults, postResults, recipeResults 프래그먼트)
 
-#### [ ] Task 4-5-2: 뱃지 시스템
-- [ ] Badge 엔티티 작성
+#### [x] Task 4-5-2: 뱃지 시스템
+- [x] Badge 엔티티 작성
   - 테스트 작성
     - 뱃지 조건 달성 여부 확인
     - 중복 획득 방지 (user + badgeType 유니크)
@@ -759,7 +759,7 @@
   - BadgeRepository 작성
     - `findByUserId(Long userId)`
     - `existsByUserIdAndBadgeType(Long userId, BadgeType badgeType)`
-- [ ] BadgeService 구현
+- [x] BadgeService 구현
   - `checkAndAwardBadge(Long userId, BadgeType badgeType)`
   - 조건 체크 로직
     - FIRST_GROUP_BUY: 첫 공구 생성 시
@@ -767,7 +767,7 @@
     - REVIEWER: 후기 5개 작성 시
     - POPULAR_HOST: 매너온도 40도 이상 달성 시
   - 각 도메인 서비스에 뱃지 획득 로직 추가
-- [ ] 마이페이지에 뱃지 목록 표시
+- [x] 마이페이지에 뱃지 목록 표시
   - UserController에 엔드포인트 추가
   - `GET /users/me/badges`
 

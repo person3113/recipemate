@@ -1,5 +1,7 @@
 package com.recipemate.domain.user.controller;
 
+import com.recipemate.domain.badge.dto.BadgeResponse;
+import com.recipemate.domain.badge.service.BadgeService;
 import com.recipemate.domain.notification.dto.NotificationResponse;
 import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.user.dto.ChangePasswordRequest;
@@ -36,6 +38,7 @@ public class UserController {
     private final WishlistService wishlistService;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+    private final BadgeService badgeService;
 
     /**
      * 마이페이지 렌더링
@@ -145,6 +148,20 @@ public class UserController {
         notificationService.deleteAllNotifications(user.getId());
         redirectAttributes.addFlashAttribute("message", "모든 알림이 삭제되었습니다.");
         return "redirect:/users/me/notifications";
+    }
+
+    /**
+     * 내 배지 목록 페이지 렌더링
+     * GET /users/me/badges
+     */
+    @GetMapping("/me/badges")
+    public String myBadgesPage(@AuthenticationPrincipal UserDetails userDetails, Model model) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        List<BadgeResponse> badges = badgeService.getUserBadges(user.getId());
+        model.addAttribute("badges", badges);
+        return "user/badges";
     }
     
     // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========

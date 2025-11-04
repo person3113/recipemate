@@ -37,6 +37,7 @@ public class GroupBuyService {
     private final ImageUploadUtil imageUploadUtil;
     private final com.recipemate.domain.recipe.service.RecipeService recipeService;
     private final com.recipemate.domain.badge.service.BadgeService badgeService;
+    private final com.recipemate.domain.user.service.PointService pointService;
 
     /**
      * 일반 공구 생성
@@ -97,7 +98,10 @@ public class GroupBuyService {
         // 6. 첫 공구 생성 시 배지 수여
         checkAndAwardFirstGroupBuyBadge(userId);
 
-        // 7. 응답 DTO 생성
+        // 7. 공구 생성 포인트 적립 (+50)
+        pointService.earnPoints(userId, 50, "공동구매 생성");
+
+        // 8. 응답 DTO 생성
         return mapToResponse(savedGroupBuy, imageUrls);
     }
 

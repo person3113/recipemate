@@ -48,6 +48,10 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private Double mannerTemperature = 36.5;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer points = 0;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UserRole role;
@@ -61,6 +65,7 @@ public class User extends BaseEntity {
                 phoneNumber,
                 null,
                 36.5,
+                0,
                 UserRole.USER
         );
     }
@@ -83,5 +88,19 @@ public class User extends BaseEntity {
 
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    public void earnPoints(int amount) {
+        if (amount > 0) {
+            this.points += amount;
+        }
+    }
+
+    public boolean usePoints(int amount) {
+        if (amount <= 0 || this.points < amount) {
+            return false;
+        }
+        this.points -= amount;
+        return true;
     }
 }

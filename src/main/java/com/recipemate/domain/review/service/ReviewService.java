@@ -35,6 +35,7 @@ public class ReviewService {
     private final UserService userService;
     private final NotificationService notificationService;
     private final com.recipemate.domain.badge.service.BadgeService badgeService;
+    private final com.recipemate.domain.user.service.PointService pointService;
 
     /**
      * 후기 작성
@@ -87,10 +88,13 @@ public class ReviewService {
             EntityType.REVIEW
         );
 
-        // 9. 후기 작성자에게 REVIEWER 배지 확인 및 수여
+        // 9. 후기 작성 포인트 적립 (+20)
+        pointService.earnPoints(userId, 20, "후기 작성");
+
+        // 10. 후기 작성자에게 REVIEWER 배지 확인 및 수여
         checkAndAwardReviewerBadge(userId);
 
-        // 10. 공구 주최자에게 POPULAR_HOST 배지 확인 및 수여
+        // 11. 공구 주최자에게 POPULAR_HOST 배지 확인 및 수여
         checkAndAwardPopularHostBadge(groupBuy.getHost().getId());
 
         return ReviewResponse.from(savedReview);

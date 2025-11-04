@@ -5,10 +5,12 @@ import com.recipemate.domain.badge.service.BadgeService;
 import com.recipemate.domain.notification.dto.NotificationResponse;
 import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.user.dto.ChangePasswordRequest;
+import com.recipemate.domain.user.dto.PointHistoryResponse;
 import com.recipemate.domain.user.dto.UpdateProfileRequest;
 import com.recipemate.domain.user.dto.UserResponse;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
+import com.recipemate.domain.user.service.PointService;
 import com.recipemate.domain.user.service.UserService;
 import com.recipemate.domain.wishlist.dto.WishlistResponse;
 import com.recipemate.domain.wishlist.service.WishlistService;
@@ -39,6 +41,7 @@ public class UserController {
     private final NotificationService notificationService;
     private final UserRepository userRepository;
     private final BadgeService badgeService;
+    private final PointService pointService;
 
     /**
      * 마이페이지 렌더링
@@ -46,8 +49,11 @@ public class UserController {
      */
     @GetMapping("/me")
     public String myPage(@AuthenticationPrincipal UserDetails userDetails, Model model) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         UserResponse userResponse = userService.getMyProfile(userDetails.getUsername());
         model.addAttribute("user", userResponse);
+        model.addAttribute("currentPoints", user.getPoints());
         return "user/my-page";
     }
 
@@ -162,6 +168,24 @@ public class UserController {
         List<BadgeResponse> badges = badgeService.getUserBadges(user.getId());
         model.addAttribute("badges", badges);
         return "user/badges";
+    }
+
+    /**
+     * 내 포인트 내역 페이지 렌더링
+     * GET /users/me/points
+     */
+    @GetMapping("/me/points")
+    public String myPointsPage(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Model model) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        Page<PointHistoryResponse> pointHistory = pointService.getPointHistory(user.getId(), pageable);
+        model.addAttribute("pointHistory", pointHistory);
+        model.addAttribute("currentPoints", user.getPoints());
+        return "user/points";
     }
     
     // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========

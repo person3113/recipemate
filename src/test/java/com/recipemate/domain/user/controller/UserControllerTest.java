@@ -2,15 +2,18 @@ package com.recipemate.domain.user.controller;
 
 import com.recipemate.domain.badge.dto.BadgeResponse;
 import com.recipemate.domain.notification.service.NotificationService;
+import com.recipemate.domain.user.dto.PointHistoryResponse;
 import com.recipemate.domain.user.dto.UserResponse;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
+import com.recipemate.domain.user.service.PointService;
 import com.recipemate.domain.user.service.UserService;
 import com.recipemate.domain.wishlist.dto.WishlistResponse;
 import com.recipemate.domain.wishlist.service.WishlistService;
 import com.recipemate.global.common.BadgeType;
 import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyStatus;
+import com.recipemate.global.common.PointType;
 import com.recipemate.global.config.TestSecurityConfig;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
@@ -68,11 +71,16 @@ class UserControllerTest {
     @MockitoBean
     private com.recipemate.domain.badge.service.BadgeService badgeService;
 
+    @MockitoBean
+    private PointService pointService;
+
     @Test
     @DisplayName("내 프로필 페이지 렌더링 성공")
     @WithMockUser(username = "test@example.com")
     void myPage_Success() throws Exception {
         // given
+        User mockUser = User.create("test@example.com", "password", "테스트유저", "010-1234-5678");
+        mockUser.earnPoints(100);
         UserResponse mockResponse = UserResponse.builder()
             .id(1L)
             .email("test@example.com")
@@ -80,13 +88,15 @@ class UserControllerTest {
             .phoneNumber("010-1234-5678")
             .build();
         
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
         given(userService.getMyProfile("test@example.com")).willReturn(mockResponse);
 
         // when & then
         mockMvc.perform(get("/users/me"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("user/my-page"))
-                .andExpect(model().attributeExists("user"));
+                .andExpect(model().attributeExists("user"))
+                .andExpect(model().attribute("currentPoints", 100));
     }
 
     @Test
@@ -242,6 +252,55 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("user/badges"))
                 .andExpect(model().attributeExists("badges"));
+    }
+
+    // ========== 포인트 내역 조회 테스트 ==========
+
+    @Test
+    @DisplayName("내 포인트 내역 페이지 렌더링 성공")
+    @WithMockUser(username = "test@example.com")
+    void myPointsPage_Success() throws Exception {
+        // given
+        User mockUser = User.create("test@example.com", "password", "테스트유저", "010-1234-5678");
+        mockUser.earnPoints(150);
+        
+        PointHistoryResponse mockHistory = new PointHistoryResponse(
+            1L,
+            50,
+            "공구 생성",
+            PointType.EARN,
+            LocalDateTime.now()
+        );
+        Page<PointHistoryResponse> mockPage = new PageImpl<>(List.of(mockHistory));
+        
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+        given(pointService.getPointHistory(any(), any(Pageable.class))).willReturn(mockPage);
+
+        // when & then
+        mockMvc.perform(get("/users/me/points"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("user/points"))
+                .andExpect(model().attributeExists("pointHistory"))
+                .andExpect(model().attribute("currentPoints", 150));
+    }
+
+    @Test
+    @DisplayName("내 포인트 내역 페이지 렌더링 - 빈 목록")
+    @WithMockUser(username = "test@example.com")
+    void myPointsPage_EmptyList() throws Exception {
+        // given
+        User mockUser = User.create("test@example.com", "password", "테스트유저", "010-1234-5678");
+        Page<PointHistoryResponse> emptyPage = new PageImpl<>(Collections.emptyList());
+        
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+        given(pointService.getPointHistory(any(), any(Pageable.class))).willReturn(emptyPage);
+
+        // when & then
+        mockMvc.perform(get("/users/me/points"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("user/points"))
+                .andExpect(model().attributeExists("pointHistory"))
+                .andExpect(model().attribute("currentPoints", 0));
     }
 }
 

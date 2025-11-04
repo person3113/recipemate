@@ -62,6 +62,12 @@ class GroupBuyServiceTest {
     @Mock
     private RecipeService recipeService;
 
+    @Mock
+    private com.recipemate.domain.badge.service.BadgeService badgeService;
+
+    @Mock
+    private com.recipemate.domain.user.service.PointService pointService;
+
     private User testUser;
     private Long testUserId = 1L;
 

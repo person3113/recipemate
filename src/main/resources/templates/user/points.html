@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>포인트 내역</title>
+</head>
+<body>
+    <h1>포인트 내역</h1>
+    
+    <div class="current-points">
+        <h2>현재 포인트: <span th:text="${currentPoints}">0</span>P</h2>
+    </div>
+    
+    <div th:if="${message}" class="alert alert-success">
+        <p th:text="${message}"></p>
+    </div>
+    
+    <div th:if="${error}" class="alert alert-danger">
+        <p th:text="${error}"></p>
+    </div>
+    
+    <div th:if="${pointHistory != null and pointHistory.hasContent()}">
+        <table>
+            <thead>
+                <tr>
+                    <th>날짜</th>
+                    <th>구분</th>
+                    <th>내용</th>
+                    <th>포인트</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="history : ${pointHistory.content}">
+                    <td th:text="${#temporals.format(history.createdAt, 'yyyy-MM-dd HH:mm')}">날짜</td>
+                    <td th:text="${history.type == T(com.recipemate.global.common.PointType).EARN ? '적립' : '사용'}">구분</td>
+                    <td th:text="${history.description}">내용</td>
+                    <td th:class="${history.type == T(com.recipemate.global.common.PointType).EARN ? 'earn' : 'use'}">
+                        <span th:text="${history.type == T(com.recipemate.global.common.PointType).EARN ? '+' : '-'} + ${history.amount} + 'P'">포인트</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- 페이지네이션 -->
+        <div th:if="${pointHistory.totalPages > 1}" class="pagination">
+            <a th:if="${!pointHistory.first}" 
+               th:href="@{/users/me/points(page=${pointHistory.number - 1})}"
+               class="page-link">이전</a>
+            
+            <span th:text="${pointHistory.number + 1} + ' / ' + ${pointHistory.totalPages}">1 / 10</span>
+            
+            <a th:if="${!pointHistory.last}" 
+               th:href="@{/users/me/points(page=${pointHistory.number + 1})}"
+               class="page-link">다음</a>
+        </div>
+    </div>
+    
+    <div th:if="${pointHistory == null or !pointHistory.hasContent()}">
+        <p>아직 포인트 내역이 없습니다.</p>
+        <p>공구를 생성하거나 참여하고, 후기를 작성하여 포인트를 획득해보세요!</p>
+    </div>
+    
+    <a th:href="@{/users/me}">마이페이지로 돌아가기</a>
+</body>
+</html>

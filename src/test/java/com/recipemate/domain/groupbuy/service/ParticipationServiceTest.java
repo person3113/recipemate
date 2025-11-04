@@ -48,6 +48,12 @@ class ParticipationServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private com.recipemate.domain.badge.service.BadgeService badgeService;
+
+    @Mock
+    private com.recipemate.domain.user.service.PointService pointService;
+
     @InjectMocks
     private ParticipationService participationService;
 

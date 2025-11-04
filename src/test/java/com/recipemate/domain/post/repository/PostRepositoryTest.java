@@ -6,6 +6,7 @@ import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.config.QueryDslConfig;
 import com.recipemate.global.common.PostCategory;
 import com.recipemate.global.common.UserRole;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,9 @@ class PostRepositoryTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private User author;
 
@@ -74,12 +78,24 @@ class PostRepositoryTest {
 
     @Test
     @DisplayName("카테고리로 게시글 목록을 최신순으로 조회한다.")
-    void findByCategoryOrderByCreatedAtDesc() {
+    void findByCategoryOrderByCreatedAtDesc() throws InterruptedException {
         // given
         Post post1 = createPost("자유글 1", PostCategory.FREE);
+        postRepository.save(post1);
+        entityManager.flush();
+        
+        // 시간차를 보장하기 위해 잠시 대기
+        Thread.sleep(10);
+        
         Post post2 = createPost("꿀팁글 1", PostCategory.TIPS);
+        postRepository.save(post2);
+        entityManager.flush();
+        
+        Thread.sleep(10);
+        
         Post post3 = createPost("자유글 2", PostCategory.FREE);
-        postRepository.saveAll(List.of(post1, post2, post3));
+        postRepository.save(post3);
+        entityManager.flush();
 
         Pageable pageable = PageRequest.of(0, 10);
 

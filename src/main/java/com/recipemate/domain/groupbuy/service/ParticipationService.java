@@ -39,6 +39,7 @@ public class ParticipationService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final com.recipemate.domain.badge.service.BadgeService badgeService;
+    private final com.recipemate.domain.user.service.PointService pointService;
 
     @Transactional
     @Retryable(
@@ -103,7 +104,10 @@ public class ParticipationService {
             EntityType.GROUP_BUY
         );
 
-        // 12. 10회 참여 배지 확인 및 수여
+        // 12. 공구 참여 포인트 적립 (+10)
+        pointService.earnPoints(userId, 10, "공동구매 참여");
+
+        // 13. 10회 참여 배지 확인 및 수여
         checkAndAwardTenParticipationsBadge(userId);
     }
 

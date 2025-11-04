@@ -21,6 +21,9 @@
         <p>닉네임: <span th:text="*{nickname}"></span></p>
         <p>전화번호: <span th:text="*{phoneNumber}"></span></p>
         <p>매너온도: <span th:text="*{mannerTemperature}"></span></p>
+        <p>보유 포인트: <span th:text="${currentPoints}">0</span>P 
+           <a th:href="@{/users/me/points}">[포인트 내역 보기]</a>
+        </p>
         
         <h3>프로필 수정</h3>
         <form th:action="@{/users/me}" method="post">
@@ -38,6 +41,15 @@
             <label>새 비밀번호: <input type="password" name="newPassword" /></label><br/>
             <button type="submit">변경</button>
         </form>
+    </div>
+    
+    <div>
+        <h2>바로가기</h2>
+        <ul>
+            <li><a th:href="@{/users/me/bookmarks}">내 찜 목록</a></li>
+            <li><a th:href="@{/users/me/badges}">내 배지</a></li>
+            <li><a th:href="@{/users/me/points}">포인트 내역</a></li>
+        </ul>
     </div>
     
     <!-- TODO: htmx 통합 시 아래 섹션들을 동적으로 로드 -->

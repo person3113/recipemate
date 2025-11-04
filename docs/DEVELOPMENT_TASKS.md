@@ -771,17 +771,17 @@
   - UserController에 엔드포인트 추가
   - `GET /users/me/badges`
 
-#### [ ] Task 4-5-3: 포인트 시스템
-- [ ] User 엔티티 확장
+#### [x] Task 4-5-3: 포인트 시스템
+- [x] User 엔티티 확장
   - 테스트 작성
     - 포인트 적립/차감 로직 확인
     - 포인트 잔액 0 미만 불가
   - User 엔티티에 points 필드 추가 (기본값: 0)
-- [ ] PointHistory 엔티티 작성
+- [x] PointHistory 엔티티 작성
   - 필드: id, user(FK), amount, description, type (EARN, USE), createdAt
   - 인덱스: userId+createdAt
   - PointHistoryRepository 작성
-- [ ] PointService 구현
+- [x] PointService 구현
   - `earnPoints(Long userId, Integer amount, String description)`
   - `usePoints(Long userId, Integer amount, String description)`
   - `getPointHistory(Long userId, Pageable pageable)`
@@ -790,8 +790,8 @@
     - 공구 참여: +10
     - 후기 작성: +20
     - 출석 체크: +5 (선택)
-- [ ] 각 도메인 서비스에 포인트 적립 로직 추가
-- [ ] 마이페이지에 포인트 내역 표시
+- [x] 각 도메인 서비스에 포인트 적립 로직 추가
+- [x] 마이페이지에 포인트 내역 표시
   - `GET /users/me/points`
   - `GET /users/me/points/history`
 

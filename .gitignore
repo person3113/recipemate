@@ -36,3 +36,11 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Docker ###
+.env
+.env.local
+.env.*.local
+docker-compose.override.yml
+nginx/ssl/
+uploads/

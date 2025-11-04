@@ -716,15 +716,27 @@
 
 ### 4.4. 배포 준비
 
-#### [ ] Task 4-4-1: Docker 설정
-- [ ] Dockerfile 작성
-- [ ] docker-compose.yml 작성 (PostgreSQL + Spring Boot)
-- [ ] Nginx 리버스 프록시 설정
+#### [x] Task 4-4-1: Docker 설정
+- [x] Dockerfile 작성 (Multi-stage build, Gradle 8.5 + JDK21 → JRE 21)
+- [x] docker-compose.yml 작성 (PostgreSQL 16 + Redis 7 + Spring Boot + Nginx)
+- [x] Nginx 리버스 프록시 설정 (nginx.conf + recipemate.conf)
+- [x] .dockerignore 작성
+- [x] .env.example 템플릿 작성
+- [x] init-db.sql 초기화 스크립트 작성
+- [x] DOCKER.md 문서 작성 (250+ lines)
+- [x] .gitignore 업데이트 (.env, SSL certs 제외)
 
-#### [ ] Task 4-4-2: 프로덕션 설정
-- [ ] application-prod.yml 작성
-- [ ] PostgreSQL DDL 스크립트 작성
-- [ ] 환경변수 설정 (.env)
+#### [x] Task 4-4-2: 프로덕션 설정
+- [x] application-prod.yml 이미 설정됨 (application.yml 내 prod 프로파일)
+- [x] PostgreSQL DDL 스크립트 작성 (schema.sql)
+  - 13개 테이블 (users, persistent_logins, group_buys, group_buy_images, participations, posts, post_images, comments, reviews, wishlists, notifications, badges, point_histories)
+  - 13개 PostgreSQL ENUM 타입
+  - 60+ 인덱스 (단일/복합)
+  - 외래키, CHECK, UNIQUE 제약조건
+  - 6개 트리거 (updated_at 자동 갱신)
+  - 스키마 버전 관리 테이블
+  - 기본 관리자 계정 생성
+- [x] 환경변수 설정 (.env.example 템플릿 제공)
 
 #### [ ] Task 4-4-3: 테스트 및 버그 수정
 - [ ] 전체 E2E 테스트

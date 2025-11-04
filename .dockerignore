@@ -1,0 +1,61 @@
+# Build artifacts
+build/
+target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+out/
+.DS_Store
+
+# Gradle (exclude cache but keep wrapper files needed for build)
+.gradle/
+gradle/*
+!gradle/wrapper/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+!gradlew
+!gradlew.bat
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+
+# Docker files (don't copy Docker files into Docker image)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Logs
+*.log
+logs/
+
+# Test files
+**/src/test/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~
+
+# OS files
+Thumbs.db
+.DS_Store

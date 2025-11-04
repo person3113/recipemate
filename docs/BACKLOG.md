@@ -33,23 +33,39 @@
 - **예상 시간**: 3-4시간
 - **참고**: 기존 기능에 영향 없이 점진적 추가 가능
 
-### 2. Repository 페치 조인 최적화
-- **현황**: 
-  - `ParticipationRepository.findByGroupBuyIdWithUser()`: User 페치 조인
-  - `ParticipationRepository.findByUserIdWithGroupBuyAndHost()`: GroupBuy, Host 페치 조인
-  - `GroupBuyRepository.findByIdWithHost()`: Host 페치 조인
-- **장점**: N+1 문제 방지, 쿼리 최적화
-- **주의**: 페이징과 @OneToMany 페치 조인 혼용 시 메모리 문제 가능 (현재는 @ManyToOne만 페치 조인하여 안전)
-- **개선**: Hibernate default_batch_fetch_size 설정 추가 고려
-- **처리 시점**: Phase 3-4 성능 테스트 후
-- **예상 시간**: 1-2시간
-
-### 3. DTO Validation 강화
+### 2. DTO Validation 강화
 - 현재 기본 어노테이션만 사용 (@NotBlank, @Email, @Pattern)
 - 개선: 커스텀 Validation 어노테이션 (예: @UniqueEmail)
 - 장점: DTO에 검증 로직 응집
 - 단점: 구현 복잡도 증가
 - 처리 시점: 검증 로직 복잡해지고 재사용 많을 때
 - 예상 시간: 3-4시간
+
+### 3. 외부 API 데이터 캐싱 전략 개선
+- **현황**: 
+  - 식품안전나라 API, MealDB API를 매번 실시간 호출
+  - prod 환경에서만 Redis 캐싱 적용
+- **문제점**:
+  - API 호출 제한(rate limit) 리스크
+  - 응답 속도가 외부 API에 의존적
+  - 검색 기능 제약 (외부 API 검색 기능에만 의존)
+- **개선 방안**:
+  1. **DB 캐싱 전략**: 첫 호출 시 레시피 데이터를 자체 DB에 저장
+  2. **배치 업데이트**: 주기적으로 인기 레시피/최신 데이터 동기화
+  3. **하이브리드 접근**: 기본 검색은 자체 DB, 상세 정보는 API 재호출
+  4. **TTL 관리**: 데이터 신선도 유지 (예: 7일마다 갱신)
+- **장점**: 
+  - 응답 속도 개선
+  - API 호출 횟수 감소 (비용/제한 대응)
+  - 자체 검색 기능 고도화 가능
+  - 서비스 안정성 향상
+- **단점**:
+  - 스토리지 비용 증가
+  - 동기화 로직 복잡도
+  - 데이터 신선도 관리 필요
+- **처리 시점**: Phase 4 배포 준비 단계 또는 API 호출 제한 발생 시
+- **예상 시간**: 6-8시간 (Entity 설계, 배치 작업, 동기화 로직)
+- **참고**: 현재 Redis 캐싱으로 단기적 해결, 장기적으로는 DB 캐싱 고려
+
 
 

@@ -205,10 +205,13 @@
                             <!-- Participant List Public -->
                             <div class="mb-4">
                                 <div class="form-check">
+                                    <!-- Hidden input to ensure false is sent when unchecked -->
+                                    <input type="hidden" name="isParticipantListPublic" value="false">
                                     <input type="checkbox" 
                                            class="form-check-input" 
                                            id="isParticipantListPublic" 
                                            name="isParticipantListPublic"
+                                           value="true"
                                            th:checked="${groupBuy?.isParticipantListPublic}">
                                     <label class="form-check-label" for="isParticipantListPublic">
                                         <i class="bi bi-people"></i> 참여자 명단 공개

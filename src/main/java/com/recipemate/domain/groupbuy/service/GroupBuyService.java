@@ -55,6 +55,9 @@ public class GroupBuyService {
         List<String> imageUrls = imageUploadUtil.uploadImages(request.getImageFiles());
 
         // 3. GroupBuy 엔티티 생성 (레시피 기반 여부 확인)
+        // Null-safe: isParticipantListPublic defaults to false if null
+        boolean isParticipantListPublic = Boolean.TRUE.equals(request.getIsParticipantListPublic());
+        
         GroupBuy groupBuy;
         if (request.getRecipeApiId() != null) {
             groupBuy = GroupBuy.createRecipeBased(
@@ -68,7 +71,7 @@ public class GroupBuyService {
                 request.getDeliveryMethod(),
                 request.getMeetupLocation(),
                 request.getParcelFee(),
-                request.getIsParticipantListPublic(),
+                isParticipantListPublic,
                 request.getRecipeApiId(),
                 request.getRecipeName(),
                 request.getRecipeImageUrl()
@@ -85,7 +88,7 @@ public class GroupBuyService {
                 request.getDeliveryMethod(),
                 request.getMeetupLocation(),
                 request.getParcelFee(),
-                request.getIsParticipantListPublic()
+                isParticipantListPublic
             );
         }
 

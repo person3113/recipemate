@@ -98,21 +98,16 @@ public class RecipeService {
             
         } else if (apiId.startsWith(FOOD_PREFIX)) {
             // 식품안전나라 레시피 조회
-            String foodSeq = apiId.substring(FOOD_PREFIX.length());
+            String rcpSeq = apiId.substring(FOOD_PREFIX.length());
             
-            // 식품안전나라는 ID로 직접 조회가 안되므로 rcpSeq 범위로 조회
-            try {
-                int seq = Integer.parseInt(foodSeq);
-                List<CookRecipeResponse> results = foodSafetyClient.getKoreanRecipes(seq, seq);
-                
-                if (results.isEmpty()) {
-                    throw new CustomException(ErrorCode.RECIPE_NOT_FOUND);
-                }
-                
-                return convertCookRecipeToDetailResponse(results.get(0));
-            } catch (NumberFormatException e) {
-                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            // RCP_SEQ로 레시피 조회 (FoodSafetyClient의 getRecipeBySeq 메서드 사용)
+            CookRecipeResponse recipe = foodSafetyClient.getRecipeBySeq(rcpSeq);
+            
+            if (recipe == null) {
+                throw new CustomException(ErrorCode.RECIPE_NOT_FOUND);
             }
+            
+            return convertCookRecipeToDetailResponse(recipe);
             
         } else {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);

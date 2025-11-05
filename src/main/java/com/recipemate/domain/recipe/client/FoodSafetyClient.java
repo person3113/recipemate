@@ -80,6 +80,24 @@ public class FoodSafetyClient {
     }
 
     /**
+     * RCP_SEQ로 특정 레시피 조회
+     * 식품안전나라 API는 ID로 직접 조회를 지원하지 않으므로
+     * 전체 범위를 조회한 후 RCP_SEQ로 필터링
+     * @param rcpSeq 레시피 일련번호
+     * @return 해당 레시피 (없으면 null)
+     */
+    public CookRecipeResponse getRecipeBySeq(String rcpSeq) {
+        // 전체 레시피를 조회 (최대 1000건)
+        List<CookRecipeResponse> allRecipes = getKoreanRecipes(1, MAX_REQUEST_SIZE);
+        
+        // RCP_SEQ로 필터링
+        return allRecipes.stream()
+                .filter(recipe -> rcpSeq.equals(recipe.getRcpSeq()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
      * 레시피 조회 공통 메서드
      * @param start 시작 위치
      * @param end 종료 위치

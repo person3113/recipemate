@@ -274,8 +274,8 @@ class RecipeServiceTest {
                     .manualImg02("http://example.com/step2.jpg")
                     .build();
 
-            when(foodSafetyClient.getKoreanRecipes(1, 1))
-                    .thenReturn(Arrays.asList(cookRecipeResponse));
+            when(foodSafetyClient.getRecipeBySeq("1"))
+                    .thenReturn(cookRecipeResponse);
 
             // when
             RecipeDetailResponse result = recipeService.getRecipeDetail(apiId);

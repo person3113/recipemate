@@ -442,4 +442,119 @@ class FoodSafetyClientTest {
         assertThat(recipe.getRcpSeq()).isEqualTo("999");
         assertThat(recipe.getRcpNm()).isEqualTo("테스트 레시피");
     }
+
+    @Test
+    @DisplayName("RCP_SEQ로 특정 레시피 조회 - 성공")
+    void getRecipeBySeq_Success() {
+        // given
+        String rcpSeq = "159";
+        String expectedUrl = String.format("%s/%s/COOKRCP01/json/1/1000", BASE_URL, API_KEY);
+        
+        String mockResponse = """
+            {
+              "COOKRCP01": {
+                "RESULT": {
+                  "MSG": "정상처리되었습니다.",
+                  "CODE": "INFO-000"
+                },
+                "total_count": "3",
+                "row": [
+                  {
+                    "RCP_SEQ": "100",
+                    "RCP_NM": "다른 레시피",
+                    "RCP_WAY2": "끓이기",
+                    "RCP_PAT2": "국&찌개",
+                    "INFO_WGT": "1인분",
+                    "INFO_ENG": "200.0",
+                    "ATT_FILE_NO_MAIN": "http://example.com/other.jpg",
+                    "RCP_PARTS_DTLS": "재료1"
+                  },
+                  {
+                    "RCP_SEQ": "159",
+                    "RCP_NM": "찾는 레시피",
+                    "RCP_WAY2": "볶기",
+                    "RCP_PAT2": "반찬",
+                    "INFO_WGT": "2인분",
+                    "INFO_ENG": "350.0",
+                    "ATT_FILE_NO_MAIN": "http://example.com/target.jpg",
+                    "RCP_PARTS_DTLS": "재료2"
+                  },
+                  {
+                    "RCP_SEQ": "271",
+                    "RCP_NM": "또 다른 레시피",
+                    "RCP_WAY2": "찌기",
+                    "RCP_PAT2": "일품",
+                    "INFO_WGT": "3인분",
+                    "INFO_ENG": "400.0",
+                    "ATT_FILE_NO_MAIN": "http://example.com/another.jpg",
+                    "RCP_PARTS_DTLS": "재료3"
+                  }
+                ]
+              }
+            }
+            """;
+
+        mockServer.expect(requestTo(expectedUrl))
+            .andRespond(withSuccess(mockResponse, MediaType.APPLICATION_JSON));
+
+        // when
+        CookRecipeResponse recipe = foodSafetyClient.getRecipeBySeq(rcpSeq);
+
+        // then
+        mockServer.verify();
+        assertThat(recipe).isNotNull();
+        assertThat(recipe.getRcpSeq()).isEqualTo("159");
+        assertThat(recipe.getRcpNm()).isEqualTo("찾는 레시피");
+        assertThat(recipe.getRcpPat2()).isEqualTo("반찬");
+    }
+
+    @Test
+    @DisplayName("RCP_SEQ로 특정 레시피 조회 - 존재하지 않는 레시피")
+    void getRecipeBySeq_NotFound() {
+        // given
+        String rcpSeq = "99999";
+        String expectedUrl = String.format("%s/%s/COOKRCP01/json/1/1000", BASE_URL, API_KEY);
+        
+        String mockResponse = """
+            {
+              "COOKRCP01": {
+                "RESULT": {
+                  "MSG": "정상처리되었습니다.",
+                  "CODE": "INFO-000"
+                },
+                "total_count": "2",
+                "row": [
+                  {
+                    "RCP_SEQ": "100",
+                    "RCP_NM": "레시피1",
+                    "RCP_WAY2": "끓이기",
+                    "RCP_PAT2": "국&찌개",
+                    "INFO_WGT": "1인분",
+                    "ATT_FILE_NO_MAIN": "http://example.com/1.jpg",
+                    "RCP_PARTS_DTLS": "재료1"
+                  },
+                  {
+                    "RCP_SEQ": "200",
+                    "RCP_NM": "레시피2",
+                    "RCP_WAY2": "볶기",
+                    "RCP_PAT2": "반찬",
+                    "INFO_WGT": "2인분",
+                    "ATT_FILE_NO_MAIN": "http://example.com/2.jpg",
+                    "RCP_PARTS_DTLS": "재료2"
+                  }
+                ]
+              }
+            }
+            """;
+
+        mockServer.expect(requestTo(expectedUrl))
+            .andRespond(withSuccess(mockResponse, MediaType.APPLICATION_JSON));
+
+        // when
+        CookRecipeResponse recipe = foodSafetyClient.getRecipeBySeq(rcpSeq);
+
+        // then
+        mockServer.verify();
+        assertThat(recipe).isNull();
+    }
 }

@@ -70,6 +70,20 @@ public class User extends BaseEntity {
         );
     }
 
+    public static User createAdmin(String email, String encodedPassword, String nickname, String phoneNumber) {
+        return new User(
+                null,
+                email,
+                encodedPassword,
+                nickname,
+                phoneNumber,
+                null,
+                36.5,
+                0,
+                UserRole.ADMIN
+        );
+    }
+
     public void updateMannerTemperature(double delta) {
         this.mannerTemperature += delta;
     }

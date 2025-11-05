@@ -249,7 +249,8 @@ class PostControllerTest {
         mockMvc.perform(post("/community-posts/" + postId)
                         .with(csrf())
                         .param("title", "수정된 제목")
-                        .param("content", "수정된 내용"))
+                        .param("content", "수정된 내용")
+                        .param("category", "FREE"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/community-posts/" + postId))
                 .andExpect(flash().attributeExists("successMessage"));
@@ -278,7 +279,8 @@ class PostControllerTest {
         mockMvc.perform(post("/community-posts/" + postId)
                         .with(csrf())
                         .param("title", "수정 시도")
-                        .param("content", "수정 시도"))
+                        .param("content", "수정 시도")
+                        .param("category", "FREE"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/community-posts/" + postId))
                 .andExpect(flash().attributeExists("errorMessage"));

@@ -262,19 +262,15 @@
                                     <div class="d-flex gap-3 small text-muted mt-2">
                                         <span>
                                             <i class="bi bi-person"></i>
-                                            <span th:text="${post.author.nickname}">작성자</span>
+                                            <span th:text="${post.authorNickname ?: '알 수 없음'}">작성자</span>
                                         </span>
                                         <span>
                                             <i class="bi bi-calendar"></i>
                                             <span th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd')}">2024-01-01</span>
                                         </span>
                                         <span>
-                                            <i class="bi bi-chat"></i>
-                                            <span th:text="${post.commentCount}">0</span>
-                                        </span>
-                                        <span>
-                                            <i class="bi bi-heart"></i>
-                                            <span th:text="${post.likeCount}">0</span>
+                                            <i class="bi bi-eye"></i>
+                                            <span th:text="${post.viewCount ?: 0}">0</span>
                                         </span>
                                     </div>
                                 </div>

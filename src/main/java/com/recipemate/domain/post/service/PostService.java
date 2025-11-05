@@ -77,7 +77,7 @@ public class PostService {
             throw new CustomException(ErrorCode.UNAUTHORIZED_POST_ACCESS);
         }
 
-        post.update(request.getTitle(), request.getContent());
+        post.update(request.getTitle(), request.getContent(), request.getCategory());
         log.debug("Post updated and cache evicted");
         return PostResponse.from(post);
     }

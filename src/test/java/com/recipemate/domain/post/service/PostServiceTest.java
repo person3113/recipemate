@@ -243,6 +243,7 @@ class PostServiceTest {
         UpdatePostRequest request = UpdatePostRequest.builder()
                 .title("수정된 제목")
                 .content("수정된 내용")
+                .category(PostCategory.FREE)
                 .build();
 
         given(postRepository.findByIdWithAuthor(1L)).willReturn(Optional.of(post));

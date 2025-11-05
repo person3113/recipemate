@@ -21,6 +21,7 @@ public class CommentResponse {
     private Long id;
     private Long authorId;
     private String authorNickname;
+    private String authorEmail;
     private String content;
     private CommentType type;
     private Long parentId;
@@ -36,6 +37,7 @@ public class CommentResponse {
                 .id(comment.getId())
                 .authorId(comment.getAuthor().getId())
                 .authorNickname(comment.getAuthor().getNickname())
+                .authorEmail(comment.getAuthor().getEmail())
                 .content(comment.getContent())
                 .type(comment.getType())
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)

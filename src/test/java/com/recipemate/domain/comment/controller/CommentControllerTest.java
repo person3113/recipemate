@@ -364,6 +364,126 @@ class CommentControllerTest {
     // ========== htmx Fragment 엔드포인트 테스트 ==========
 
     @Test
+    @DisplayName("댓글 목록 HTML Fragment 조회 성공 (페이지네이션)")
+    void getCommentsFragment_withPagination_success() throws Exception {
+        // given
+        CommentResponse comment1 = CommentResponse.builder()
+                .id(1L)
+                .authorId(1L)
+                .authorNickname("작성자1")
+                .authorEmail("user1@example.com")
+                .content("첫 번째 댓글")
+                .type(CommentType.GENERAL)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .isDeleted(false)
+                .replies(Arrays.asList())
+                .build();
+
+        given(commentService.getCommentsByTargetPageable(eq(EntityType.POST), eq(1L), any()))
+                .willReturn(new org.springframework.data.domain.PageImpl<>(Arrays.asList(comment1)));
+
+        // when & then
+        mockMvc.perform(get("/comments/fragments")
+                        .param("targetType", "POST")
+                        .param("targetId", "1")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("fragments/comments :: comment-list"))
+                .andExpect(model().attributeExists("comments"))
+                .andExpect(model().attributeExists("targetType"))
+                .andExpect(model().attributeExists("targetId"));
+    }
+
+    @Test
+    @DisplayName("댓글 작성 - HTML Fragment 반환 (htmx용) 성공")
+    @WithMockUser(username = "test@example.com")
+    void createCommentFragment_htmx_success() throws Exception {
+        // given
+        User mockUser = createMockUser();
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+
+        CommentResponse mockResponse = CommentResponse.builder()
+                .id(1L)
+                .authorId(1L)
+                .authorNickname("테스터")
+                .authorEmail("test@example.com")
+                .content("htmx로 작성한 댓글")
+                .type(CommentType.GENERAL)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .isDeleted(false)
+                .build();
+
+        given(commentService.createComment(eq(1L), any())).willReturn(mockResponse);
+
+        // when & then
+        mockMvc.perform(post("/comments/fragment")
+                        .with(csrf())
+                        .param("targetType", "POST")
+                        .param("targetId", "1")
+                        .param("content", "htmx로 작성한 댓글")
+                        .param("type", "GENERAL"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("fragments/comments :: comment-item"))
+                .andExpect(model().attributeExists("comment"));
+    }
+
+    @Test
+    @DisplayName("댓글 수정 - HTML Fragment 반환 (htmx용) 성공")
+    @WithMockUser(username = "test@example.com")
+    void updateCommentFragment_htmx_success() throws Exception {
+        // given
+        User mockUser = createMockUser();
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+
+        CommentResponse mockResponse = CommentResponse.builder()
+                .id(1L)
+                .authorId(1L)
+                .authorNickname("테스터")
+                .authorEmail("test@example.com")
+                .content("htmx로 수정한 댓글")
+                .type(CommentType.GENERAL)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .isDeleted(false)
+                .build();
+
+        given(commentService.updateComment(eq(1L), eq(1L), any())).willReturn(mockResponse);
+
+        // when & then
+        mockMvc.perform(post("/comments/1/fragment")
+                        .with(csrf())
+                        .param("targetType", "POST")
+                        .param("targetId", "1")
+                        .param("content", "htmx로 수정한 댓글"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("fragments/comments :: comment-item"))
+                .andExpect(model().attributeExists("comment"));
+    }
+
+    @Test
+    @DisplayName("댓글 삭제 - htmx 요청으로 빈 Fragment 반환")
+    @WithMockUser(username = "test@example.com")
+    void deleteComment_htmx_returnsEmptyFragment() throws Exception {
+        // given
+        User mockUser = createMockUser();
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+
+        doNothing().when(commentService).deleteComment(1L, 1L);
+
+        // when & then
+        mockMvc.perform(post("/comments/1/delete")
+                        .with(csrf())
+                        .header("HX-Request", "true")
+                        .param("targetType", "POST")
+                        .param("targetId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("fragments/comments :: empty"));
+    }
+
+    @Test
     @DisplayName("댓글 목록 HTML Fragment 조회 성공")
     void getCommentsFragment_success() throws Exception {
         // given
@@ -391,8 +511,8 @@ class CommentControllerTest {
                 .replies(Arrays.asList())
                 .build();
 
-        given(commentService.getCommentsByTarget(EntityType.POST, 1L))
-                .willReturn(Arrays.asList(comment1, comment2));
+        given(commentService.getCommentsByTargetPageable(eq(EntityType.POST), eq(1L), any()))
+                .willReturn(new org.springframework.data.domain.PageImpl<>(Arrays.asList(comment1, comment2)));
 
         // when & then
         mockMvc.perform(get("/comments/fragments")

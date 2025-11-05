@@ -22,6 +22,7 @@ public class PostResponse {
     private Integer viewCount;
     private Long authorId;
     private String authorNickname;
+    private String authorEmail;  // 작성자 권한 체크용
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -34,6 +35,7 @@ public class PostResponse {
                 .viewCount(post.getViewCount())
                 .authorId(post.getAuthor().getId())
                 .authorNickname(post.getAuthor().getNickname())
+                .authorEmail(post.getAuthor().getEmail())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .build();

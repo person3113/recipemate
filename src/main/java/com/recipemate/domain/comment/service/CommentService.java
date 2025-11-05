@@ -17,6 +17,8 @@ import com.recipemate.global.common.NotificationType;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -184,5 +186,26 @@ public class CommentService {
         return comments.stream()
                 .map(CommentResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 특정 대상의 댓글 목록 페이지네이션 조회 (htmx fragment용)
+     */
+    public Page<CommentResponse> getCommentsByTargetPageable(EntityType targetType, Long targetId, Pageable pageable) {
+        Page<Comment> commentsPage;
+
+        if (targetType == EntityType.GROUP_BUY) {
+            commentsPage = commentRepository.findByGroupBuyIdAndParentIsNullPageable(targetId, pageable);
+        } else if (targetType == EntityType.POST) {
+            commentsPage = commentRepository.findByPostIdAndParentIsNullPageable(targetId, pageable);
+        } else {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        // 각 댓글에 대한 대댓글 조회 및 설정
+        return commentsPage.map(comment -> {
+            List<Comment> replies = commentRepository.findByParentIdOrderByCreatedAtAsc(comment.getId());
+            return CommentResponse.fromWithReplies(comment, replies);
+        });
     }
 }

@@ -11,6 +11,9 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/styles.css}">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 </head>
 <body class="bg-light">
     <!-- Header Fragment -->
@@ -128,6 +131,20 @@
                                 </a>
                             </div>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Comments Section (Q&A) -->
+                <div id="comments-section" 
+                     hx-get th:hx-get="@{/comments/fragments(targetType='GROUP_BUY', targetId=${groupBuy.id})}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                    <!-- 댓글 로딩 중 표시 -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">로딩 중...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Q&A를 불러오는 중...</p>
                     </div>
                 </div>
             </div>
@@ -265,5 +282,8 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Comment Scripts -->
+    <div th:replace="~{fragments/comments :: comment-scripts}"></div>
 </body>
 </html>

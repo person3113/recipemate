@@ -110,7 +110,7 @@
                 </div>
                 
                 <!-- Recipe Info Card (if recipe-based) -->
-                <div th:if="${groupBuy.recipe != null}" class="card shadow-sm mb-4">
+                <div th:if="${groupBuy.recipeApiId != null}" class="card shadow-sm mb-4">
                     <div class="card-header bg-white">
                         <h5 class="mb-0 fw-bold">
                             <i class="bi bi-book"></i> 연관 레시피
@@ -118,13 +118,12 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div th:if="${groupBuy.recipe.imageUrl}" class="col-md-4">
-                                <img th:src="${groupBuy.recipe.imageUrl}" class="img-fluid rounded" alt="레시피 이미지">
+                            <div th:if="${groupBuy.recipeImageUrl}" class="col-md-4">
+                                <img th:src="${groupBuy.recipeImageUrl}" class="img-fluid rounded" alt="레시피 이미지">
                             </div>
                             <div class="col-md-8">
-                                <h6 class="fw-bold mb-2" th:text="${groupBuy.recipe.name}">레시피 이름</h6>
-                                <p class="text-muted small mb-3" th:if="${groupBuy.recipe.description}" th:text="${groupBuy.recipe.description}">레시피 설명</p>
-                                <a th:href="@{/recipes/{id}(id=${groupBuy.recipe.id})}" class="btn btn-sm btn-outline-primary">
+                                <h6 class="fw-bold mb-2" th:text="${groupBuy.recipeName}">레시피 이름</h6>
+                                <a th:href="@{/recipes/{id}(id=${groupBuy.recipeApiId})}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-arrow-right"></i> 레시피 보기
                                 </a>
                             </div>

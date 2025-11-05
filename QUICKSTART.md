@@ -18,31 +18,6 @@ docker info
 
 ---
 
-### 2단계: 환경변수 파일 확인
-
-`.env` 파일이 있는지 확인:
-```bash
-dir .env
-# 또는
-type .env
-```
-
-**없다면 생성:**
-```bash
-copy .env.example .env
-```
-
-**내용 확인 (최소 요구사항):**
-```
-DB_USERNAME=recipemate
-DB_PASSWORD=recipemate2024!secure
-REDIS_PASSWORD=redis2024!secure
-FOOD_SAFETY_API_KEY=sample
-SPRING_PROFILES_ACTIVE=prod
-```
-
----
-
 ### 3단계: Docker 컨테이너 실행
 
 ```bash

@@ -122,10 +122,10 @@ public class RecipeService {
     /**
      * 랜덤 레시피 조회
      * TheMealDB API를 사용하여 랜덤 레시피 반환
+     * 매번 새로운 랜덤 레시피를 제공하기 위해 캐싱하지 않음
      * @param count 조회할 레시피 개수
      * @return 랜덤 레시피 목록
      */
-    @Cacheable(value = CacheConfig.RECIPES_CACHE, key = "'random:' + #count")
     public RecipeListResponse getRandomRecipes(int count) {
         validateRandomCount(count);
 
@@ -150,6 +150,29 @@ public class RecipeService {
     @Cacheable(value = CacheConfig.RECIPES_CACHE, key = "'categories'")
     public List<CategoryResponse> getCategories() {
         return theMealDBClient.getCategories();
+    }
+
+    /**
+     * 카테고리별 레시피 조회
+     * 특정 카테고리에 속한 레시피 목록 반환
+     * @param category 카테고리 이름
+     * @return 해당 카테고리의 레시피 목록
+     */
+    @Cacheable(value = CacheConfig.RECIPES_CACHE, key = "'category:' + #category")
+    public RecipeListResponse getRecipesByCategory(String category) {
+        validateCategory(category);
+
+        List<MealResponse> meals = theMealDBClient.getRecipesByCategory(category);
+        
+        List<RecipeListResponse.RecipeSimpleInfo> recipes = meals.stream()
+                .map(this::convertMealToSimpleInfo)
+                .collect(Collectors.toList());
+
+        return RecipeListResponse.builder()
+                .recipes(recipes)
+                .totalCount(recipes.size())
+                .source("themealdb")
+                .build();
     }
 
     /**
@@ -319,6 +342,15 @@ public class RecipeService {
      */
     private void validateRecipeApiId(String recipeApiId) {
         if (recipeApiId == null || recipeApiId.trim().isEmpty()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    /**
+     * 카테고리 유효성 검증
+     */
+    private void validateCategory(String category) {
+        if (category == null || category.trim().isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }

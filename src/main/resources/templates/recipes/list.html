@@ -20,6 +20,15 @@
     <main class="container py-4">
         <h1 class="mb-4">레시피 검색</h1>
         
+        <!-- Category Title (if filtered by category) -->
+        <div th:if="${category != null}" class="alert alert-primary mb-4">
+            <i class="bi bi-tag-fill me-2"></i>
+            카테고리: <strong th:text="${category}"></strong>
+            <a href="/recipes" class="btn btn-sm btn-outline-primary ms-3">
+                <i class="bi bi-x-circle"></i> 필터 해제
+            </a>
+        </div>
+        
         <!-- Search Form -->
         <div class="card mb-4">
             <div class="card-body">
@@ -75,7 +84,7 @@
                             <div class="card-body">
                                 <h5 class="card-title">
                                     <a th:href="@{/recipes/{id}(id=${recipe.id})}" 
-                                       class="text-decoration-none text-dark"
+                                       class="text-decoration-none text-dark stretched-link"
                                        th:text="${recipe.name}"></a>
                                 </h5>
                                 <div class="mb-2">

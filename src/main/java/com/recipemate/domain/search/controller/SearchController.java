@@ -45,8 +45,15 @@ public class SearchController {
 
         // 모델에 검색 결과 추가
         model.addAttribute("searchResults", searchResults);
+        model.addAttribute("keyword", query);
         model.addAttribute("query", query);
         model.addAttribute("totalResults", searchResults.getTotalResults());
+        model.addAttribute("recipes", searchResults.getRecipes());
+        model.addAttribute("groupbuys", searchResults.getGroupBuys());
+        model.addAttribute("posts", searchResults.getPosts());
+        model.addAttribute("recipeCount", searchResults.getRecipes().size());
+        model.addAttribute("groupbuyCount", searchResults.getGroupBuys().size());
+        model.addAttribute("postCount", searchResults.getPosts().size());
 
         return "search/results";
     }

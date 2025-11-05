@@ -263,8 +263,10 @@ main {
 
 /* Recipe Detail Page Styles */
 .recipe-detail-img {
-    max-height: 400px;
-    object-fit: cover;
+    max-height: 500px;
+    width: 100%;
+    object-fit: contain;
+    background-color: #f8f9fa;
 }
 
 .recipe-detail-placeholder {

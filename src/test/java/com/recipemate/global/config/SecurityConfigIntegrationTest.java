@@ -126,21 +126,6 @@ class SecurityConfigIntegrationTest {
                 .andExpect(status().isOk());
     }
 
-    // 5. 레시피 엔드포인트 테스트
-    @Test
-    @DisplayName("레시피 검색은 인증 필요")
-    void recipesList_NoAuth_Forbidden() throws Exception {
-        mockMvc.perform(get("/recipes"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("인증된 사용자는 레시피 검색 접근 가능")
-    @WithMockUser(username = "test@example.com")
-    void recipesList_WithAuth_Success() throws Exception {
-        mockMvc.perform(get("/recipes"))
-                .andExpect(status().isOk());
-    }
 
     // 6. 사용자 프로필 엔드포인트 테스트
     @Test

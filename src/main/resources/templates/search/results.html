@@ -140,23 +140,19 @@
                                 </div>
                                 <div class="card-body">
                                     <h5 class="card-title">
-                                        <a th:href="@{/recipes/{id}(id=${recipe.id})}" 
+                                        <a th:href="@{/recipes/{id}(id=${recipe.apiId})}" 
                                            class="text-decoration-none text-dark"
-                                           th:text="${recipe.name}">레시피명</a>
+                                           th:text="${recipe.title}">레시피명</a>
                                     </h5>
                                     <p class="card-text text-muted small" 
-                                       th:text="${#strings.abbreviate(recipe.description, 100)}">
+                                       th:text="${#strings.abbreviate(recipe.content, 100)}">
                                         레시피 설명
                                     </p>
                                     <div class="d-flex justify-content-between align-items-center mt-3">
                                         <div class="d-flex gap-3 small text-muted">
-                                            <span>
-                                                <i class="bi bi-clock"></i>
-                                                <span th:text="${recipe.cookingTime}">30</span>분
-                                            </span>
-                                            <span>
-                                                <i class="bi bi-heart"></i>
-                                                <span th:text="${recipe.likeCount}">0</span>
+                                            <span th:if="${recipe.content}">
+                                                <i class="bi bi-tag"></i>
+                                                <span th:text="${recipe.content}">카테고리</span>
                                             </span>
                                         </div>
                                     </div>

@@ -128,4 +128,37 @@ public class TheMealDBClient {
             return Collections.emptyList();
         }
     }
+
+    /**
+     * 카테고리별 레시피 목록 조회
+     * @param category 카테고리 이름
+     * @return 해당 카테고리의 레시피 목록
+     */
+    public List<MealResponse> getRecipesByCategory(String category) {
+        String url = BASE_URL + "/filter.php?c=" + category;
+        
+        try {
+            MealListResponse response = restTemplate.getForObject(url, MealListResponse.class);
+            
+            if (response == null || response.getMeals() == null) {
+                return Collections.emptyList();
+            }
+            
+            // filter.php는 간단한 정보만 반환하므로, 각 레시피의 상세 정보를 조회
+            List<MealResponse> detailedRecipes = new ArrayList<>();
+            for (MealResponse meal : response.getMeals()) {
+                if (meal.getId() != null) {
+                    MealResponse detailed = getRecipeById(meal.getId());
+                    if (detailed != null) {
+                        detailedRecipes.add(detailed);
+                    }
+                }
+            }
+            
+            return detailedRecipes;
+        } catch (Exception e) {
+            log.error("카테고리별 레시피 조회 중 오류 발생: category={}", category, e);
+            return Collections.emptyList();
+        }
+    }
 }

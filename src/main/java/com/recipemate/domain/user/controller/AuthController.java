@@ -8,6 +8,7 @@ import com.recipemate.global.exception.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -24,7 +25,12 @@ public class AuthController {
      * GET /auth/login
      */
     @GetMapping("/login")
-    public String loginPage() {
+    public String loginPage(
+            @RequestParam(value = "error", required = false) Boolean error,
+            Model model) {
+        if (error != null && error) {
+            model.addAttribute("error", "이메일 또는 비밀번호가 올바르지 않습니다.");
+        }
         return "auth/login";
     }
     

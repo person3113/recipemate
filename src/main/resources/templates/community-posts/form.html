@@ -41,7 +41,9 @@
                 <!-- Post Form Card -->
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
-                        <form method="post" th:action="${post != null ? '/community-posts/' + post.id : '/community-posts'}">
+                        <form method="post" 
+                              th:action="${post != null ? '/community-posts/' + post.id : '/community-posts'}"
+                              th:object="${formData}">
                             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             
                             <!-- Category -->
@@ -49,15 +51,20 @@
                                 <label for="category" class="form-label fw-semibold">
                                     카테고리 <span class="text-danger">*</span>
                                 </label>
-                                <select id="category" name="category" class="form-select" required>
+                                <select id="category" 
+                                        th:field="*{category}"
+                                        class="form-select"
+                                        th:classappend="${#fields.hasErrors('category')} ? 'is-invalid'"
+                                        required>
                                     <option value="">카테고리를 선택하세요</option>
-                                    <option value="GENERAL" th:selected="${post?.category?.name() == 'GENERAL'}">일반</option>
-                                    <option value="RECIPE" th:selected="${post?.category?.name() == 'RECIPE'}">레시피</option>
-                                    <option value="GROUP_BUY" th:selected="${post?.category?.name() == 'GROUP_BUY'}">공동구매</option>
-                                    <option value="REVIEW" th:selected="${post?.category?.name() == 'REVIEW'}">후기</option>
-                                    <option value="QUESTION" th:selected="${post?.category?.name() == 'QUESTION'}">질문</option>
-                                    <option value="TIPS" th:selected="${post?.category?.name() == 'TIPS'}">팁 공유</option>
+                                    <option value="GENERAL">일반</option>
+                                    <option value="RECIPE">레시피</option>
+                                    <option value="GROUP_BUY">공동구매</option>
+                                    <option value="REVIEW">후기</option>
+                                    <option value="QUESTION">질문</option>
+                                    <option value="TIPS">팁 공유</option>
                                 </select>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('category')}" th:errors="*{category}"></div>
                             </div>
                             
                             <!-- Title -->
@@ -67,12 +74,13 @@
                                 </label>
                                 <input type="text" 
                                        id="title" 
-                                       name="title" 
-                                       class="form-control" 
-                                       th:value="${post?.title}"
+                                       th:field="*{title}"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('title')} ? 'is-invalid'"
                                        placeholder="게시글 제목을 입력하세요"
                                        required
                                        maxlength="100">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
                                 <div class="form-text">
                                     <i class="bi bi-info-circle"></i> 최대 100자까지 입력 가능합니다.
                                 </div>
@@ -84,12 +92,13 @@
                                     내용 <span class="text-danger">*</span>
                                 </label>
                                 <textarea id="content" 
-                                          name="content" 
-                                          class="form-control" 
+                                          th:field="*{content}"
+                                          class="form-control"
+                                          th:classappend="${#fields.hasErrors('content')} ? 'is-invalid'"
                                           rows="15"
                                           placeholder="게시글 내용을 입력하세요"
-                                          required
-                                          th:text="${post?.content}"></textarea>
+                                          required></textarea>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('content')}" th:errors="*{content}"></div>
                                 <div class="form-text">
                                     <i class="bi bi-info-circle"></i> 최소 10자 이상 작성해주세요.
                                 </div>

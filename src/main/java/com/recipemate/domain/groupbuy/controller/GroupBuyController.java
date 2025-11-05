@@ -91,16 +91,40 @@ public class GroupBuyController {
         @RequestParam(required = false) String recipeApiId,
         Model model
     ) {
-        // 레시피 기반 공구인 경우 레시피 정보 조회
+        // 빈 폼 객체 추가 (Thymeleaf th:object를 위해 필수)
+        CreateGroupBuyRequest formData = new CreateGroupBuyRequest();
+        
+        // 레시피 기반 공구인 경우 레시피 정보 조회 및 초기값 설정
         if (recipeApiId != null && !recipeApiId.isBlank()) {
             try {
                 com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = recipeService.getRecipeDetail(recipeApiId);
                 model.addAttribute("recipe", recipe);
+                
+                // 레시피 정보로 폼 초기값 설정
+                formData.setTitle(recipe.getName() + " 재료 공동구매");
+                formData.setContent(recipe.getName() + " 레시피에 필요한 재료들을 공동구매합니다!\n\n아래 재료들을 함께 구매하면 더 저렴하게 구입할 수 있습니다.");
+                formData.setRecipeApiId(recipe.getId());
+                formData.setRecipeName(recipe.getName());
+                formData.setRecipeImageUrl(recipe.getImageUrl());
+                
+                // 카테고리 매핑
+                if (recipe.getCategory() != null) {
+                    String category = switch(recipe.getCategory()) {
+                        case "Beef", "Pork", "Chicken" -> "육류";
+                        case "Vegetarian", "Vegan" -> "채소";
+                        case "Seafood" -> "수산물";
+                        default -> "기타";
+                    };
+                    formData.setCategory(category);
+                }
             } catch (CustomException e) {
                 // 레시피를 찾을 수 없는 경우 에러 메시지 추가
                 model.addAttribute("errorMessage", "레시피 정보를 불러올 수 없습니다.");
             }
         }
+        
+        model.addAttribute("formData", formData);
+        model.addAttribute("createGroupBuyRequest", formData); // POST 핸들러와의 호환성
         return "group-purchases/form";
     }
     
@@ -111,6 +135,22 @@ public class GroupBuyController {
     public String editPage(@PathVariable Long purchaseId, Model model) {
         GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
         model.addAttribute("groupBuy", groupBuy);
+        
+        // 기존 데이터로 폼 객체 초기화 (Thymeleaf th:field가 값을 채우기 위해 필요)
+        UpdateGroupBuyRequest formData = new UpdateGroupBuyRequest();
+        formData.setTitle(groupBuy.getTitle());
+        formData.setContent(groupBuy.getContent());
+        formData.setCategory(groupBuy.getCategory());
+        formData.setTotalPrice(groupBuy.getTotalPrice());
+        formData.setTargetHeadcount(groupBuy.getTargetHeadcount());
+        formData.setDeadline(groupBuy.getDeadline());
+        formData.setDeliveryMethod(groupBuy.getDeliveryMethod());
+        formData.setMeetupLocation(groupBuy.getMeetupLocation());
+        formData.setParcelFee(groupBuy.getParcelFee());
+        formData.setIsParticipantListPublic(groupBuy.getIsParticipantListPublic());
+        
+        model.addAttribute("formData", formData);
+        model.addAttribute("updateGroupBuyRequest", formData); // POST 핸들러와의 호환성
         return "group-purchases/form";
     }
 
@@ -122,15 +162,18 @@ public class GroupBuyController {
     @PostMapping
     public String createGroupBuy(
         @AuthenticationPrincipal UserDetails userDetails,
-        @Valid @ModelAttribute CreateGroupBuyRequest request,
+        @Valid @ModelAttribute("createGroupBuyRequest") CreateGroupBuyRequest request,
         BindingResult bindingResult,
+        Model model,
         RedirectAttributes redirectAttributes
     ) {
         // 1. 유효성 검증 실패 처리
         if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage", 
+            model.addAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
-            return "redirect:/group-purchases/new";
+            model.addAttribute("formData", request); // Thymeleaf th:object를 위해 필수
+            // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
+            return "group-purchases/form";
         }
         
         User user = userRepository.findByEmail(userDetails.getUsername())
@@ -147,15 +190,28 @@ public class GroupBuyController {
     @PostMapping("/recipe-based")
     public String createRecipeBasedGroupBuy(
         @AuthenticationPrincipal UserDetails userDetails,
-        @Valid @ModelAttribute CreateGroupBuyRequest request,
+        @Valid @ModelAttribute("createGroupBuyRequest") CreateGroupBuyRequest request,
         BindingResult bindingResult,
+        Model model,
         RedirectAttributes redirectAttributes
     ) {
         // 1. 유효성 검증 실패 처리
         if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage", 
+            model.addAttribute("formData", request);
+            model.addAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
-            return "redirect:/group-purchases/new";
+            // 레시피 정보 다시 조회해서 모델에 추가
+            if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
+                try {
+                    com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = 
+                        recipeService.getRecipeDetail(request.getRecipeApiId());
+                    model.addAttribute("recipe", recipe);
+                } catch (CustomException e) {
+                    model.addAttribute("errorMessage", "레시피 정보를 불러올 수 없습니다.");
+                }
+            }
+            // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
+            return "group-purchases/form";
         }
         
         // 2. JSON 형식의 재료 데이터 파싱
@@ -168,15 +224,40 @@ public class GroupBuyController {
                 );
             } catch (Exception e) {
                 log.error("재료 JSON 파싱 실패: {}", e.getMessage());
-                redirectAttributes.addFlashAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
-                return "redirect:/group-purchases/new?recipeApiId=" + request.getRecipeApiId();
+                model.addAttribute("formData", request);
+                model.addAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
+                // 레시피 정보 다시 조회
+                if (request.getRecipeApiId() != null) {
+                    try {
+                        com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = 
+                            recipeService.getRecipeDetail(request.getRecipeApiId());
+                        model.addAttribute("recipe", recipe);
+                    } catch (CustomException ex) {
+                        // 레시피 조회 실패는 무시
+                    }
+                }
+                return "group-purchases/form";
             }
+        } else if (request.getSelectedIngredients() != null && !request.getSelectedIngredients().isEmpty()) {
+            // JSON이 없으면 직접 바인딩된 리스트 사용 (테스트용)
+            ingredients = request.getSelectedIngredients();
         }
         
         // 3. 최소 1개 이상의 재료 선택 확인
         if (ingredients.isEmpty()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "최소 1개 이상의 재료를 선택해주세요.");
-            return "redirect:/group-purchases/new?recipeApiId=" + request.getRecipeApiId();
+            model.addAttribute("formData", request);
+            model.addAttribute("errorMessage", "최소 1개 이상의 재료를 선택해주세요.");
+            // 레시피 정보 다시 조회
+            if (request.getRecipeApiId() != null) {
+                try {
+                    com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = 
+                        recipeService.getRecipeDetail(request.getRecipeApiId());
+                    model.addAttribute("recipe", recipe);
+                } catch (CustomException e) {
+                    // 레시피 조회 실패는 무시
+                }
+            }
+            return "group-purchases/form";
         }
         
         // 4. 파싱된 재료 리스트를 request에 설정
@@ -197,15 +278,21 @@ public class GroupBuyController {
     public String updateGroupBuy(
         @AuthenticationPrincipal UserDetails userDetails,
         @PathVariable Long purchaseId,
-        @Valid @ModelAttribute UpdateGroupBuyRequest request,
+        @Valid @ModelAttribute("updateGroupBuyRequest") UpdateGroupBuyRequest request,
         BindingResult bindingResult,
+        Model model,
         RedirectAttributes redirectAttributes
     ) {
         // 1. 유효성 검증 실패 처리
         if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage", 
+            model.addAttribute("formData", request);
+            model.addAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
-            return "redirect:/group-purchases/" + purchaseId + "/edit";
+            // 기존 공동구매 정보 조회해서 모델에 추가
+            GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
+            model.addAttribute("groupBuy", groupBuy);
+            // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
+            return "group-purchases/form";
         }
         
         User user = userRepository.findByEmail(userDetails.getUsername())

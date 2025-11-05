@@ -27,9 +27,18 @@ public class AuthController {
     @GetMapping("/login")
     public String loginPage(
             @RequestParam(value = "error", required = false) Boolean error,
-            Model model) {
+            Model model,
+            jakarta.servlet.http.HttpSession session) {
         if (error != null && error) {
             model.addAttribute("error", "이메일 또는 비밀번호가 올바르지 않습니다.");
+            
+            // 세션에서 마지막으로 시도한 이메일 가져오기
+            String lastAttemptedEmail = (String) session.getAttribute("lastAttemptedEmail");
+            if (lastAttemptedEmail != null) {
+                model.addAttribute("lastEmail", lastAttemptedEmail);
+                // 사용 후 세션에서 제거
+                session.removeAttribute("lastAttemptedEmail");
+            }
         }
         return "auth/login";
     }
@@ -39,7 +48,11 @@ public class AuthController {
      * GET /auth/signup
      */
     @GetMapping("/signup")
-    public String signupPage() {
+    public String signupPage(Model model) {
+        // 빈 폼 객체 추가 (Thymeleaf th:object를 위해 필수)
+        SignupRequest formData = new SignupRequest();
+        model.addAttribute("formData", formData);
+        model.addAttribute("signupRequest", formData); // POST 핸들러와의 호환성
         return "auth/signup";
     }
 
@@ -49,8 +62,19 @@ public class AuthController {
      */
     @PostMapping("/signup")
     public String signup(
-            @Valid @ModelAttribute SignupRequest request,
+            @Valid @ModelAttribute("signupRequest") SignupRequest request,
+            org.springframework.validation.BindingResult bindingResult,
+            Model model,
             RedirectAttributes redirectAttributes) {
+        // 유효성 검증 실패 처리
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("formData", request);
+            model.addAttribute("error", 
+                bindingResult.getAllErrors().get(0).getDefaultMessage());
+            // 입력된 데이터를 유지하면서 회원가입 페이지로 직접 반환
+            return "auth/signup";
+        }
+        
         userService.signup(request);
         redirectAttributes.addFlashAttribute("message", "회원가입이 완료되었습니다. 로그인해주세요.");
         return "redirect:/auth/login";

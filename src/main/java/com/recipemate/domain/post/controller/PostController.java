@@ -85,7 +85,9 @@ public class PostController {
      * 게시글 작성 페이지 렌더링
      */
     @GetMapping("/new")
-    public String createPage() {
+    public String createPage(Model model) {
+        // 빈 폼 객체 추가 (Thymeleaf th:object를 위해 필수)
+        model.addAttribute("formData", new CreatePostRequest());
         return "community-posts/form";
     }
     
@@ -96,6 +98,13 @@ public class PostController {
     public String editPage(@PathVariable Long postId, Model model) {
         PostResponse post = postService.getPostDetail(postId);
         model.addAttribute("post", post);
+        
+        // 기존 데이터로 폼 객체 초기화 (Thymeleaf th:field가 값을 채우기 위해 필요)
+        UpdatePostRequest formData = new UpdatePostRequest();
+        formData.setTitle(post.getTitle());
+        formData.setContent(post.getContent());
+        
+        model.addAttribute("formData", formData);
         return "community-posts/form";
     }
 
@@ -109,13 +118,16 @@ public class PostController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @ModelAttribute CreatePostRequest request,
             BindingResult bindingResult,
+            Model model,
             RedirectAttributes redirectAttributes
     ) {
         // 1. 유효성 검증 실패 처리
         if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage", 
+            model.addAttribute("formData", request);
+            model.addAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
-            return "redirect:/community-posts/new";
+            // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
+            return "community-posts/form";
         }
         
         User user = userRepository.findByEmail(userDetails.getUsername())
@@ -135,13 +147,19 @@ public class PostController {
             @PathVariable Long postId,
             @Valid @ModelAttribute UpdatePostRequest request,
             BindingResult bindingResult,
+            Model model,
             RedirectAttributes redirectAttributes
     ) {
         // 1. 유효성 검증 실패 처리
         if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage", 
+            model.addAttribute("formData", request);
+            model.addAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
-            return "redirect:/community-posts/" + postId + "/edit";
+            // 기존 게시글 정보 조회해서 모델에 추가
+            PostResponse post = postService.getPostDetail(postId);
+            model.addAttribute("post", post);
+            // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
+            return "community-posts/form";
         }
         
         User user = userRepository.findByEmail(userDetails.getUsername())

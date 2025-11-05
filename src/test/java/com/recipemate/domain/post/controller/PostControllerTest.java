@@ -193,14 +193,15 @@ class PostControllerTest {
 
         given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
 
-        // when & then
+        // when & then - 유효성 검증 실패 시 폼 페이지를 직접 반환 (리다이렉트 없음)
         mockMvc.perform(post("/community-posts")
                         .with(csrf())
                         .param("content", "내용만 있음")
                         .param("category", "FREE"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/community-posts/new"))
-                .andExpect(flash().attributeExists("errorMessage"));
+                .andExpect(status().isOk())
+                .andExpect(view().name("community-posts/form"))
+                .andExpect(model().attributeExists("formData"))
+                .andExpect(model().attributeExists("errorMessage"));
     }
 
     @Test
@@ -290,16 +291,26 @@ class PostControllerTest {
         // given
         Long postId = 1L;
         User mockUser = User.create("test@example.com", "password", "테스터", "010-1234-5678");
+        
+        PostResponse mockPost = PostResponse.builder()
+                .id(postId)
+                .title("기존 제목")
+                .content("기존 내용")
+                .category(PostCategory.FREE)
+                .build();
 
         given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+        given(postService.getPostDetail(postId)).willReturn(mockPost);
 
-        // when & then
+        // when & then - 유효성 검증 실패 시 폼 페이지를 직접 반환 (리다이렉트 없음)
         mockMvc.perform(post("/community-posts/" + postId)
                         .with(csrf())
                         .param("content", "내용만 있음"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/community-posts/" + postId + "/edit"))
-                .andExpect(flash().attributeExists("errorMessage"));
+                .andExpect(status().isOk())
+                .andExpect(view().name("community-posts/form"))
+                .andExpect(model().attributeExists("formData"))
+                .andExpect(model().attributeExists("post"))
+                .andExpect(model().attributeExists("errorMessage"));
     }
 
     @Test

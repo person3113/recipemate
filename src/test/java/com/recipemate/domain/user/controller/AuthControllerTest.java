@@ -55,7 +55,9 @@ class AuthControllerTest {
     void signupPage() throws Exception {
         mockMvc.perform(get("/auth/signup"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("auth/signup"));
+                .andExpect(view().name("auth/signup"))
+                .andExpect(model().attributeExists("formData"))
+                .andExpect(model().attributeExists("signupRequest"));
     }
 
     @Test
@@ -90,7 +92,7 @@ class AuthControllerTest {
         given(userService.signup(any()))
             .willThrow(new CustomException(ErrorCode.DUPLICATE_EMAIL));
 
-        // when & then
+        // when & then - 비즈니스 로직 에러는 redirect로 처리
         mockMvc.perform(post("/auth/signup")
                         .with(csrf())
                         .param("email", "test@example.com")  // 이미 존재하는 이메일
@@ -100,6 +102,22 @@ class AuthControllerTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/auth/signup"))
                 .andExpect(flash().attributeExists("errorMessage"));
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 - 유효성 검증 실패")
+    void signup_Failure_ValidationError() throws Exception {
+        // when & then - 유효성 검증 실패 시 폼 페이지로 직접 반환 (redirect 없음)
+        mockMvc.perform(post("/auth/signup")
+                        .with(csrf())
+                        .param("email", "invalid-email")  // 잘못된 이메일 형식
+                        .param("password", "short")  // 최소 길이 미달
+                        .param("nickname", "a")  // 최소 길이 미달
+                        .param("phoneNumber", "123"))  // 잘못된 형식
+                .andExpect(status().isOk())
+                .andExpect(view().name("auth/signup"))
+                .andExpect(model().attributeExists("signupRequest"))
+                .andExpect(model().attributeHasFieldErrors("signupRequest", "email", "password", "nickname", "phoneNumber"));
     }
 
     @Test

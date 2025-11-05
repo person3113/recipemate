@@ -35,7 +35,7 @@
                         </div>
                         
                         <!-- Signup Form -->
-                        <form action="/auth/signup" method="post">
+                        <form action="/auth/signup" method="post" th:object="${formData}">
                             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             
                             <div class="mb-3">
@@ -45,10 +45,12 @@
                                 <input type="email" 
                                        id="email" 
                                        name="email" 
-                                       class="form-control" 
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'"
                                        placeholder="example@email.com"
                                        required>
-                                <div class="form-text">로그인 시 사용할 이메일 주소를 입력하세요.</div>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                                <div class="form-text" th:unless="${#fields.hasErrors('email')}">로그인 시 사용할 이메일 주소를 입력하세요.</div>
                             </div>
                             
                             <div class="mb-3">
@@ -58,11 +60,13 @@
                                 <input type="password" 
                                        id="password" 
                                        name="password" 
-                                       class="form-control" 
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'"
                                        placeholder="8자 이상 입력하세요"
                                        minlength="8"
                                        required>
-                                <div class="form-text">최소 8자 이상의 비밀번호를 입력하세요.</div>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                                <div class="form-text" th:unless="${#fields.hasErrors('password')}">최소 8자 이상의 비밀번호를 입력하세요.</div>
                             </div>
                             
                             <div class="mb-3">

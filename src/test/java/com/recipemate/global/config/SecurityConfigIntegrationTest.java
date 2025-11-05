@@ -156,10 +156,10 @@ class SecurityConfigIntegrationTest {
     @DisplayName("인증된 사용자는 CSRF 토큰과 함께 공동구매 생성 가능")
     @WithMockUser(username = "test@example.com")
     void createGroupBuy_WithAuth_ValidationError() throws Exception {
-        // CSRF 토큰 포함 + 빈 데이터로 요청 시 유효성 검증 실패 (400 또는 리다이렉트)
+        // CSRF 토큰 포함 + 빈 데이터로 요청 시 유효성 검증 실패 (200 OK with form view)
         mockMvc.perform(post("/group-purchases")
                         .with(csrf())) // ✅ CSRF 토큰 추가
-                .andExpect(status().is3xxRedirection()); // 검증 실패 시 리다이렉트
+                .andExpect(status().isOk()); // 검증 실패 시 폼 페이지 반환 (200 OK)
     }
 
     // 8. H2 Console 접근 테스트

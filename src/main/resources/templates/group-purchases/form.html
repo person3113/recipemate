@@ -39,6 +39,7 @@
                     <div class="card-body p-4">
                         <form id="groupBuyForm" method="post" 
                               th:action="${groupBuy != null ? '/group-purchases/' + groupBuy.id : (recipe != null ? '/group-purchases/recipe-based' : '/group-purchases')}"
+                              th:object="${formData}"
                               enctype="multipart/form-data">
                             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             
@@ -116,12 +117,13 @@
                                 </label>
                                 <input type="text" 
                                        id="title" 
-                                       name="title" 
-                                       class="form-control" 
-                                       th:value="${groupBuy?.title != null ? groupBuy.title : (recipe != null ? recipe.name + ' 재료 공동구매' : '')}"
-                                       placeholder="공동구매 제목을 입력하세요"
+                                       th:field="*{title}"
+                                       class="form-control"
+                                       th:classappend="${#fields.hasErrors('title')} ? 'is-invalid'"
+                                       th:placeholder="${groupBuy == null and recipe == null} ? '공동구매 제목을 입력하세요' : ''"
                                        required
                                        maxlength="100">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
                             </div>
                             
                             <!-- Category -->
@@ -129,14 +131,14 @@
                                 <label for="category" class="form-label fw-semibold">
                                     카테고리 <span class="text-danger">*</span>
                                 </label>
-                                <select id="category" name="category" class="form-select" required>
+                                <select id="category" th:field="*{category}" class="form-select" required>
                                     <option value="">카테고리를 선택하세요</option>
-                                    <option value="육류" th:selected="${groupBuy?.category == '육류' or (recipe != null and recipe.category == 'Beef')}">육류</option>
-                                    <option value="채소" th:selected="${groupBuy?.category == '채소' or (recipe != null and recipe.category == 'Vegetarian')}">채소</option>
-                                    <option value="과일" th:selected="${groupBuy?.category == '과일'}">과일</option>
-                                    <option value="수산물" th:selected="${groupBuy?.category == '수산물' or (recipe != null and recipe.category == 'Seafood')}">수산물</option>
-                                    <option value="유제품" th:selected="${groupBuy?.category == '유제품'}">유제품</option>
-                                    <option value="기타" th:selected="${groupBuy?.category == '기타' or (recipe != null and groupBuy == null)}">기타</option>
+                                    <option value="육류">육류</option>
+                                    <option value="채소">채소</option>
+                                    <option value="과일">과일</option>
+                                    <option value="수산물">수산물</option>
+                                    <option value="유제품">유제품</option>
+                                    <option value="기타">기타</option>
                                 </select>
                             </div>
                             
@@ -146,12 +148,11 @@
                                     상세 설명 <span class="text-danger">*</span>
                                 </label>
                                 <textarea id="content" 
-                                          name="content" 
+                                          th:field="*{content}"
                                           class="form-control" 
                                           rows="8"
                                           placeholder="공동구매에 대한 상세한 설명을 입력하세요"
-                                          required
-                                          th:text="${groupBuy?.content != null ? groupBuy.content : (recipe != null ? recipe.name + ' 레시피에 필요한 재료들을 공동구매합니다!\n\n아래 재료들을 함께 구매하면 더 저렴하게 구입할 수 있습니다.' : '')}"></textarea>
+                                          required></textarea>
                                 <div class="form-text">
                                     <i class="bi bi-info-circle"></i> 상품의 상태, 수령 방법 등을 자세히 작성해주세요.
                                 </div>
@@ -166,9 +167,8 @@
                                     <div class="input-group">
                                         <input type="number" 
                                                id="totalPrice" 
-                                               name="totalPrice" 
+                                               th:field="*{totalPrice}"
                                                class="form-control" 
-                                               th:value="${groupBuy?.totalPrice}" 
                                                min="0" 
                                                step="1000"
                                                placeholder="0"
@@ -185,9 +185,8 @@
                                     <div class="input-group">
                                         <input type="number" 
                                                id="targetHeadcount" 
-                                               name="targetHeadcount" 
+                                               th:field="*{targetHeadcount}"
                                                class="form-control" 
-                                               th:value="${groupBuy?.targetHeadcount}" 
                                                min="2" 
                                                max="100"
                                                placeholder="2"
@@ -204,10 +203,11 @@
                                 </label>
                                 <input type="datetime-local" 
                                        id="deadline" 
-                                       name="deadline" 
+                                       th:field="*{deadline}"
                                        class="form-control"
-                                       th:value="${groupBuy != null and groupBuy.deadline != null ? #temporals.format(groupBuy.deadline, 'yyyy-MM-dd''T''HH:mm') : ''}" 
+                                       th:classappend="${#fields.hasErrors('deadline')} ? 'is-invalid'"
                                        required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('deadline')}" th:errors="*{deadline}"></div>
                             </div>
                             
                             <hr class="my-4">
@@ -219,16 +219,16 @@
                                 <label for="deliveryMethod" class="form-label fw-semibold">
                                     배송 방법 <span class="text-danger">*</span>
                                 </label>
-                                <select id="deliveryMethod" name="deliveryMethod" class="form-select" required>
+                                <select id="deliveryMethod" th:field="*{deliveryMethod}" class="form-select" required>
                                     <option value="">배송 방법을 선택하세요</option>
-                                    <option value="DIRECT" th:selected="${groupBuy?.deliveryMethod?.name() == 'DIRECT'}">
+                                    <option value="DIRECT">
                                         <i class="bi bi-person-arms-up"></i> 직거래
                                     </option>
-                                    <option value="PARCEL" th:selected="${groupBuy?.deliveryMethod?.name() == 'PARCEL'}">
+                                    <option value="PARCEL">
                                         <i class="bi bi-box-seam"></i> 택배
                                     </option>
-                                    <option value="BOTH" th:selected="${groupBuy?.deliveryMethod?.name() == 'BOTH'}">
-                                        <i class="bi bi-check-all"></i> 둘 다 가능
+                                    <option value="BOTH">
+                                        <i class="bi bi-arrow-left-right"></i> 직거래 / 택배
                                     </option>
                                 </select>
                             </div>
@@ -240,9 +240,8 @@
                                 </label>
                                 <input type="text" 
                                        id="meetupLocation" 
-                                       name="meetupLocation" 
+                                       th:field="*{meetupLocation}"
                                        class="form-control" 
-                                       th:value="${groupBuy?.meetupLocation}"
                                        placeholder="예: 서울역 3번 출구">
                                 <div class="form-text">
                                     <i class="bi bi-geo-alt"></i> 구체적인 만남 장소를 입력해주세요.
@@ -257,9 +256,8 @@
                                 <div class="input-group">
                                     <input type="number" 
                                            id="parcelFee" 
-                                           name="parcelFee" 
+                                           th:field="*{parcelFee}"
                                            class="form-control" 
-                                           th:value="${groupBuy?.parcelFee}" 
                                            min="0"
                                            step="500"
                                            placeholder="0">
@@ -272,14 +270,10 @@
                             <!-- Participant List Public -->
                             <div class="mb-4">
                                 <div class="form-check">
-                                    <!-- Hidden input to ensure false is sent when unchecked -->
-                                    <input type="hidden" name="isParticipantListPublic" value="false">
                                     <input type="checkbox" 
                                            class="form-check-input" 
                                            id="isParticipantListPublic" 
-                                           name="isParticipantListPublic"
-                                           value="true"
-                                           th:checked="${groupBuy?.isParticipantListPublic}">
+                                           th:field="*{isParticipantListPublic}">
                                     <label class="form-check-label" for="isParticipantListPublic">
                                         <i class="bi bi-people"></i> 참여자 명단 공개
                                     </label>

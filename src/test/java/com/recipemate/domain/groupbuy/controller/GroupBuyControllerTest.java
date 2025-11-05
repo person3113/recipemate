@@ -117,7 +117,9 @@ class GroupBuyControllerTest {
     void createPage_Success() throws Exception {
         mockMvc.perform(get("/group-purchases/new"))
             .andExpect(status().isOk())
-            .andExpect(view().name("group-purchases/form"));
+            .andExpect(view().name("group-purchases/form"))
+            .andExpect(model().attributeExists("formData"))
+            .andExpect(model().attributeExists("createGroupBuyRequest"));
     }
 
     @Test
@@ -151,6 +153,8 @@ class GroupBuyControllerTest {
                 .param("recipeApiId", recipeApiId))
             .andExpect(status().isOk())
             .andExpect(view().name("group-purchases/form"))
+            .andExpect(model().attributeExists("formData"))
+            .andExpect(model().attributeExists("createGroupBuyRequest"))
             .andExpect(model().attributeExists("recipe"))
             .andExpect(model().attribute("recipe", mockRecipe));
     }
@@ -169,6 +173,8 @@ class GroupBuyControllerTest {
                 .param("recipeApiId", nonExistentRecipeId))
             .andExpect(status().isOk())
             .andExpect(view().name("group-purchases/form"))
+            .andExpect(model().attributeExists("formData"))
+            .andExpect(model().attributeExists("createGroupBuyRequest"))
             .andExpect(model().attributeExists("errorMessage"));
     }
 
@@ -189,6 +195,8 @@ class GroupBuyControllerTest {
         mockMvc.perform(get("/group-purchases/" + groupBuyId + "/edit"))
             .andExpect(status().isOk())
             .andExpect(view().name("group-purchases/form"))
+            .andExpect(model().attributeExists("formData"))
+            .andExpect(model().attributeExists("updateGroupBuyRequest"))
             .andExpect(model().attributeExists("groupBuy"));
     }
 
@@ -388,10 +396,8 @@ class GroupBuyControllerTest {
         // given
         User mockUser = User.create("test@example.com", "password", "테스터", "010-1234-5678");
         given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
-        given(groupBuyService.createGroupBuy(anyLong(), any()))
-            .willThrow(new CustomException(ErrorCode.INVALID_INPUT_VALUE));
 
-        // when & then
+        // when & then - 유효성 검증 실패 시 폼 페이지로 직접 반환 (redirect 없음)
         mockMvc.perform(post("/group-purchases")
                 .with(csrf())
                 .param("title", "") // 빈 제목
@@ -401,9 +407,10 @@ class GroupBuyControllerTest {
                 .param("targetHeadcount", "1") // 최소 인원 미달
                 .param("deadline", LocalDateTime.now().plusDays(7).toString())
                 .param("deliveryMethod", "BOTH"))
-            .andExpect(status().is3xxRedirection())
-            .andExpect(redirectedUrl("/group-purchases/new"))
-            .andExpect(flash().attributeExists("errorMessage"));
+            .andExpect(status().isOk()) // redirect 대신 200 OK
+            .andExpect(view().name("group-purchases/form")) // 폼 페이지로 직접 반환
+            .andExpect(model().attributeExists("createGroupBuyRequest")) // 입력값 유지
+            .andExpect(model().attributeHasFieldErrors("createGroupBuyRequest", "title", "totalPrice", "targetHeadcount"));
     }
 
     // ========== 찜 기능 테스트 ==========

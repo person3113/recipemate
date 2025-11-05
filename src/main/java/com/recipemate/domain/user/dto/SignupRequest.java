@@ -7,8 +7,12 @@ import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class SignupRequest {
 
@@ -32,3 +36,4 @@ public class SignupRequest {
         return new SignupRequest(email, password, nickname, phoneNumber);
     }
 }
+

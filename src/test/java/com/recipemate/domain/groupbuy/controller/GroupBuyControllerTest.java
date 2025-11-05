@@ -62,6 +62,9 @@ class GroupBuyControllerTest {
     @MockitoBean
     private com.recipemate.domain.user.service.CustomUserDetailsService customUserDetailsService;
 
+    @MockitoBean
+    private com.recipemate.domain.recipe.service.RecipeService recipeService;
+
     // ========== 페이지 렌더링 테스트 ==========
 
     @Test
@@ -115,6 +118,58 @@ class GroupBuyControllerTest {
         mockMvc.perform(get("/group-purchases/new"))
             .andExpect(status().isOk())
             .andExpect(view().name("group-purchases/form"));
+    }
+
+    @Test
+    @DisplayName("레시피 기반 공구 작성 페이지 렌더링 성공")
+    @WithMockUser
+    void createPage_WithRecipeId_Success() throws Exception {
+        // given
+        String recipeApiId = "52772";
+        com.recipemate.domain.recipe.dto.RecipeDetailResponse mockRecipe = 
+            com.recipemate.domain.recipe.dto.RecipeDetailResponse.builder()
+                .id(recipeApiId)
+                .name("Teriyaki Chicken Casserole")
+                .imageUrl("https://example.com/image.jpg")
+                .category("Chicken")
+                .ingredients(java.util.List.of(
+                    com.recipemate.domain.recipe.dto.RecipeDetailResponse.IngredientInfo.builder()
+                        .name("soy sauce")
+                        .measure("3/4 cup")
+                        .build(),
+                    com.recipemate.domain.recipe.dto.RecipeDetailResponse.IngredientInfo.builder()
+                        .name("water")
+                        .measure("1/2 cup")
+                        .build()
+                ))
+                .build();
+        
+        given(recipeService.getRecipeDetail(recipeApiId)).willReturn(mockRecipe);
+
+        // when & then
+        mockMvc.perform(get("/group-purchases/new")
+                .param("recipeApiId", recipeApiId))
+            .andExpect(status().isOk())
+            .andExpect(view().name("group-purchases/form"))
+            .andExpect(model().attributeExists("recipe"))
+            .andExpect(model().attribute("recipe", mockRecipe));
+    }
+
+    @Test
+    @DisplayName("레시피 기반 공구 작성 페이지 렌더링 실패 - 존재하지 않는 레시피")
+    @WithMockUser
+    void createPage_WithRecipeId_NotFound() throws Exception {
+        // given
+        String nonExistentRecipeId = "99999";
+        given(recipeService.getRecipeDetail(nonExistentRecipeId))
+            .willThrow(new CustomException(ErrorCode.RECIPE_NOT_FOUND));
+
+        // when & then
+        mockMvc.perform(get("/group-purchases/new")
+                .param("recipeApiId", nonExistentRecipeId))
+            .andExpect(status().isOk())
+            .andExpect(view().name("group-purchases/form"))
+            .andExpect(model().attributeExists("errorMessage"));
     }
 
     @Test
@@ -173,6 +228,56 @@ class GroupBuyControllerTest {
                 .param("meetupLocation", "홍대입구역")
                 .param("parcelFee", "2500")
                 .param("isParticipantListPublic", "true"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/group-purchases/1"))
+            .andExpect(flash().attributeExists("successMessage"));
+    }
+
+    @Test
+    @DisplayName("레시피 기반 공구 생성 폼 제출 성공")
+    @WithMockUser(username = "test@example.com")
+    void createRecipeBasedGroupBuy_FormSubmit_Success() throws Exception {
+        // given
+        User mockUser = User.builder()
+            .id(1L)
+            .email("test@example.com")
+            .password("password")
+            .nickname("테스터")
+            .phoneNumber("010-1234-5678")
+            .role(com.recipemate.global.common.UserRole.USER)
+            .build();
+        GroupBuyResponse mockResponse = GroupBuyResponse.builder()
+            .id(1L)
+            .title("Teriyaki Chicken 재료 공구")
+            .recipeApiId("52772")
+            .recipeName("Teriyaki Chicken Casserole")
+            .build();
+        
+        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(mockUser));
+        given(groupBuyService.createRecipeBasedGroupBuy(any(), any())).willReturn(mockResponse);
+
+        // when & then
+        mockMvc.perform(post("/group-purchases/recipe-based")
+                .with(csrf())
+                .param("title", "Teriyaki Chicken 재료 공구")
+                .param("content", "레시피에 필요한 재료들입니다")
+                .param("category", "육류")
+                .param("totalPrice", "35000")
+                .param("targetHeadcount", "5")
+                .param("deadline", LocalDateTime.now().plusDays(7).toString())
+                .param("deliveryMethod", "BOTH")
+                .param("meetupLocation", "강남역")
+                .param("parcelFee", "3000")
+                .param("isParticipantListPublic", "true")
+                .param("recipeApiId", "52772")
+                .param("recipeName", "Teriyaki Chicken Casserole")
+                .param("recipeImageUrl", "https://example.com/image.jpg")
+                .param("selectedIngredients[0].name", "soy sauce")
+                .param("selectedIngredients[0].measure", "3/4 cup")
+                .param("selectedIngredients[0].selected", "true")
+                .param("selectedIngredients[1].name", "water")
+                .param("selectedIngredients[1].measure", "1/2 cup")
+                .param("selectedIngredients[1].selected", "true"))
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/group-purchases/1"))
             .andExpect(flash().attributeExists("successMessage"));

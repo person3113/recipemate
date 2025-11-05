@@ -3,6 +3,13 @@ spring:
     name: RecipeMate
   profiles:
     active: dev
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 30MB
+      # 폼 필드 개수 제한 (재료가 많은 레시피 대응)
+      file-size-threshold: 0
 
 # 식품안전나라 API 설정
 food:

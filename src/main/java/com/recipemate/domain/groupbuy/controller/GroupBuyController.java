@@ -1,9 +1,11 @@
 package com.recipemate.domain.groupbuy.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.recipemate.domain.groupbuy.dto.CreateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
 import com.recipemate.domain.groupbuy.dto.ParticipateRequest;
+import com.recipemate.domain.groupbuy.dto.SelectedIngredient;
 import com.recipemate.domain.groupbuy.dto.UpdateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.service.GroupBuyService;
 import com.recipemate.domain.groupbuy.service.ParticipationService;
@@ -17,6 +19,7 @@ import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -29,6 +32,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+@Slf4j
 @Controller
 @RequestMapping("/group-purchases")
 @RequiredArgsConstructor
@@ -38,6 +42,8 @@ public class GroupBuyController {
     private final ParticipationService participationService;
     private final WishlistService wishlistService;
     private final UserRepository userRepository;
+    private final com.recipemate.domain.recipe.service.RecipeService recipeService;
+    private final ObjectMapper objectMapper;
 
     // ========== 페이지 렌더링 엔드포인트 ==========
     
@@ -81,7 +87,20 @@ public class GroupBuyController {
      * 공구 작성 페이지 렌더링
      */
     @GetMapping("/new")
-    public String createPage() {
+    public String createPage(
+        @RequestParam(required = false) String recipeApiId,
+        Model model
+    ) {
+        // 레시피 기반 공구인 경우 레시피 정보 조회
+        if (recipeApiId != null && !recipeApiId.isBlank()) {
+            try {
+                com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = recipeService.getRecipeDetail(recipeApiId);
+                model.addAttribute("recipe", recipe);
+            } catch (CustomException e) {
+                // 레시피를 찾을 수 없는 경우 에러 메시지 추가
+                model.addAttribute("errorMessage", "레시피 정보를 불러올 수 없습니다.");
+            }
+        }
         return "group-purchases/form";
     }
     
@@ -138,6 +157,30 @@ public class GroupBuyController {
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
             return "redirect:/group-purchases/new";
         }
+        
+        // 2. JSON 형식의 재료 데이터 파싱
+        java.util.List<SelectedIngredient> ingredients = new java.util.ArrayList<>();
+        if (request.getSelectedIngredientsJson() != null && !request.getSelectedIngredientsJson().isEmpty()) {
+            try {
+                ingredients = objectMapper.readValue(
+                    request.getSelectedIngredientsJson(),
+                    objectMapper.getTypeFactory().constructCollectionType(java.util.List.class, SelectedIngredient.class)
+                );
+            } catch (Exception e) {
+                log.error("재료 JSON 파싱 실패: {}", e.getMessage());
+                redirectAttributes.addFlashAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
+                return "redirect:/group-purchases/new?recipeApiId=" + request.getRecipeApiId();
+            }
+        }
+        
+        // 3. 최소 1개 이상의 재료 선택 확인
+        if (ingredients.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "최소 1개 이상의 재료를 선택해주세요.");
+            return "redirect:/group-purchases/new?recipeApiId=" + request.getRecipeApiId();
+        }
+        
+        // 4. 파싱된 재료 리스트를 request에 설정
+        request.setSelectedIngredients(ingredients);
         
         User user = userRepository.findByEmail(userDetails.getUsername())
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));

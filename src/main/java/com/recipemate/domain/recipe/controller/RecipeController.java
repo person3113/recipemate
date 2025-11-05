@@ -74,6 +74,10 @@ public class RecipeController {
         RecipeDetailResponse recipe = recipeService.getRecipeDetail(recipeId);
         model.addAttribute("recipe", recipe);
         
+        // 관련 공동구매 조회
+        List<GroupBuyResponse> relatedGroupBuys = recipeService.getRelatedGroupBuys(recipeId);
+        model.addAttribute("relatedGroupBuys", relatedGroupBuys);
+        
         return "recipes/detail";
     }
 

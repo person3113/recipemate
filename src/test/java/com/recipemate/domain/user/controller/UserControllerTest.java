@@ -74,6 +74,12 @@ class UserControllerTest {
     @MockitoBean
     private PointService pointService;
 
+    @MockitoBean
+    private com.recipemate.domain.groupbuy.repository.GroupBuyRepository groupBuyRepository;
+
+    @MockitoBean
+    private com.recipemate.domain.groupbuy.repository.ParticipationRepository participationRepository;
+
     @Test
     @DisplayName("내 프로필 페이지 렌더링 성공")
     @WithMockUser(username = "test@example.com")

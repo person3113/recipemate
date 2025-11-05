@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
@@ -64,4 +65,10 @@ public class CreateGroupBuyRequest {
 
     @Size(max = 500, message = "레시피 이미지 URL은 500자 이내여야 합니다")
     private String recipeImageUrl;
+
+    @Builder.Default
+    private List<SelectedIngredient> selectedIngredients = new ArrayList<>();
+    
+    // JSON 형식의 재료 데이터 (폼 필드 개수 제한 우회)
+    private String selectedIngredientsJson;
 }

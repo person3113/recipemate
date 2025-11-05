@@ -128,32 +128,40 @@ public class GroupBuyService {
 
     /**
      * 레시피 정보로 요청 데이터 보강
-     * recipeName이나 recipeImageUrl이 없으면 레시피 API에서 가져와서 채웁니다.
+     * 선택된 재료만 content에 추가하고, recipeName과 recipeImageUrl이 없으면 레시피 API에서 가져와서 채웁니다.
      */
     private CreateGroupBuyRequest enrichWithRecipeInfo(CreateGroupBuyRequest request) {
         // 이미 모든 레시피 정보가 제공된 경우 API 호출 생략
-        if (request.getRecipeName() != null && request.getRecipeImageUrl() != null) {
-            return request;
-        }
+        boolean hasRecipeInfo = request.getRecipeName() != null && request.getRecipeImageUrl() != null;
         
-        // 레시피 상세 정보 조회
-        com.recipemate.domain.recipe.dto.RecipeDetailResponse recipeDetail;
-        try {
-            recipeDetail = recipeService.getRecipeDetail(request.getRecipeApiId());
-        } catch (CustomException e) {
-            // 레시피를 찾을 수 없는 경우 예외 전파
-            if (e.getErrorCode() == ErrorCode.RECIPE_NOT_FOUND) {
-                throw e;
+        String recipeName = request.getRecipeName();
+        String recipeImageUrl = request.getRecipeImageUrl();
+        
+        // 레시피 정보가 없으면 API에서 조회
+        if (!hasRecipeInfo) {
+            com.recipemate.domain.recipe.dto.RecipeDetailResponse recipeDetail;
+            try {
+                recipeDetail = recipeService.getRecipeDetail(request.getRecipeApiId());
+                recipeName = recipeDetail.getName();
+                recipeImageUrl = recipeDetail.getImageUrl();
+            } catch (CustomException e) {
+                // 레시피를 찾을 수 없는 경우 예외 전파
+                if (e.getErrorCode() == ErrorCode.RECIPE_NOT_FOUND) {
+                    throw e;
+                }
+                // 기타 오류는 일반적인 레시피 조회 오류로 처리
+                throw new CustomException(ErrorCode.RECIPE_NOT_FOUND);
             }
-            // 기타 오류는 일반적인 레시피 조회 오류로 처리
-            throw new CustomException(ErrorCode.RECIPE_NOT_FOUND);
         }
         
-        // 재료 목록을 문자열로 변환
-        String ingredientsText = buildIngredientsText(recipeDetail);
+        // 선택된 재료만 필터링하여 문자열로 변환
+        String ingredientsText = buildSelectedIngredientsText(request.getSelectedIngredients());
         
         // 기존 content에 재료 정보 추가
-        String enrichedContent = request.getContent() + "\n\n" + ingredientsText;
+        String enrichedContent = request.getContent();
+        if (ingredientsText != null && !ingredientsText.isEmpty()) {
+            enrichedContent = request.getContent() + "\n\n" + ingredientsText;
+        }
         
         // 새로운 요청 객체 생성 (레시피 정보 보강)
         return CreateGroupBuyRequest.builder()
@@ -169,21 +177,31 @@ public class GroupBuyService {
             .isParticipantListPublic(request.getIsParticipantListPublic())
             .imageFiles(request.getImageFiles())
             .recipeApiId(request.getRecipeApiId())
-            .recipeName(request.getRecipeName() != null ? request.getRecipeName() : recipeDetail.getName())
-            .recipeImageUrl(request.getRecipeImageUrl() != null ? request.getRecipeImageUrl() : recipeDetail.getImageUrl())
+            .recipeName(recipeName)
+            .recipeImageUrl(recipeImageUrl)
+            .selectedIngredients(request.getSelectedIngredients())
             .build();
     }
 
     /**
-     * 재료 목록을 문자열로 변환
+     * 선택된 재료 목록을 문자열로 변환
      */
-    private String buildIngredientsText(com.recipemate.domain.recipe.dto.RecipeDetailResponse recipeDetail) {
-        if (recipeDetail.getIngredients() == null || recipeDetail.getIngredients().isEmpty()) {
-            return "필요한 재료: 정보 없음";
+    private String buildSelectedIngredientsText(List<com.recipemate.domain.groupbuy.dto.SelectedIngredient> selectedIngredients) {
+        if (selectedIngredients == null || selectedIngredients.isEmpty()) {
+            return "";
+        }
+        
+        // 선택된 재료만 필터링
+        List<com.recipemate.domain.groupbuy.dto.SelectedIngredient> filteredIngredients = selectedIngredients.stream()
+            .filter(ingredient -> Boolean.TRUE.equals(ingredient.getSelected()))
+            .toList();
+        
+        if (filteredIngredients.isEmpty()) {
+            return "";
         }
         
         StringBuilder sb = new StringBuilder("필요한 재료:\n");
-        for (com.recipemate.domain.recipe.dto.RecipeDetailResponse.IngredientInfo ingredient : recipeDetail.getIngredients()) {
+        for (com.recipemate.domain.groupbuy.dto.SelectedIngredient ingredient : filteredIngredients) {
             sb.append("- ").append(ingredient.getName());
             if (ingredient.getMeasure() != null && !ingredient.getMeasure().isBlank()) {
                 sb.append(" (").append(ingredient.getMeasure()).append(")");

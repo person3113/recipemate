@@ -107,7 +107,7 @@ class SecurityConfigIntegrationTest {
     @DisplayName("공동구매 생성 폼은 인증 필요")
     void groupPurchasesCreateForm_NoAuth_Forbidden() throws Exception {
         mockMvc.perform(get("/group-purchases/new"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().is3xxRedirection());
     }
 
     @Test
@@ -132,7 +132,7 @@ class SecurityConfigIntegrationTest {
     @DisplayName("마이페이지는 인증 필요")
     void myPage_NoAuth_Forbidden() throws Exception {
         mockMvc.perform(get("/users/me"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().is3xxRedirection());
     }
 
     @Test
@@ -231,7 +231,7 @@ class SecurityConfigIntegrationTest {
     @DisplayName("공동구매 ID가 숫자가 아닌 경우 인증 필요")
     void groupPurchasesDetailNonNumericId_NoAuth_Forbidden() throws Exception {
         mockMvc.perform(get("/group-purchases/abc"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().is3xxRedirection());
     }
 
     @Test

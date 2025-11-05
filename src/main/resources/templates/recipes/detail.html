@@ -164,12 +164,54 @@
             <h3 class="fw-bold mb-4">
                 <i class="bi bi-basket3 text-primary"></i> 이 레시피와 관련된 공동구매
             </h3>
-            <div class="text-center py-5 border rounded bg-white">
+            
+            <!-- 관련 공동구매가 없을 때 -->
+            <div th:if="${relatedGroupBuys.isEmpty()}" class="text-center py-5 border rounded bg-white">
                 <i class="bi bi-basket3 display-1 text-muted"></i>
                 <p class="text-muted mt-3">아직 관련된 공동구매가 없습니다.</p>
                 <a th:href="@{/group-purchases/new(recipeApiId=${recipe.id})}" class="btn btn-primary">
                     <i class="bi bi-plus-circle"></i> 첫 공동구매 만들기
                 </a>
+            </div>
+            
+            <!-- 관련 공동구매 목록 -->
+            <div th:if="${!relatedGroupBuys.isEmpty()}" class="row">
+                <div th:each="groupBuy : ${relatedGroupBuys}" class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm group-buy-item">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">
+                                    <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" 
+                                       class="text-decoration-none text-dark"
+                                       th:text="${groupBuy.title}"></a>
+                                </h5>
+                                <span class="badge" 
+                                      th:classappend="${groupBuy.status.name() == 'RECRUITING'} ? 'bg-success' : 
+                                                      (${groupBuy.status.name() == 'IMMINENT'} ? 'bg-warning' : 'bg-secondary')"
+                                      th:text="${groupBuy.status.name() == 'RECRUITING' ? '모집중' : 
+                                               (groupBuy.status.name() == 'IMMINENT' ? '마감임박' : '마감')}"></span>
+                            </div>
+                            <p class="card-text text-muted small" th:text="${groupBuy.content}"></p>
+                            <div class="mb-2">
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-tag"></i> <span th:text="${groupBuy.category}"></span>
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-primary fw-bold">
+                                    <span th:text="${#numbers.formatInteger(groupBuy.totalPrice, 0, 'COMMA')}"></span>원
+                                </span>
+                                <span class="text-muted small">
+                                    <i class="bi bi-people"></i>
+                                    <span th:text="${groupBuy.currentHeadcount}"></span> / <span th:text="${groupBuy.targetHeadcount}"></span>
+                                </span>
+                            </div>
+                            <div class="mt-2 text-muted small">
+                                <i class="bi bi-person"></i> <span th:text="${groupBuy.hostNickname}"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>

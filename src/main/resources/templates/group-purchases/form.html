@@ -23,9 +23,9 @@
                 <div class="mb-4">
                     <h1 class="fw-bold">
                         <i class="bi bi-basket3"></i>
-                        <span th:text="${groupBuy != null ? '공동구매 수정' : '공동구매 작성'}">공동구매 작성</span>
+                        <span th:text="${groupBuy != null ? '공동구매 수정' : (recipe != null ? '레시피 기반 공동구매 작성' : '공동구매 작성')}">공동구매 작성</span>
                     </h1>
-                    <p class="text-muted">함께 구매할 상품의 정보를 입력해주세요</p>
+                    <p class="text-muted" th:text="${recipe != null ? '레시피 재료를 선택하고 공동구매를 만들어보세요' : '함께 구매할 상품의 정보를 입력해주세요'}">함께 구매할 상품의 정보를 입력해주세요</p>
                 </div>
                 
                 <!-- Flash Messages -->
@@ -37,10 +37,77 @@
                 <!-- Form Card -->
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
-                        <form method="post" 
-                              th:action="${groupBuy != null ? '/group-purchases/' + groupBuy.id : '/group-purchases'}"
+                        <form id="groupBuyForm" method="post" 
+                              th:action="${groupBuy != null ? '/group-purchases/' + groupBuy.id : (recipe != null ? '/group-purchases/recipe-based' : '/group-purchases')}"
                               enctype="multipart/form-data">
                             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            
+                            <!-- Recipe Info Section (레시피 기반 공구인 경우만 표시) -->
+                            <div th:if="${recipe != null}" class="alert alert-info mb-4">
+                                <div class="d-flex align-items-center">
+                                    <img th:if="${recipe.imageUrl != null}" 
+                                         th:src="${recipe.imageUrl}" 
+                                         th:alt="${recipe.name}" 
+                                         class="rounded me-3"
+                                         style="width: 80px; height: 80px; object-fit: cover;">
+                                    <div class="flex-grow-1">
+                                        <h5 class="mb-1 fw-bold">
+                                            <i class="bi bi-egg-fried"></i> <span th:text="${recipe.name}">레시피명</span>
+                                        </h5>
+                                        <p class="mb-0 small text-muted">
+                                            <span th:text="${recipe.category}">카테고리</span>
+                                            <span th:if="${recipe.area != null}"> · <span th:text="${recipe.area}">지역</span></span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <!-- Hidden fields for recipe info -->
+                                <input type="hidden" name="recipeApiId" th:value="${recipe.id}">
+                                <input type="hidden" name="recipeName" th:value="${recipe.name}">
+                                <input type="hidden" name="recipeImageUrl" th:value="${recipe.imageUrl}">
+                            </div>
+                            
+                            <!-- Ingredients Selection (레시피 기반 공구인 경우만 표시) -->
+<div th:if="${recipe != null}" class="mb-4">
+                                <label class="form-label fw-semibold">
+                                    필요한 재료 선택 <span class="text-danger">*</span>
+                                </label>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <p class="text-muted small mb-3">
+                                            <i class="bi bi-info-circle"></i> 공동구매에 포함할 재료를 선택하세요. 분량은 수정할 수 있습니다.
+                                        </p>
+                                        <div class="row g-2" id="ingredientsList">
+                                            <div th:each="ingredient, stat : ${recipe.ingredients}" class="col-md-6">
+                                                <div class="border rounded p-3 ingredient-item">
+                                                    <div class="form-check mb-2">
+                                                        <input class="form-check-input ingredient-checkbox" 
+                                                               type="checkbox" 
+                                                               th:id="'ingredient-' + ${stat.index}"
+                                                               th:data-name="${ingredient.name}"
+                                                               th:data-measure="${ingredient.measure}"
+                                                               checked>
+                                                        <label class="form-check-label fw-semibold" th:for="'ingredient-' + ${stat.index}">
+                                                            <span th:text="${ingredient.name}">재료명</span>
+                                                        </label>
+                                                    </div>
+                                                    <input type="text" 
+                                                           class="form-control form-control-sm ingredient-measure" 
+                                                           th:id="'measure-' + ${stat.index}"
+                                                           th:value="${ingredient.measure}"
+                                                           placeholder="분량 (예: 200g, 2개)">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="addIngredientBtn">
+                                                <i class="bi bi-plus-circle"></i> 재료 추가
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Hidden input for selected ingredients JSON -->
+                                <input type="hidden" id="selectedIngredientsJson" name="selectedIngredientsJson">
+                            </div>
                             
                             <!-- Title -->
                             <div class="mb-4">
@@ -51,7 +118,7 @@
                                        id="title" 
                                        name="title" 
                                        class="form-control" 
-                                       th:value="${groupBuy?.title}"
+                                       th:value="${groupBuy?.title != null ? groupBuy.title : (recipe != null ? recipe.name + ' 재료 공동구매' : '')}"
                                        placeholder="공동구매 제목을 입력하세요"
                                        required
                                        maxlength="100">
@@ -64,12 +131,12 @@
                                 </label>
                                 <select id="category" name="category" class="form-select" required>
                                     <option value="">카테고리를 선택하세요</option>
-                                    <option value="육류" th:selected="${groupBuy?.category == '육류'}">육류</option>
-                                    <option value="채소" th:selected="${groupBuy?.category == '채소'}">채소</option>
+                                    <option value="육류" th:selected="${groupBuy?.category == '육류' or (recipe != null and recipe.category == 'Beef')}">육류</option>
+                                    <option value="채소" th:selected="${groupBuy?.category == '채소' or (recipe != null and recipe.category == 'Vegetarian')}">채소</option>
                                     <option value="과일" th:selected="${groupBuy?.category == '과일'}">과일</option>
-                                    <option value="수산물" th:selected="${groupBuy?.category == '수산물'}">수산물</option>
+                                    <option value="수산물" th:selected="${groupBuy?.category == '수산물' or (recipe != null and recipe.category == 'Seafood')}">수산물</option>
                                     <option value="유제품" th:selected="${groupBuy?.category == '유제품'}">유제품</option>
-                                    <option value="기타" th:selected="${groupBuy?.category == '기타'}">기타</option>
+                                    <option value="기타" th:selected="${groupBuy?.category == '기타' or (recipe != null and groupBuy == null)}">기타</option>
                                 </select>
                             </div>
                             
@@ -84,7 +151,7 @@
                                           rows="8"
                                           placeholder="공동구매에 대한 상세한 설명을 입력하세요"
                                           required
-                                          th:text="${groupBuy?.content}"></textarea>
+                                          th:text="${groupBuy?.content != null ? groupBuy.content : (recipe != null ? recipe.name + ' 레시피에 필요한 재료들을 공동구매합니다!\n\n아래 재료들을 함께 구매하면 더 저렴하게 구입할 수 있습니다.' : '')}"></textarea>
                                 <div class="form-text">
                                     <i class="bi bi-info-circle"></i> 상품의 상태, 수령 방법 등을 자세히 작성해주세요.
                                 </div>
@@ -274,5 +341,93 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Recipe-based Group Buy Script -->
+    <script th:if="${recipe != null}">
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('groupBuyForm');
+            const addIngredientBtn = document.getElementById('addIngredientBtn');
+            const ingredientsList = document.getElementById('ingredientsList');
+            const selectedIngredientsInput = document.getElementById('selectedIngredientsJson');
+            let ingredientIndex = [[${recipe.ingredients.size()}]];
+            
+            if (!form || !selectedIngredientsInput) {
+                console.error('필수 요소를 찾을 수 없습니다.');
+                return;
+            }
+            
+            // 폼 제출 시 선택된 재료를 JSON으로 변환
+            form.addEventListener('submit', function(e) {
+                const selectedIngredients = [];
+                const checkboxes = document.querySelectorAll('.ingredient-checkbox');
+                
+                checkboxes.forEach((checkbox, index) => {
+                    if (checkbox.checked) {
+                        const measureInput = document.getElementById('measure-' + index) || 
+                                           checkbox.closest('.ingredient-item').querySelector('.ingredient-measure');
+                        selectedIngredients.push({
+                            name: checkbox.dataset.name,
+                            measure: measureInput ? measureInput.value : ''
+                        });
+                    }
+                });
+                
+                if (selectedIngredients.length === 0) {
+                    e.preventDefault();
+                    alert('최소 1개 이상의 재료를 선택해주세요.');
+                    return false;
+                }
+                
+                selectedIngredientsInput.value = JSON.stringify(selectedIngredients);
+            });
+            
+            // 재료 추가 버튼
+            addIngredientBtn.addEventListener('click', function() {
+                const newIngredient = document.createElement('div');
+                newIngredient.className = 'col-md-6';
+                newIngredient.innerHTML = `
+                    <div class="border rounded p-3 ingredient-item">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input ingredient-checkbox" 
+                                   type="checkbox" 
+                                   id="ingredient-${ingredientIndex}"
+                                   data-name=""
+                                   checked>
+                            <label class="form-check-label" for="ingredient-${ingredientIndex}">
+                                <input type="text" 
+                                       class="form-control form-control-sm d-inline-block ingredient-name-input" 
+                                       placeholder="재료명"
+                                       required
+                                       style="width: auto;">
+                            </label>
+                        </div>
+                        <input type="text" 
+                               class="form-control form-control-sm ingredient-measure" 
+                               id="measure-${ingredientIndex}"
+                               placeholder="분량 (예: 200g, 2개)">
+                        <button type="button" class="btn btn-sm btn-outline-danger mt-2 remove-ingredient">
+                            <i class="bi bi-trash"></i> 제거
+                        </button>
+                    </div>
+                `;
+                
+                ingredientsList.appendChild(newIngredient);
+                
+                // 재료명 입력 시 data-name 업데이트
+                const nameInput = newIngredient.querySelector('.ingredient-name-input');
+                const checkbox = newIngredient.querySelector('.ingredient-checkbox');
+                nameInput.addEventListener('input', function() {
+                    checkbox.dataset.name = this.value;
+                });
+                
+                // 제거 버튼 이벤트 리스너
+                newIngredient.querySelector('.remove-ingredient').addEventListener('click', function() {
+                    newIngredient.remove();
+                });
+                
+                ingredientIndex++;
+            });
+        });
+    </script>
 </body>
 </html>

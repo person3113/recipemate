@@ -19,6 +19,10 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
      */
     Optional<Participation> findByUserIdAndGroupBuyId(Long userId, Long groupBuyId);
 
+    @Query("SELECT p FROM Participation p JOIN FETCH p.groupBuy WHERE p.user.id = :userId AND p.groupBuy.id = :groupBuyId")
+    Optional<Participation> findByUserIdAndGroupBuyIdWithGroupBuy(@Param("userId") Long userId, @Param("groupBuyId") Long groupBuyId);
+
+
     /**
      * 특정 공구의 모든 참여자 조회
      */

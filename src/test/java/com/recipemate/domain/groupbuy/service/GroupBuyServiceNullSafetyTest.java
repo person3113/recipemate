@@ -52,6 +52,9 @@ class GroupBuyServiceNullSafetyTest {
     @Mock
     private com.recipemate.domain.user.service.PointService pointService;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @Test
     @DisplayName("isParticipantListPublic이 null이면 false로 처리된다")
     void createGroupBuy_WithNullIsParticipantListPublic_ShouldDefaultToFalse() {

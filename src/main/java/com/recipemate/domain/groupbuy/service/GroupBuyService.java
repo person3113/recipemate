@@ -12,10 +12,12 @@ import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.config.CacheConfig;
+import com.recipemate.global.event.GroupBuyCreatedEvent;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import com.recipemate.global.util.ImageUploadUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,8 +38,7 @@ public class GroupBuyService {
     private final UserRepository userRepository;
     private final ImageUploadUtil imageUploadUtil;
     private final com.recipemate.domain.recipe.service.RecipeService recipeService;
-    private final com.recipemate.domain.badge.service.BadgeService badgeService;
-    private final com.recipemate.domain.user.service.PointService pointService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 일반 공구 생성
@@ -98,13 +99,10 @@ public class GroupBuyService {
         // 5. 이미지 엔티티 생성 및 저장
         saveGroupBuyImages(savedGroupBuy, imageUrls);
 
-        // 6. 첫 공구 생성 시 배지 수여
-        checkAndAwardFirstGroupBuyBadge(userId);
+        // 6. 공구 생성 관련 이벤트 발행 (뱃지, 포인트 등)
+        eventPublisher.publishEvent(new GroupBuyCreatedEvent(userId));
 
-        // 7. 공구 생성 포인트 적립 (+50)
-        pointService.earnPoints(userId, 50, "공동구매 생성");
-
-        // 8. 응답 DTO 생성
+        // 7. 응답 DTO 생성
         return mapToResponse(savedGroupBuy, imageUrls);
     }
 
@@ -443,16 +441,6 @@ public class GroupBuyService {
         }
         if (request.getDeliveryMethod() == null) {
             throw new CustomException(ErrorCode.INVALID_DELIVERY_METHOD);
-        }
-    }
-
-    /**
-     * 첫 공구 생성 배지 확인 및 수여
-     */
-    private void checkAndAwardFirstGroupBuyBadge(Long userId) {
-        long groupBuyCount = groupBuyRepository.countByHostIdAndStatus(userId, GroupBuyStatus.RECRUITING);
-        if (groupBuyCount == 1) {
-            badgeService.checkAndAwardBadge(userId, com.recipemate.global.common.BadgeType.FIRST_GROUP_BUY);
         }
     }
 }

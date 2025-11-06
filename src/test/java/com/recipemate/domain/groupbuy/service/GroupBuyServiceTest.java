@@ -68,7 +68,11 @@ class GroupBuyServiceTest {
     @Mock
     private com.recipemate.domain.user.service.PointService pointService;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     private User testUser;
+    private User participantUser;
     private Long testUserId = 1L;
 
     @BeforeEach
@@ -80,6 +84,14 @@ class GroupBuyServiceTest {
             "010-1234-5678"
         );
         setUserId(testUser, testUserId);
+
+        participantUser = User.create(
+            "participant@example.com",
+            "encodedPassword",
+            "참여자",
+            "010-8765-4321"
+        );
+        setUserId(participantUser, 2L);
     }
 
     // ========== 공구 생성 테스트 ==========
@@ -751,7 +763,7 @@ class GroupBuyServiceTest {
             true
         );
         setGroupBuyId(groupBuy, 1L);
-        groupBuy.increaseParticipant(); // 참여자 1명 추가
+        groupBuy.addParticipant(participantUser, 1, DeliveryMethod.DIRECT); // 참여자 1명 추가
 
         given(userRepository.findById(testUserId)).willReturn(Optional.of(testUser));
         given(groupBuyRepository.findByIdWithHost(1L)).willReturn(Optional.of(groupBuy));

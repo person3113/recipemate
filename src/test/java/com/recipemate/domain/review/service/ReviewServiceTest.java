@@ -64,6 +64,9 @@ class ReviewServiceTest {
     @Mock
     private com.recipemate.domain.user.service.PointService pointService;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     private User reviewer;
     private User host;
     private GroupBuy closedGroupBuy;
@@ -125,7 +128,6 @@ class ReviewServiceTest {
         given(participationRepository.existsByUserIdAndGroupBuyId(reviewerId, groupBuyId)).willReturn(true);
         given(reviewRepository.existsByReviewerIdAndGroupBuyId(reviewerId, groupBuyId)).willReturn(false);
         given(reviewRepository.save(any(Review.class))).willReturn(savedReview);
-        willDoNothing().given(userService).updateMannerTemperature(hostId, 0.5);
 
         // when
         ReviewResponse response = reviewService.createReview(reviewerId, groupBuyId, request);
@@ -142,7 +144,7 @@ class ReviewServiceTest {
         verify(participationRepository).existsByUserIdAndGroupBuyId(reviewerId, groupBuyId);
         verify(reviewRepository).existsByReviewerIdAndGroupBuyId(reviewerId, groupBuyId);
         verify(reviewRepository).save(any(Review.class));
-        verify(userService).updateMannerTemperature(hostId, 0.5);
+        verify(eventPublisher).publishEvent(any(com.recipemate.global.event.ReviewCreatedEvent.class));
     }
 
     @Test
@@ -162,14 +164,13 @@ class ReviewServiceTest {
         given(participationRepository.existsByUserIdAndGroupBuyId(reviewerId, groupBuyId)).willReturn(true);
         given(reviewRepository.existsByReviewerIdAndGroupBuyId(reviewerId, groupBuyId)).willReturn(false);
         given(reviewRepository.save(any(Review.class))).willReturn(savedReview);
-        willDoNothing().given(userService).updateMannerTemperature(hostId, 0.3);
 
         // when
         ReviewResponse response = reviewService.createReview(reviewerId, groupBuyId, request);
 
         // then
         assertThat(response.getRating()).isEqualTo(4);
-        verify(userService).updateMannerTemperature(hostId, 0.3);
+        verify(eventPublisher).publishEvent(any(com.recipemate.global.event.ReviewCreatedEvent.class));
     }
 
     @Test
@@ -189,14 +190,13 @@ class ReviewServiceTest {
         given(participationRepository.existsByUserIdAndGroupBuyId(reviewerId, groupBuyId)).willReturn(true);
         given(reviewRepository.existsByReviewerIdAndGroupBuyId(reviewerId, groupBuyId)).willReturn(false);
         given(reviewRepository.save(any(Review.class))).willReturn(savedReview);
-        willDoNothing().given(userService).updateMannerTemperature(hostId, 0.0);
 
         // when
         ReviewResponse response = reviewService.createReview(reviewerId, groupBuyId, request);
 
         // then
         assertThat(response.getRating()).isEqualTo(3);
-        verify(userService).updateMannerTemperature(hostId, 0.0);
+        verify(eventPublisher).publishEvent(any(com.recipemate.global.event.ReviewCreatedEvent.class));
     }
 
     @Test
@@ -216,14 +216,13 @@ class ReviewServiceTest {
         given(participationRepository.existsByUserIdAndGroupBuyId(reviewerId, groupBuyId)).willReturn(true);
         given(reviewRepository.existsByReviewerIdAndGroupBuyId(reviewerId, groupBuyId)).willReturn(false);
         given(reviewRepository.save(any(Review.class))).willReturn(savedReview);
-        willDoNothing().given(userService).updateMannerTemperature(hostId, -1.0);
 
         // when
         ReviewResponse response = reviewService.createReview(reviewerId, groupBuyId, request);
 
         // then
         assertThat(response.getRating()).isEqualTo(2);
-        verify(userService).updateMannerTemperature(hostId, -1.0);
+        verify(eventPublisher).publishEvent(any(com.recipemate.global.event.ReviewCreatedEvent.class));
     }
 
     @Test
@@ -243,14 +242,13 @@ class ReviewServiceTest {
         given(participationRepository.existsByUserIdAndGroupBuyId(reviewerId, groupBuyId)).willReturn(true);
         given(reviewRepository.existsByReviewerIdAndGroupBuyId(reviewerId, groupBuyId)).willReturn(false);
         given(reviewRepository.save(any(Review.class))).willReturn(savedReview);
-        willDoNothing().given(userService).updateMannerTemperature(hostId, -2.0);
 
         // when
         ReviewResponse response = reviewService.createReview(reviewerId, groupBuyId, request);
 
         // then
         assertThat(response.getRating()).isEqualTo(1);
-        verify(userService).updateMannerTemperature(hostId, -2.0);
+        verify(eventPublisher).publishEvent(any(com.recipemate.global.event.ReviewCreatedEvent.class));
     }
 
     @Test

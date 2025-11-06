@@ -98,6 +98,10 @@ public class GroupBuy extends BaseEntity {
 
     @Builder.Default
     @OneToMany(mappedBy = "groupBuy", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Participation> participations = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "groupBuy", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("displayOrder asc")
     private List<GroupBuyImage> images = new ArrayList<>();
 
@@ -190,14 +194,62 @@ public class GroupBuy extends BaseEntity {
     }
 
     //== 비즈니스 로직 ==//
-    public void increaseParticipant() {
+
+
+    public Participation addParticipant(User participant, int quantity, DeliveryMethod selectedDeliveryMethod) {
+        // 1. 목표 인원 도달 여부 검증
+        if (isTargetReached()) {
+            throw new CustomException(ErrorCode.MAX_PARTICIPANTS_EXCEEDED);
+        }
+        // 2. 참여 가능 상태인지 검증
+        if (this.status != GroupBuyStatus.RECRUITING) {
+            throw new CustomException(ErrorCode.GROUP_BUY_CLOSED);
+        }
+        // 3. 주최자 본인 참여 불가 검증
+        if (isHost(participant)) {
+            throw new CustomException(ErrorCode.HOST_CANNOT_PARTICIPATE);
+        }
+
+        // 4. Participation 엔티티 생성
+        Participation newParticipation = Participation.create(
+            participant,
+            this,
+            quantity,
+            selectedDeliveryMethod
+        );
+
+        // 5. 참여자 추가 및 상태 변경
+        this.participations.add(newParticipation);
+        increaseParticipant();
+        if (isTargetReached()) {
+            close();
+        }
+
+        return newParticipation;
+    }
+
+    public void cancelParticipation(Participation participation) {
+        // 1. 마감 1일 전 취소 제한 검증
+        if (LocalDateTime.now().isAfter(this.deadline.minusDays(1))) {
+            throw new CustomException(ErrorCode.CANCELLATION_DEADLINE_PASSED);
+        }
+
+        // 2. 참여 정보 제거 및 상태 변경
+        this.participations.remove(participation);
+        decreaseParticipant();
+        if (this.status == GroupBuyStatus.CLOSED && !isTargetReached()) {
+            reopen();
+        }
+    }
+
+    private void increaseParticipant() {
         if (this.currentHeadcount + 1 > this.targetHeadcount) {
             throw new CustomException(ErrorCode.MAX_PARTICIPANTS_EXCEEDED);
         }
         this.currentHeadcount++;
     }
 
-    public void decreaseParticipant() {
+    private void decreaseParticipant() {
         if (this.currentHeadcount <= 0) {
             throw new CustomException(ErrorCode.NO_PARTICIPANTS);
         }

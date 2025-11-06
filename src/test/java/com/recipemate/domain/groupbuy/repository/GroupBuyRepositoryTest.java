@@ -36,6 +36,8 @@ class GroupBuyRepositoryTest {
     private UserRepository userRepository;
 
     private User host;
+    private User participantUser;
+    private User participantUser2;
 
     @BeforeEach
     void setUp() {
@@ -50,6 +52,24 @@ class GroupBuyRepositoryTest {
                 .role(UserRole.USER)
                 .build();
         userRepository.save(host);
+
+        participantUser = User.builder()
+                .email("participant@example.com")
+                .password("password")
+                .nickname("test-participant")
+                .phoneNumber("010-8765-4321")
+                .role(UserRole.USER)
+                .build();
+        userRepository.save(participantUser);
+
+        participantUser2 = User.builder()
+                .email("participant2@example.com")
+                .password("password")
+                .nickname("test-participant2")
+                .phoneNumber("010-1111-2222")
+                .role(UserRole.USER)
+                .build();
+        userRepository.save(participantUser2);
     }
 
     @Test
@@ -268,11 +288,11 @@ class GroupBuyRepositoryTest {
     void findByStatusOrderByParticipantsDesc() {
         // given
         GroupBuy groupBuy1 = createGroupBuy("Popular", GroupBuyStatus.RECRUITING, LocalDateTime.now().plusDays(3));
-        groupBuy1.increaseParticipant();
-        groupBuy1.increaseParticipant();
+        groupBuy1.addParticipant(participantUser, 1, DeliveryMethod.DIRECT);
+        groupBuy1.addParticipant(participantUser2, 1, DeliveryMethod.DIRECT);
 
         GroupBuy groupBuy2 = createGroupBuy("Less Popular", GroupBuyStatus.RECRUITING, LocalDateTime.now().plusDays(4));
-        groupBuy2.increaseParticipant();
+        groupBuy2.addParticipant(participantUser, 1, DeliveryMethod.DIRECT);
 
         GroupBuy groupBuy3 = createGroupBuy("Not Popular", GroupBuyStatus.RECRUITING, LocalDateTime.now().plusDays(5));
 

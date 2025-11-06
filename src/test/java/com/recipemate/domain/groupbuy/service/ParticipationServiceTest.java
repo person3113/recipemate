@@ -54,6 +54,9 @@ class ParticipationServiceTest {
     @Mock
     private com.recipemate.domain.user.service.PointService pointService;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private ParticipationService participationService;
 
@@ -295,10 +298,8 @@ class ParticipationServiceTest {
         );
         setParticipationId(participation, 1L);
 
-        given(participationRepository.findByUserIdAndGroupBuyId(participant.getId(), groupBuy.getId()))
+        given(participationRepository.findByUserIdAndGroupBuyIdWithGroupBuy(participant.getId(), groupBuy.getId()))
             .willReturn(Optional.of(participation));
-        given(groupBuyRepository.findById(groupBuy.getId())).willReturn(Optional.of(groupBuy));
-        willDoNothing().given(participationRepository).delete(participation);
 
         // when
         participationService.cancelParticipation(participant.getId(), groupBuy.getId());
@@ -306,16 +307,14 @@ class ParticipationServiceTest {
         // then
         assertThat(groupBuy.getCurrentHeadcount()).isEqualTo(0);
 
-        verify(participationRepository).findByUserIdAndGroupBuyId(participant.getId(), groupBuy.getId());
-        verify(groupBuyRepository).findById(groupBuy.getId());
-        verify(participationRepository).delete(participation);
+        verify(participationRepository).findByUserIdAndGroupBuyIdWithGroupBuy(participant.getId(), groupBuy.getId());
     }
 
     @Test
     @DisplayName("참여 취소 실패 - 참여하지 않은 공구 취소 불가")
     void cancelParticipation_Fail_NotParticipated() {
         // given
-        given(participationRepository.findByUserIdAndGroupBuyId(participant.getId(), groupBuy.getId()))
+        given(participationRepository.findByUserIdAndGroupBuyIdWithGroupBuy(participant.getId(), groupBuy.getId()))
             .willReturn(Optional.empty());
 
         // when & then
@@ -323,7 +322,7 @@ class ParticipationServiceTest {
             .isInstanceOf(CustomException.class)
             .hasMessageContaining("참여하지 않은 공동구매입니다");
 
-        verify(participationRepository).findByUserIdAndGroupBuyId(participant.getId(), groupBuy.getId());
+        verify(participationRepository).findByUserIdAndGroupBuyIdWithGroupBuy(participant.getId(), groupBuy.getId());
         verify(participationRepository, never()).delete(any(Participation.class));
     }
 
@@ -355,17 +354,15 @@ class ParticipationServiceTest {
         );
         setParticipationId(participation, 1L);
 
-        given(participationRepository.findByUserIdAndGroupBuyId(participant.getId(), imminentGroupBuy.getId()))
+        given(participationRepository.findByUserIdAndGroupBuyIdWithGroupBuy(participant.getId(), imminentGroupBuy.getId()))
             .willReturn(Optional.of(participation));
-        given(groupBuyRepository.findById(imminentGroupBuy.getId())).willReturn(Optional.of(imminentGroupBuy));
 
         // when & then
         assertThatThrownBy(() -> participationService.cancelParticipation(participant.getId(), imminentGroupBuy.getId()))
             .isInstanceOf(CustomException.class)
             .hasMessageContaining("마감 1일 전에는 참여를 취소할 수 없습니다");
 
-        verify(participationRepository).findByUserIdAndGroupBuyId(participant.getId(), imminentGroupBuy.getId());
-        verify(groupBuyRepository).findById(imminentGroupBuy.getId());
+        verify(participationRepository).findByUserIdAndGroupBuyIdWithGroupBuy(participant.getId(), imminentGroupBuy.getId());
         verify(participationRepository, never()).delete(any(Participation.class));
     }
 

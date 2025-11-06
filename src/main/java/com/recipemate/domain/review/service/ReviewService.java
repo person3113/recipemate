@@ -3,7 +3,6 @@ package com.recipemate.domain.review.service;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
-import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.review.dto.CreateReviewRequest;
 import com.recipemate.domain.review.dto.ReviewResponse;
 import com.recipemate.domain.review.dto.UpdateReviewRequest;
@@ -11,12 +10,11 @@ import com.recipemate.domain.review.entity.Review;
 import com.recipemate.domain.review.repository.ReviewRepository;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
-import com.recipemate.domain.user.service.UserService;
-import com.recipemate.global.common.EntityType;
-import com.recipemate.global.common.NotificationType;
+import com.recipemate.global.event.ReviewCreatedEvent;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,10 +30,7 @@ public class ReviewService {
     private final UserRepository userRepository;
     private final GroupBuyRepository groupBuyRepository;
     private final ParticipationRepository participationRepository;
-    private final UserService userService;
-    private final NotificationService notificationService;
-    private final com.recipemate.domain.badge.service.BadgeService badgeService;
-    private final com.recipemate.domain.user.service.PointService pointService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 후기 작성
@@ -75,27 +70,8 @@ public class ReviewService {
         // 6. 후기 저장
         Review savedReview = reviewRepository.save(review);
 
-        // 7. 매너온도 반영
-        double delta = savedReview.calculateMannerTemperatureDelta();
-        userService.updateMannerTemperature(groupBuy.getHost().getId(), delta);
-
-        // 8. 공구 주최자에게 후기 알림 전송
-        notificationService.createNotification(
-            groupBuy.getHost().getId(),
-            NotificationType.REVIEW_GROUP_BUY,
-            userId,
-            savedReview.getId(),
-            EntityType.REVIEW
-        );
-
-        // 9. 후기 작성 포인트 적립 (+20)
-        pointService.earnPoints(userId, 20, "후기 작성");
-
-        // 10. 후기 작성자에게 REVIEWER 배지 확인 및 수여
-        checkAndAwardReviewerBadge(userId);
-
-        // 11. 공구 주최자에게 POPULAR_HOST 배지 확인 및 수여
-        checkAndAwardPopularHostBadge(groupBuy.getHost().getId());
+        // 7. 후기 생성 관련 이벤트 발행 (매너온도, 알림, 포인트, 뱃지 등)
+        eventPublisher.publishEvent(new ReviewCreatedEvent(savedReview));
 
         return ReviewResponse.from(savedReview);
     }
@@ -163,33 +139,5 @@ public class ReviewService {
         return reviews.stream()
                 .map(ReviewResponse::from)
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * REVIEWER 배지 확인 및 수여 (5개 이상 후기 작성)
-     */
-    private void checkAndAwardReviewerBadge(Long userId) {
-        long count = reviewRepository.countByReviewerId(userId);
-        if (count >= 5) {
-            badgeService.checkAndAwardBadge(userId, com.recipemate.global.common.BadgeType.REVIEWER);
-        }
-    }
-
-    /**
-     * POPULAR_HOST 배지 확인 및 수여 (10개 이상 후기 & 평균 평점 4.5 이상)
-     */
-    private void checkAndAwardPopularHostBadge(Long hostId) {
-        List<Review> hostReviews = reviewRepository.findByGroupBuyHostId(hostId);
-        
-        if (hostReviews.size() >= 10) {
-            double avgRating = hostReviews.stream()
-                    .mapToInt(Review::getRating)
-                    .average()
-                    .orElse(0.0);
-            
-            if (avgRating >= 4.5) {
-                badgeService.checkAndAwardBadge(hostId, com.recipemate.global.common.BadgeType.POPULAR_HOST);
-            }
-        }
     }
 }

@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
+import java.lang.reflect.Field;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,26 +50,35 @@ class NotificationRepositoryTest {
         userRepository.save(actor);
     }
 
+    private void setCreatedAt(Notification notification, LocalDateTime createdAt) throws Exception {
+        Field createdAtField = notification.getClass().getSuperclass().getDeclaredField("createdAt");
+        createdAtField.setAccessible(true);
+        createdAtField.set(notification, createdAt);
+    }
+
     @Test
     @DisplayName("사용자의 읽지 않은 알림 목록을 최신순으로 조회할 수 있다")
-    void findUnreadNotificationsByUserId() {
+    void findUnreadNotificationsByUserId() throws InterruptedException {
         // given
         Notification notification1 = Notification.create(
                 recipient, actor, "댓글이 달렸습니다 1",
                 NotificationType.COMMENT_POST, "/posts/1", 1L, EntityType.POST
         );
+        notificationRepository.save(notification1);
+        Thread.sleep(10);
+
         Notification notification2 = Notification.create(
                 recipient, actor, "댓글이 달렸습니다 2",
                 NotificationType.COMMENT_POST, "/posts/2", 2L, EntityType.POST
         );
+        notification2.markAsRead(); // notification2만 읽음 처리
+        notificationRepository.save(notification2);
+        Thread.sleep(10);
+
         Notification notification3 = Notification.create(
                 recipient, actor, "댓글이 달렸습니다 3",
                 NotificationType.COMMENT_POST, "/posts/3", 3L, EntityType.POST
         );
-        notification2.markAsRead(); // notification2만 읽음 처리
-
-        notificationRepository.save(notification1);
-        notificationRepository.save(notification2);
         notificationRepository.save(notification3);
 
         // when

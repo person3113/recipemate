@@ -6,16 +6,16 @@ import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.Participation;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
-import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
-import com.recipemate.global.common.EntityType;
 import com.recipemate.global.common.GroupBuyStatus;
-import com.recipemate.global.common.NotificationType;
+import com.recipemate.global.event.ParticipationCancelledEvent;
+import com.recipemate.global.event.ParticipationCreatedEvent;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -37,9 +37,7 @@ public class ParticipationService {
     private final ParticipationRepository participationRepository;
     private final GroupBuyRepository groupBuyRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
-    private final com.recipemate.domain.badge.service.BadgeService badgeService;
-    private final com.recipemate.domain.user.service.PointService pointService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     @Retryable(
@@ -48,67 +46,30 @@ public class ParticipationService {
         backoff = @Backoff(delay = 100, multiplier = 2)
     )
     public void participate(Long userId, Long groupBuyId, ParticipateRequest request) {
-        // 1. 사용자 조회
+        // 1. 엔티티 조회
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 2. 공구 조회
         GroupBuy groupBuy = groupBuyRepository.findByIdWithHost(groupBuyId)
             .orElseThrow(() -> new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
 
-        // 3. 공구 상태 검증 (RECRUITING 상태가 아니면 참여 불가)
-        if (groupBuy.getStatus() != GroupBuyStatus.RECRUITING) {
-            throw new CustomException(ErrorCode.GROUP_BUY_CLOSED);
-        }
-
-        // 4. 주최자는 자신의 공구에 참여 불가
-        if (groupBuy.isHost(user)) {
-            throw new CustomException(ErrorCode.HOST_CANNOT_PARTICIPATE);
-        }
-
-        // 5. 중복 참여 체크
+        // 2. 중복 참여 체크 (Repository 의존성이 필요한 유일한 비즈니스 검증)
         if (participationRepository.existsByUserIdAndGroupBuyId(userId, groupBuyId)) {
             throw new CustomException(ErrorCode.ALREADY_PARTICIPATED);
         }
 
-        // 6. 목표 인원 도달 체크
-        if (groupBuy.isTargetReached()) {
-            throw new CustomException(ErrorCode.MAX_PARTICIPANTS_EXCEEDED);
-        }
-
-        // 7. 참여 엔티티 생성 (도메인 로직에서 수령 방법 호환성 검증)
-        Participation participation = Participation.create(
+        // 3. 도메인 엔티티에 참여 위임
+        Participation participation = groupBuy.addParticipant(
             user,
-            groupBuy,
             request.getQuantity(),
             request.getSelectedDeliveryMethod()
         );
 
-        // 8. 참여 저장
+        // 4. 참여 정보 저장
         participationRepository.save(participation);
 
-        // 9. 공구 참여 인원 증가
-        groupBuy.increaseParticipant();
-
-        // 10. 목표 인원 도달 시 공구 상태를 CLOSED로 변경
-        if (groupBuy.isTargetReached()) {
-            groupBuy.close();
-        }
-
-        // 11. 주최자에게 참여 알림 전송
-        notificationService.createNotification(
-            groupBuy.getHost().getId(),
-            NotificationType.JOIN_GROUP_BUY,
-            userId,
-            groupBuyId,
-            EntityType.GROUP_BUY
-        );
-
-        // 12. 공구 참여 포인트 적립 (+10)
-        pointService.earnPoints(userId, 10, "공동구매 참여");
-
-        // 13. 10회 참여 배지 확인 및 수여
-        checkAndAwardTenParticipationsBadge(userId);
+        // 5. 참여 생성 관련 이벤트 발행 (알림, 포인트, 뱃지 등)
+        eventPublisher.publishEvent(new ParticipationCreatedEvent(userId, groupBuyId));
     }
 
     @Transactional
@@ -118,40 +79,17 @@ public class ParticipationService {
         backoff = @Backoff(delay = 100, multiplier = 2)
     )
     public void cancelParticipation(Long userId, Long groupBuyId) {
-        // 1. 참여 기록 조회
-        Participation participation = participationRepository.findByUserIdAndGroupBuyId(userId, groupBuyId)
+        // 1. 참여 기록 조회 (GroupBuy를 함께 fetch)
+        Participation participation = participationRepository.findByUserIdAndGroupBuyIdWithGroupBuy(userId, groupBuyId)
             .orElseThrow(() -> new CustomException(ErrorCode.PARTICIPATION_NOT_FOUND));
 
-        // 2. 공구 조회
-        GroupBuy groupBuy = groupBuyRepository.findById(groupBuyId)
-            .orElseThrow(() -> new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
+        GroupBuy groupBuy = participation.getGroupBuy();
 
-        // 3. 마감 1일 전 취소 제한 검증
-        LocalDateTime now = LocalDateTime.now();
-        long hoursUntilDeadline = ChronoUnit.HOURS.between(now, groupBuy.getDeadline());
-        if (hoursUntilDeadline < 24) {
-            throw new CustomException(ErrorCode.CANCELLATION_DEADLINE_PASSED);
-        }
+        // 2. 도메인 엔티티에 참여 취소 위임
+        groupBuy.cancelParticipation(participation);
 
-        // 4. 참여 기록 삭제
-        participationRepository.delete(participation);
-
-        // 5. 공구 참여 인원 감소
-        groupBuy.decreaseParticipant();
-
-        // 6. CLOSED 상태였다면 RECRUITING으로 재개
-        if (groupBuy.getStatus() == GroupBuyStatus.CLOSED && !groupBuy.isTargetReached()) {
-            groupBuy.reopen();
-        }
-
-        // 7. 주최자에게 취소 알림 전송
-        notificationService.createNotification(
-            groupBuy.getHost().getId(),
-            NotificationType.CANCEL_PARTICIPATION,
-            userId,
-            groupBuyId,
-            EntityType.GROUP_BUY
-        );
+        // 3. 참여 취소 관련 이벤트 발행 (알림 등)
+        eventPublisher.publishEvent(new ParticipationCancelledEvent(userId, groupBuyId));
     }
 
     @Recover
@@ -185,15 +123,5 @@ public class ParticipationService {
         return participations.stream()
             .map(ParticipantResponse::from)
             .collect(Collectors.toList());
-    }
-
-    /**
-     * 10회 참여 배지 확인 및 수여
-     */
-    private void checkAndAwardTenParticipationsBadge(Long userId) {
-        long count = participationRepository.countByUserId(userId);
-        if (count >= 10) {
-            badgeService.checkAndAwardBadge(userId, com.recipemate.global.common.BadgeType.TEN_PARTICIPATIONS);
-        }
     }
 }

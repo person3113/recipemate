@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.*;
 class GroupBuyTest {
 
     private User host;
+    private User participantUser;
 
     @BeforeEach
     void setUp() {
@@ -24,6 +25,12 @@ class GroupBuyTest {
                 "encodedPassword",
                 "주최자",
                 "010-1234-5678"
+        );
+        participantUser = User.create(
+                "participant@example.com",
+                "encodedPassword",
+                "참여자",
+                "010-8765-4321"
         );
     }
 
@@ -98,8 +105,7 @@ class GroupBuyTest {
         // given
         GroupBuy groupBuy = createSampleGroupBuy();
 
-        // when
-        groupBuy.increaseParticipant();
+        groupBuy.addParticipant(participantUser, 1, DeliveryMethod.DIRECT);
 
         // then
         assertThat(groupBuy.getCurrentHeadcount()).isEqualTo(1);
@@ -110,11 +116,12 @@ class GroupBuyTest {
     void decreaseParticipant() {
         // given
         GroupBuy groupBuy = createSampleGroupBuy();
-        groupBuy.increaseParticipant();
-        groupBuy.increaseParticipant();
+        groupBuy.addParticipant(participantUser, 1, DeliveryMethod.DIRECT);
+        groupBuy.addParticipant(participantUser, 1, DeliveryMethod.DIRECT);
 
         // when
-        groupBuy.decreaseParticipant();
+        Participation participation = groupBuy.getParticipations().get(0);
+        groupBuy.cancelParticipation(participation);
 
         // then
         assertThat(groupBuy.getCurrentHeadcount()).isEqualTo(1);
@@ -125,9 +132,11 @@ class GroupBuyTest {
     void decreaseParticipantWhenZero() {
         // given
         GroupBuy groupBuy = createSampleGroupBuy();
+        // Dummy participation as cancelParticipation requires one, even if not in the list
+        Participation dummyParticipation = Participation.create(participantUser, groupBuy, 1, DeliveryMethod.DIRECT);
 
         // when & then
-        assertThatThrownBy(groupBuy::decreaseParticipant)
+        assertThatThrownBy(() -> groupBuy.cancelParticipation(dummyParticipation))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NO_PARTICIPANTS);
     }
@@ -138,9 +147,9 @@ class GroupBuyTest {
         // given
         GroupBuy groupBuy = createSampleGroupBuy();
 
-        // when
         for (int i = 0; i < 5; i++) {
-            groupBuy.increaseParticipant();
+            User user = User.create("p" + i + "@test.com", "pw", "p"+i, "010-1111-111"+i);
+            groupBuy.addParticipant(user, 1, DeliveryMethod.DIRECT);
         }
 
         // then
@@ -154,11 +163,13 @@ class GroupBuyTest {
         // given
         GroupBuy groupBuy = createSampleGroupBuy();
         for (int i = 0; i < 5; i++) {
-            groupBuy.increaseParticipant();
+            User user = User.create("p" + i + "@test.com", "pw", "p"+i, "010-1111-111"+i);
+            groupBuy.addParticipant(user, 1, DeliveryMethod.DIRECT);
         }
 
         // when & then
-        assertThatThrownBy(groupBuy::increaseParticipant)
+        User anotherUser = User.create("another@test.com", "pw", "another", "010-2222-2222");
+        assertThatThrownBy(() -> groupBuy.addParticipant(anotherUser, 1, DeliveryMethod.DIRECT))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MAX_PARTICIPANTS_EXCEEDED);
     }
@@ -335,7 +346,8 @@ class GroupBuyTest {
         // given
         GroupBuy groupBuy = createSampleGroupBuy();
         for (int i = 0; i < 5; i++) {
-            groupBuy.increaseParticipant();
+            User user = User.create("p" + i + "@test.com", "pw", "p"+i, "010-1111-111"+i);
+            groupBuy.addParticipant(user, 1, DeliveryMethod.DIRECT);
         }
 
         // when & then

@@ -66,6 +66,10 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
+tasks.named('bootRun') {
+	systemProperty 'spring.profiles.active', 'dev'
+}
+
 sourceSets {
     main.java.srcDirs += [ generatedDir ]
 }

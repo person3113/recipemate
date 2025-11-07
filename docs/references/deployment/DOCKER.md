@@ -392,18 +392,3 @@ docker tag recipemate-app:latest username/recipemate:latest
 docker push username/recipemate:latest
 ```
 
-## Additional Resources
-
-- [Docker Documentation](https://docs.docker.com/)
-- [Docker Compose Documentation](https://docs.docker.com/compose/)
-- [Spring Boot Docker Guide](https://spring.io/guides/gs/spring-boot-docker/)
-- [PostgreSQL Docker Hub](https://hub.docker.com/_/postgres)
-- [Redis Docker Hub](https://hub.docker.com/_/redis)
-- [Nginx Docker Hub](https://hub.docker.com/_/nginx)
-
-## Support
-
-For issues or questions:
-1. Check logs: `docker-compose logs -f`
-2. Review documentation in `docs/` directory
-3. Check project issues on GitHub

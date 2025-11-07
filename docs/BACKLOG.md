@@ -79,18 +79,43 @@
     1. 컨트롤러에 htmx HTML Fragment 엔드포인트 추가 (TODO 주석으로 표시된 부분 구현)
     2. Thymeleaf Fragment 템플릿 생성 (list-items, detail-content, form-fields 등)
     3. 기존 템플릿의 htmx 호출 경로를 HTML Fragment 엔드포인트로 변경
-- **장점**:
-    - htmx 철학 완전 준수 (서버가 HTML 반환)
-    - JSON 파싱 오버헤드 제거
-    - 서버 사이드 렌더링 완전 활용
-- **참고**: 기존 기능에 영향 없이 점진적 추가 가능
-- **htmx 부분 페이지 갱신**: `URL_DESIGN.md`와 컨트롤러 곳곳에 `htmx`를 위한 `/fragments` 엔드포인트가 설계되어 있으나, 실제 구현은 대부분 일반적인 `redirect` 방식으로 처리되고 있습니다. 이로 인해 사용자 경험(UX)이 저하될 수 있습니다.
+  - **장점**:
+      - htmx 철학 완전 준수 (서버가 HTML 반환)
+      - JSON 파싱 오버헤드 제거
+      - 서버 사이드 렌더링 완전 활용
+  - **참고**: 기존 기능에 영향 없이 점진적 추가 가능
+  - **htmx 부분 페이지 갱신**: `URL_DESIGN.md`와 컨트롤러 곳곳에 `htmx`를 위한 `/fragments` 엔드포인트가 설계되어 있으나, 실제 구현은 대부분 일반적인 `redirect` 방식으로 처리되고 있습니다. 이로 인해 사용자 경험(UX)이 저하될 수 있습니다.
+- Task 4-3-3: htmx/Alpine.js 적용
+  - [ ] htmx로 부분 페이지 갱신
+      - 댓글 작성/삭제
+      - 좋아요/찜하기
+      - 참여하기/취소
+  - [ ] Alpine.js로 클라이언트 상호작용
+      - 드롭다운 메뉴
+      - 모달 팝업
+      - 이미지 갤러리
 
 ### 3.3. 컨트롤러의 역할
 - **문제점**: `CommentController`에서 `Validator`를 직접 주입받아 수동으로 DTO를 검증하고 있습니다. 또한 `UserDetails`에서 사용자를 조회하는 로직이 반복적으로 나타납니다.
 - **제안**:
     1. **- [ ] `@Valid` 어노테이션 활용**: 컨트롤러 메서드 파라미터에 `@Valid`를 사용하여 유효성 검증을 프레임워크에 위임하고, `BindingResult`로 결과를 처리하는 것이 표준적인 방법입니다. `CustomAuthenticationFailureHandler`처럼 `BindingResult`를 처리하는 로직을 추가하면 코드가 간결해집니다.
     2. **- [ ] Argument Resolver 활용**: `@AuthenticationPrincipal`에 `UserDetails` 대신 커스텀한 `User` 객체를 직접 주입받도록 `HandlerMethodArgumentResolver`를 구현하면, 컨트롤러에서 `userRepository.findByEmail(...)` 호출 코드를 제거하여 중복을 줄일 수 있습니다.
+
+#### [ ] Task 4-5-5: 지도 API 연동 (만남 장소 표시)
+- [ ] 테스트 작성
+    - 주소 → 위도/경도 변환 (Geocoding)
+    - 지도 표시 컴포넌트 렌더링
+- [ ] 카카오/네이버 지도 API 설정
+    - API Key 발급
+    - JavaScript SDK 추가
+- [ ] GroupBuy 엔티티 확장
+    - latitude, longitude 필드 추가 (Nullable)
+- [ ] MapService 구현
+    - `geocodeAddress(String address)` (주소 → 좌표)
+    - `reverseGeocode(Double lat, Double lng)` (좌표 → 주소)
+- [ ] 프론트엔드 통합
+    - 공구 작성 시 지도에서 장소 선택
+    - 공구 상세 페이지에 지도 표시
 
 ---
 
@@ -104,8 +129,52 @@
 
 - **`ImageUploadUtil.java` & `ImageOptimizationService.java`**
     - **문제점**: 이미지 업로드 시 `ImageOptimizationService`를 통해 동기적으로 이미지를 최적화하고 있습니다. 이미지 처리(특히 리사이징, 압축)는 CPU를 많이 사용하는 작업이므로, 요청량이 많아지거나 큰 이미지를 처리할 때 요청 처리 스레드를 오래 점유하여 전체 애플리케이션의 응답성을 저하시킬 수 있습니다.
-    - **제안**: **- [ ] 이미지 업로드 및 최적화 과정을 비동기(Asynchronous)로 처리하는 것을 권장합니다.** `@Async` 어노테이션과 별도의 스레드 풀을 사용하여 이미지 처리를 백그라운드에서 수행하면, 사용자는 더 빠른 응답을 받을 수 있고 시스템의 처리량이 향상됩니다.
+    - **제안**: 
+        - [ ] 이미지 업로드 및 최적화 과정을 비동기(Asynchronous)로 처리하는 것을 권장합니다. `@Async` 어노테이션과 별도의 스레드 풀을 사용하여 이미지 처리를 백그라운드에서 수행하면, 사용자는 더 빠른 응답을 받을 수 있고 시스템의 처리량이 향상됩니다.
+        - [ ] 원본 + 썸네일 2종 저장 (향후 개선)
+        - [ ] 실제 WebP 형식 변환 (webp-imageio 라이브러리 추가)
+        - [ ] CDN 연동 고려 (향후 개선)
 
 - **`CacheConfig.java`**
     - **문제점**: `PostService`의 게시글 목록 캐시 키가 `category`, `keyword`, `pageNumber`, `pageSize`를 모두 조합하여 생성됩니다. 이는 잠재적으로 수많은 캐시 키를 생성하여 메모리를 비효율적으로 사용하고, 캐시 적중률(Hit Ratio)을 떨어뜨릴 수 있습니다.
     - **제안**: **- [ ] 검색 결과처럼 파라미터 조합이 다양한 경우, 캐싱의 효율이 떨어지므로 전략을 재검토해야 합니다.** 예를 들어, 자주 바뀌지 않는 첫 페이지만 캐싱하거나, 캐시 키를 단순화(예: 키워드의 해시값 사용)하는 방안을 고려해야 합니다. 또한 `@CacheEvict(allEntries = true)`는 관련 없는 캐시까지 모두 삭제하므로, 특정 캐시 항목만 선별적으로 제거하는 로직으로 개선하는 것이 좋습니다.
+
+## ⚪ VERY LOW Priority
+
+#### [ ] Task 4-5-6: 번역 API 연동 (선택)
+- [ ] 테스트 작성
+    - TheMealDB 영문 레시피명 → 한글 번역
+    - 재료명 번역 캐싱
+- [ ] Google Translation API 설정
+    - API Key 발급 및 환경변수 설정
+    - 번역 클라이언트 작성
+- [ ] TranslationService 구현
+    - `translateRecipeName(String englishName)`
+    - `translateIngredient(String ingredient)`
+    - 번역 결과 캐싱 (Redis 또는 로컬 캐시)
+- [ ] RecipeService에 번역 로직 통합
+    - 레시피 조회 시 자동 번역 옵션
+    - 사용자 언어 설정에 따라 번역 제공
+
+#### [ ] Task 4-5-7: 실시간 채팅 (선택 - 복잡도 높음)
+- [ ] WebSocket 설정
+    - Spring WebSocket 의존성 추가
+    - WebSocketConfig 작성
+    - STOMP 프로토콜 설정
+- [ ] ChatMessage 엔티티 작성
+    - 필드: id, sender(User FK), receiver(User FK), content, sentAt, isRead
+    - 제약조건: 인덱스 (senderId, receiverId, sentAt)
+- [ ] ChatService 구현
+    - `sendMessage(Long senderId, Long receiverId, String content)`
+    - `getMessageHistory(Long userId, Long otherUserId, Pageable pageable)`
+    - `markAsRead(Long messageId)`
+- [ ] WebSocket 컨트롤러 작성
+    - `/topic/chat/{userId}` 구독 엔드포인트
+    - `/app/chat.send` 메시지 전송 엔드포인트
+- [ ] 프론트엔드 통합
+    - SockJS + STOMP.js 클라이언트
+    - 채팅방 UI 컴포넌트
+    - 실시간 메시지 수신 처리
+- [ ] 주의사항
+    - 복잡도가 높아 시간 여유가 충분할 때만 구현
+    - 대안: 기본 댓글 기능으로 대체 가능

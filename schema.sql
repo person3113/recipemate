@@ -91,6 +91,7 @@ CREATE TABLE group_buys (
     host_id BIGINT NOT NULL,
     title VARCHAR(100) NOT NULL,
     content VARCHAR(2000) NOT NULL,
+    ingredients VARCHAR(1000),
     category VARCHAR(50) NOT NULL,
     total_price INTEGER NOT NULL,
     target_headcount INTEGER NOT NULL,
@@ -117,6 +118,7 @@ CREATE TABLE group_buys (
 COMMENT ON TABLE group_buys IS '공동구매 게시글';
 COMMENT ON COLUMN group_buys.host_id IS '방장 ID';
 COMMENT ON COLUMN group_buys.category IS '카테고리';
+COMMENT ON COLUMN group_buys.ingredients IS '레시피 재료 목록 (레시피 기반 공구만 해당)';
 COMMENT ON COLUMN group_buys.target_headcount IS '목표 인원';
 COMMENT ON COLUMN group_buys.current_headcount IS '현재 참여 인원';
 COMMENT ON COLUMN group_buys.total_price IS '총 가격';

@@ -1,5 +1,6 @@
 package com.recipemate.domain.groupbuy.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.recipemate.domain.groupbuy.dto.CreateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
@@ -14,6 +15,7 @@ import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.domain.wishlist.service.WishlistService;
 import com.recipemate.global.common.ApiResponse;
 import com.recipemate.global.common.DeliveryMethod;
+import com.recipemate.global.common.GroupBuyCategory;
 import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
@@ -59,8 +61,19 @@ public class GroupBuyController {
         @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
         Model model
     ) {
+        // 문자열 category를 GroupBuyCategory enum으로 변환
+        GroupBuyCategory categoryEnum = null;
+        if (category != null && !category.isBlank()) {
+            try {
+                categoryEnum = GroupBuyCategory.valueOf(category);
+            } catch (IllegalArgumentException e) {
+                // 잘못된 카테고리는 무시
+                log.warn("Invalid category value: {}", category);
+            }
+        }
+        
         GroupBuySearchCondition condition = GroupBuySearchCondition.builder()
-            .category(category)
+            .category(categoryEnum)
             .status(status)
             .recipeOnly(recipeOnly)
             .keyword(keyword)
@@ -69,6 +82,7 @@ public class GroupBuyController {
         Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(condition, pageable);
         model.addAttribute("groupBuys", result);
         model.addAttribute("searchCondition", condition);
+        model.addAttribute("categories", GroupBuyCategory.values()); // enum 값들을 템플릿에 전달
         
         return "group-purchases/list";
     }
@@ -97,7 +111,7 @@ public class GroupBuyController {
         // 레시피 기반 공구인 경우 레시피 정보 조회 및 초기값 설정
         if (recipeApiId != null && !recipeApiId.isBlank()) {
             try {
-                com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = recipeService.getRecipeDetail(recipeApiId);
+                com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = recipeService.getRecipeDetailByApiId(recipeApiId);
                 model.addAttribute("recipe", recipe);
                 
                 // 레시피 정보로 폼 초기값 설정
@@ -107,16 +121,8 @@ public class GroupBuyController {
                 formData.setRecipeName(recipe.getName());
                 formData.setRecipeImageUrl(recipe.getImageUrl());
                 
-                // 카테고리 매핑
-                if (recipe.getCategory() != null) {
-                    String category = switch(recipe.getCategory()) {
-                        case "Beef", "Pork", "Chicken" -> "육류";
-                        case "Vegetarian", "Vegan" -> "채소";
-                        case "Seafood" -> "수산물";
-                        default -> "기타";
-                    };
-                    formData.setCategory(category);
-                }
+                // 레시피 기반 공구는 항상 RECIPE 카테고리 사용
+                formData.setCategory(GroupBuyCategory.RECIPE);
             } catch (CustomException e) {
                 // 레시피를 찾을 수 없는 경우 에러 메시지 추가
                 model.addAttribute("errorMessage", "레시피 정보를 불러올 수 없습니다.");
@@ -125,6 +131,7 @@ public class GroupBuyController {
         
         model.addAttribute("formData", formData);
         model.addAttribute("createGroupBuyRequest", formData); // POST 핸들러와의 호환성
+        model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 전달
         return "group-purchases/form";
     }
     
@@ -151,6 +158,7 @@ public class GroupBuyController {
         
         model.addAttribute("formData", formData);
         model.addAttribute("updateGroupBuyRequest", formData); // POST 핸들러와의 호환성
+        model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 전달
         return "group-purchases/form";
     }
 
@@ -214,54 +222,65 @@ public class GroupBuyController {
             return "group-purchases/form";
         }
         
-        // 2. JSON 형식의 재료 데이터 파싱
-        java.util.List<SelectedIngredient> ingredients = new java.util.ArrayList<>();
-        if (request.getSelectedIngredientsJson() != null && !request.getSelectedIngredientsJson().isEmpty()) {
+        // 2. JSON에서 선택된 재료 파싱
+        if (request.getSelectedIngredientsJson() != null && !request.getSelectedIngredientsJson().isBlank()) {
             try {
-                ingredients = objectMapper.readValue(
-                    request.getSelectedIngredientsJson(),
-                    objectMapper.getTypeFactory().constructCollectionType(java.util.List.class, SelectedIngredient.class)
+                java.util.List<SelectedIngredient> ingredients = objectMapper.readValue(
+                    request.getSelectedIngredientsJson(), 
+                    new TypeReference<java.util.List<SelectedIngredient>>() {}
                 );
+                
+                if (ingredients == null || ingredients.isEmpty()) {
+                    model.addAttribute("formData", request);
+                    model.addAttribute("errorMessage", "선택된 재료가 없습니다. 최소 1개 이상의 재료를 선택해주세요.");
+                    // 레시피 정보 다시 조회해서 모델에 추가
+                    if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
+                        try {
+                            com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = 
+                                recipeService.getRecipeDetail(request.getRecipeApiId());
+                            model.addAttribute("recipe", recipe);
+                        } catch (CustomException e) {
+                            log.error("레시피 조회 실패: recipeApiId={}, error={}", request.getRecipeApiId(), e.getMessage());
+                        }
+                    }
+                    return "group-purchases/form";
+                }
+                
+                request.setSelectedIngredients(ingredients);
+                log.info("레시피 기반 공구 생성: recipeApiId={}, 선택된 재료 개수={}", 
+                    request.getRecipeApiId(), ingredients.size());
+                
             } catch (Exception e) {
                 log.error("재료 JSON 파싱 실패: {}", e.getMessage());
                 model.addAttribute("formData", request);
                 model.addAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
-                // 레시피 정보 다시 조회
-                if (request.getRecipeApiId() != null) {
+                // 레시피 정보 다시 조회해서 모델에 추가
+                if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
                     try {
                         com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = 
                             recipeService.getRecipeDetail(request.getRecipeApiId());
                         model.addAttribute("recipe", recipe);
                     } catch (CustomException ex) {
-                        // 레시피 조회 실패는 무시
+                        log.error("레시피 조회 실패: recipeApiId={}, error={}", request.getRecipeApiId(), ex.getMessage());
                     }
                 }
                 return "group-purchases/form";
             }
-        } else if (request.getSelectedIngredients() != null && !request.getSelectedIngredients().isEmpty()) {
-            // JSON이 없으면 직접 바인딩된 리스트 사용 (테스트용)
-            ingredients = request.getSelectedIngredients();
-        }
-        
-        // 3. 최소 1개 이상의 재료 선택 확인
-        if (ingredients.isEmpty()) {
+        } else {
             model.addAttribute("formData", request);
-            model.addAttribute("errorMessage", "최소 1개 이상의 재료를 선택해주세요.");
-            // 레시피 정보 다시 조회
-            if (request.getRecipeApiId() != null) {
+            model.addAttribute("errorMessage", "선택된 재료 정보가 없습니다.");
+            // 레시피 정보 다시 조회해서 모델에 추가
+            if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
                 try {
                     com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = 
                         recipeService.getRecipeDetail(request.getRecipeApiId());
                     model.addAttribute("recipe", recipe);
                 } catch (CustomException e) {
-                    // 레시피 조회 실패는 무시
+                    log.error("레시피 조회 실패: recipeApiId={}, error={}", request.getRecipeApiId(), e.getMessage());
                 }
             }
             return "group-purchases/form";
         }
-        
-        // 4. 파싱된 재료 리스트를 request에 설정
-        request.setSelectedIngredients(ingredients);
         
         User user = userRepository.findByEmail(userDetails.getUsername())
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));

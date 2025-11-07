@@ -24,7 +24,7 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSp
     List<GroupBuy> findByRecipeApiId(String recipeApiId);
 
     @Query("SELECT g FROM GroupBuy g WHERE g.category = :category AND g.status = :status ORDER BY g.createdAt DESC")
-    Page<GroupBuy> findByCategoryAndStatus(@Param("category") String category, 
+    Page<GroupBuy> findByCategoryAndStatus(@Param("category") com.recipemate.global.common.GroupBuyCategory category, 
                                            @Param("status") GroupBuyStatus status, 
                                            Pageable pageable);
 

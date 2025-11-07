@@ -1,6 +1,7 @@
 package com.recipemate.domain.groupbuy.dto;
 
 import com.recipemate.global.common.DeliveryMethod;
+import com.recipemate.global.common.GroupBuyCategory;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,10 +24,12 @@ public class CreateGroupBuyRequest {
     @NotBlank(message = "내용은 필수입니다")
     @Size(max = 2000, message = "내용은 2000자 이내여야 합니다")
     private String content;
+    
+    @Size(max = 1000, message = "재료는 1000자 이내여야 합니다")
+    private String ingredients; // 재료 목록 (레시피 기반 공구에서만 사용)
 
-    @NotBlank(message = "카테고리는 필수입니다")
-    @Size(max = 50, message = "카테고리는 50자 이내여야 합니다")
-    private String category;
+    @NotNull(message = "카테고리는 필수입니다")
+    private GroupBuyCategory category;
 
     @NotNull(message = "총 금액은 필수입니다")
     @Min(value = 0, message = "총 금액은 0원 이상이어야 합니다")

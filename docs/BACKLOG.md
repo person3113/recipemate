@@ -9,11 +9,49 @@
 
 ---
 
+## 다른 팀원에게
+-[]  프로필 수정 전화번호만 바꾸고 수정누르면 반영되긴 하는데. 프로필 이미지가 기존에 디폴트 이미지에서 null로 되는 느낌? 한 번 직접 해보고 상황 설명하면서 ai한테 알려주면 해결해줄거임. 
+
+- [] 내가 작성한 댓글, 내가 작성한 포스트 => 이거 마이페이지에서 목록 볼 수 있게. 현재  바로가기 아래  내 찜 목록
+  내 배지
+  포인트 내역
+  내가 만든 공구
+  참여중인 공구
+    - 이렇게 있는데 거기에 추가하는거지. ui는 다른 비슷한 용도의 템플릿 참고해서 일관성 유지하고.
+
+- http://localhost:8080/recipes -> 이땐 정상인데. 페이지네이션으로 2페이지 누르니까
+  http://localhost:8080/recipes?keyword=&category=&area=&source=&ingredients=&maxCalor
+  ies=&maxCarbohydrate=&maxProtein=&maxFat=&maxSodium=&page=1&size=20
+  이렇게 되어서그런가. 페이지 위에  "카테고리: "필터해제"" 표시 나오네. 불필요한데. 또
+  필터해제 누르면 1페이지로 가네. 필터하고 페이지네이션은 별개로 보통 그러지 않나?
+
+- 	FOOD_SAFETY 인 recipe는 5	INFO_WGT	중량(1인분)
+     6	INFO_ENG	열량
+     7	INFO_CAR	탄수화물
+     8	INFO_PRO	단백질
+     9	INFO_FAT	지방
+     10	INFO_NA	나트륨
+- 제공해주는데. db에 값이 있을 때(null이나 "" 아닐 때)만 영양정보에 포함시키는게 좋을 듯. 화면에.
+
+---
+
 ## 🔴 HIGH Priority
 
 ---
 
 ## 🟡 MEDIUM Priority
+
+-[] 포인트 로직 안 되는 느낌인데 한 번 점검해보고. 비즈니스로직에 맞게. 그 다음. 안 되면 왜 안되는지 점검하기.
+
+-[] http://localhost:8080/recipes/food-1082 -> 영유아를 위한 고소한 닭꼬치 이건데. 닭고기(가슴살 - 적당량 / 25g) - 적당량 이렇게 저장되고 표시되네? ',' 기준으로 파싱해서 그런건가? 원래는 닭고기(가슴살, 25g) 이렇게 api가 제공해주는데. 이 부분 현실적으로 개선 가능한가? 
+    - 고추잡채 -> 이거도 식용유(재료) - 5g[소스소개] 고기 밑간 양념:후춧가루 0.1g 이렇게 분리되어서 저장되네. api가 "돼지고기 30g, 청피망 30g, 죽순통조림 6g, 홍고추 1.4g, 표고버섯 7g, 소금 0.4g, 참기름 1g, 식용유 5g[소스소개] 고기 밑간 양념:후춧가루 0.1g, 정종 1g, 달걀 4g, 녹말가루 3g" 이렇게 제공해서 그런 듯. 
+    - 이 부분은 api 제공 방식의 한계라 어쩔 수 없을 듯.
+    - 감자냉채 ->오이- "10g [소스소개 단촛물:물60g" / 소금 -"0.3g 겨자초장:겨자가루 1.5g " 이렇게 분리 저장되네. api는 "감자 40g, 래디쉬 5g, 오이 10g [소스소개 단촛물:물60g, 식초 1.5g, 설탕 1.5g, 파인애플주스 1.5g, 소금 0.3g 겨자초장:겨자가루 1.5g, 물미지근한것 1g, 설탕 2g, 식초 3g, 소금 0.03g, 파인애플주스 1.6g", 이렇게 제공해주고. 
+
+- 참여공구 목록 관련
+  - http://localhost:8080/group-purchases/194/participants -> 참여자 관리 버튼 누른 거지. 그럼 No static resource group-purchases/194/participants. 404 이런 오류 페이지가 렌더링됨.
+  - http://localhost:8080/api/group-purchases/194 -> 삭제 버튼 누르니까. 404. No static resource api/group-purchases/194. 
+
 
 ---
 
@@ -40,39 +78,31 @@
 ## ⚪ VERY LOW Priority
 
 #### [ ] Task 4-5-6: 번역 API 연동 (선택)
-- [ ] 테스트 작성
-    - TheMealDB 영문 레시피명 → 한글 번역
-    - 재료명 번역 캐싱
-- [ ] Google Translation API 설정
-    - API Key 발급 및 환경변수 설정
-    - 번역 클라이언트 작성
-- [ ] TranslationService 구현
-    - `translateRecipeName(String englishName)`
-    - `translateIngredient(String ingredient)`
-    - 번역 결과 캐싱 (Redis 또는 로컬 캐시)
-- [ ] RecipeService에 번역 로직 통합
-    - 레시피 조회 시 자동 번역 옵션
-    - 사용자 언어 설정에 따라 번역 제공
+시간 빠듯해서 못할 듯?
+~~- [ ] 테스트 작성~~
+    ~~- TheMealDB 영문 레시피명 → 한글 번역~~
+    ~~- 재료명 번역 캐싱~~
+~~- [ ] Google Translation API 설정~~
+    ~~- API Key 발급 및 환경변수 설정~~
+    ~~- 번역 클라이언트 작성~~
+~~- [ ] TranslationService 구현~~
+    ~~- `translateRecipeName(String englishName)`~~
+    ~~- `translateIngredient(String ingredient)`~~
+    ~~- 번역 결과 캐싱 (Redis 또는 로컬 캐시)~~
+~~- [ ] RecipeService에 번역 로직 통합~~
+    ~~- 레시피 조회 시 자동 번역 옵션~~
+    ~~- 사용자 언어 설정에 따라 번역 제공~~
 
 #### [ ] Task 4-5-7: 실시간 채팅 (선택 - 복잡도 높음)
-- [ ] WebSocket 설정
-    - Spring WebSocket 의존성 추가
-    - WebSocketConfig 작성
-    - STOMP 프로토콜 설정
-- [ ] ChatMessage 엔티티 작성
-    - 필드: id, sender(User FK), receiver(User FK), content, sentAt, isRead
-    - 제약조건: 인덱스 (senderId, receiverId, sentAt)
-- [ ] ChatService 구현
-    - `sendMessage(Long senderId, Long receiverId, String content)`
-    - `getMessageHistory(Long userId, Long otherUserId, Pageable pageable)`
-    - `markAsRead(Long messageId)`
-- [ ] WebSocket 컨트롤러 작성
-    - `/topic/chat/{userId}` 구독 엔드포인트
-    - `/app/chat.send` 메시지 전송 엔드포인트
-- [ ] 프론트엔드 통합
-    - SockJS + STOMP.js 클라이언트
-    - 채팅방 UI 컴포넌트
-    - 실시간 메시지 수신 처리
-- [ ] 주의사항
-    - 복잡도가 높아 시간 여유가 충분할 때만 구현
-    - 대안: 기본 댓글 기능으로 대체 가능
+=> // Option 1: 댓글 기능으로 대체 (권장)
+- 구현 시간: 2-4시간
+- 기존 지식으로 충분
+- 충분히 실용적
+- [ ] ~~WebSocket 설정~~
+~~- [ ] ChatMessage 엔티티 작성~~
+~~- [ ] ChatService 구현~~
+~~- [ ] WebSocket 컨트롤러 작성~~
+~~- [ ] 프론트엔드 통합~~
+~~- [ ] 주의사항~~
+    ~~- 복잡도가 높아 시간 여유가 충분할 때만 구현~~
+    ~~- 대안: 기본 댓글 기능으로 대체 가능~~

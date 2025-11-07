@@ -6,14 +6,29 @@ import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.recipe.client.FoodSafetyClient;
 import com.recipemate.domain.recipe.client.TheMealDBClient;
 import com.recipemate.domain.recipe.dto.*;
+import com.recipemate.domain.recipe.entity.Recipe;
+import com.recipemate.domain.recipe.entity.RecipeIngredient;
+import com.recipemate.domain.recipe.entity.RecipeSource;
+import com.recipemate.domain.recipe.entity.RecipeStep;
+import com.recipemate.domain.recipe.repository.RecipeIngredientRepository;
+import com.recipemate.domain.recipe.repository.RecipeRepository;
 import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.config.CacheConfig;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.jpa.impl.JPAQuery;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,23 +42,30 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class RecipeService {
 
     private final TheMealDBClient theMealDBClient;
     private final FoodSafetyClient foodSafetyClient;
     private final GroupBuyRepository groupBuyRepository;
+    private final RecipeRepository recipeRepository;
+    private final RecipeIngredientRepository recipeIngredientRepository;
+    private final JPAQueryFactory queryFactory;
 
     private static final String MEAL_PREFIX = "meal-";
     private static final String FOOD_PREFIX = "food-";
     private static final int MAX_RANDOM_COUNT = 100;
     private static final int FOOD_SAFETY_SEARCH_SIZE = 100;
+    private static final int DEFAULT_PAGE_SIZE = 20;
 
     /**
      * 레시피 검색
      * 두 API에서 검색 후 결과를 통합하여 반환
+     * @deprecated DB 기반 검색 메서드로 대체됨 (findRecipes)
      * @param keyword 검색어
      * @return 통합된 레시피 목록
      */
+    @Deprecated
     @Cacheable(value = CacheConfig.RECIPES_CACHE, key = "'search:' + #keyword")
     public RecipeListResponse searchRecipes(String keyword) {
         validateKeyword(keyword);
@@ -115,36 +137,81 @@ public class RecipeService {
     }
 
     /**
-     * 랜덤 레시피 조회
-     * TheMealDB API를 사용하여 랜덤 레시피 반환
+     * 랜덤 레시피 조회 (DB 기반)
+     * DB에 저장된 레시피 중에서 랜덤으로 조회
      * 매번 새로운 랜덤 레시피를 제공하기 위해 캐싱하지 않음
      * @param count 조회할 레시피 개수
      * @return 랜덤 레시피 목록
      */
     public RecipeListResponse getRandomRecipes(int count) {
         validateRandomCount(count);
-
-        List<MealResponse> meals = theMealDBClient.getRandomRecipes(count);
         
-        List<RecipeListResponse.RecipeSimpleInfo> recipes = meals.stream()
-                .map(this::convertMealToSimpleInfo)
+        log.info("DB 기반 랜덤 레시피 조회 요청: count={}", count);
+        
+        // 전체 레시피 개수 조회
+        long totalCount = recipeRepository.count();
+        
+        if (totalCount == 0) {
+            log.warn("DB에 레시피가 없습니다");
+            return RecipeListResponse.builder()
+                    .recipes(List.of())
+                    .totalCount(0)
+                    .source("database")
+                    .build();
+        }
+        
+        // count가 전체 개수보다 크면 전체 개수로 제한
+        int actualCount = (int) Math.min(count, totalCount);
+        
+        // QueryDSL로 랜덤 레시피 조회
+        // H2 데이터베이스의 RANDOM() 함수 사용
+        com.recipemate.domain.recipe.entity.QRecipe recipe = 
+            com.recipemate.domain.recipe.entity.QRecipe.recipe;
+        
+        List<Recipe> randomRecipes = queryFactory
+                .selectFrom(recipe)
+                .orderBy(com.querydsl.core.types.dsl.Expressions.numberTemplate(Double.class, "RANDOM()").asc())
+                .limit(actualCount)
+                .fetch();
+        
+        // RecipeSimpleInfo로 변환
+        List<RecipeListResponse.RecipeSimpleInfo> recipes = randomRecipes.stream()
+                .map(this::convertRecipeEntityToSimpleInfo)
                 .collect(Collectors.toList());
-
+        
         return RecipeListResponse.builder()
                 .recipes(recipes)
                 .totalCount(recipes.size())
-                .source("themealdb")
+                .source("database")
                 .build();
     }
 
     /**
-     * 카테고리 목록 조회
-     * TheMealDB API의 카테고리 목록 반환
+     * 카테고리 목록 조회 (DB 기반)
+     * DB에 저장된 레시피의 카테고리 목록 반환
      * @return 카테고리 목록
      */
     @Cacheable(value = CacheConfig.RECIPES_CACHE, key = "'categories'")
     public List<CategoryResponse> getCategories() {
-        return theMealDBClient.getCategories();
+        log.info("DB 기반 카테고리 목록 조회");
+        
+        // QueryDSL로 카테고리별 그룹화 및 집계
+        com.recipemate.domain.recipe.entity.QRecipe recipe = 
+            com.recipemate.domain.recipe.entity.QRecipe.recipe;
+        
+        // 카테고리가 null이 아닌 레시피만 조회하고 distinct 카테고리 추출
+        List<String> categories = queryFactory
+                .select(recipe.category)
+                .from(recipe)
+                .where(recipe.category.isNotNull())
+                .distinct()
+                .orderBy(recipe.category.asc())
+                .fetch();
+        
+        // CategoryResponse로 변환 (thumbnail과 description은 null)
+        return categories.stream()
+                .map(cat -> new CategoryResponse(null, cat, null, null))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -196,7 +263,355 @@ public class RecipeService {
                 .collect(Collectors.toList());
     }
 
+    // ========== DB 기반 레시피 조회 메서드 (신규) ==========
+
+    /**
+     * 통합 레시피 검색 (DB 기반)
+     * 여러 필터 조건을 조합하여 레시피 검색
+     * 
+     * @param keyword 검색어 (제목 검색)
+     * @param category 카테고리
+     * @param area 지역
+     * @param sourceApi 데이터 출처
+     * @param pageable 페이징 정보
+     * @return 검색된 레시피 목록
+     */
+    public RecipeListResponse findRecipes(
+            String keyword,
+            String category,
+            String area,
+            RecipeSource sourceApi,
+            Pageable pageable) {
+        
+        log.info("DB 기반 레시피 검색: keyword={}, category={}, area={}, source={}", 
+                 keyword, category, area, sourceApi);
+
+        // QueryDSL을 사용한 동적 쿼리 생성
+        com.recipemate.domain.recipe.entity.QRecipe recipe = 
+            com.recipemate.domain.recipe.entity.QRecipe.recipe;
+        
+        BooleanBuilder builder = new BooleanBuilder();
+        
+        // 키워드 검색 (제목에 포함)
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            builder.and(recipe.title.toLowerCase().contains(keyword.toLowerCase()));
+        }
+        
+        // 카테고리 필터
+        if (category != null && !category.trim().isEmpty()) {
+            builder.and(recipe.category.eq(category));
+        }
+        
+        // 지역 필터
+        if (area != null && !area.trim().isEmpty()) {
+            builder.and(recipe.area.eq(area));
+        }
+        
+        // 데이터 출처 필터
+        if (sourceApi != null) {
+            builder.and(recipe.sourceApi.eq(sourceApi));
+        }
+        
+        // 페이징 쿼리
+        List<Recipe> recipes = queryFactory
+                .selectFrom(recipe)
+                .where(builder)
+                .orderBy(recipe.lastSyncedAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+        
+        // 전체 개수 조회
+        Long totalCount = queryFactory
+                .select(recipe.count())
+                .from(recipe)
+                .where(builder)
+                .fetchOne();
+        
+        // DTO 변환
+        List<RecipeListResponse.RecipeSimpleInfo> recipeInfos = recipes.stream()
+                .map(this::convertRecipeEntityToSimpleInfo)
+                .collect(Collectors.toList());
+        
+        String source = sourceApi != null ? sourceApi.name().toLowerCase() : "all";
+        
+        return RecipeListResponse.builder()
+                .recipes(recipeInfos)
+                .totalCount(totalCount != null ? totalCount.intValue() : 0)
+                .source(source)
+                .build();
+    }
+
+    /**
+     * 재료명으로 레시피 검색 (DB 기반)
+     * MVP 버전: 단순 문자열 포함 검색 (LIKE '%재료명%')
+     * 
+     * @param ingredients 재료명 리스트
+     * @param pageable 페이징 정보
+     * @return 검색된 레시피 목록
+     */
+    public RecipeListResponse findRecipesByIngredients(List<String> ingredients, Pageable pageable) {
+        validateIngredients(ingredients);
+        
+        log.info("재료 기반 레시피 검색: ingredients={}", ingredients);
+        
+        // QueryDSL을 사용한 동적 쿼리 생성
+        com.recipemate.domain.recipe.entity.QRecipe recipe = 
+            com.recipemate.domain.recipe.entity.QRecipe.recipe;
+        com.recipemate.domain.recipe.entity.QRecipeIngredient recipeIngredient = 
+            com.recipemate.domain.recipe.entity.QRecipeIngredient.recipeIngredient;
+        
+        // 각 재료명에 대한 LIKE 조건 생성 (OR 조건)
+        BooleanBuilder ingredientBuilder = new BooleanBuilder();
+        for (String ing : ingredients) {
+            ingredientBuilder.or(recipeIngredient.name.toLowerCase().contains(ing.toLowerCase()));
+        }
+        
+        // 페이징 쿼리
+        List<Recipe> recipes = queryFactory
+                .selectFrom(recipe)
+                .distinct()
+                .join(recipe.ingredients, recipeIngredient)
+                .where(ingredientBuilder)
+                .orderBy(recipe.lastSyncedAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+        
+        // 전체 개수 조회
+        Long totalCount = queryFactory
+                .select(recipe.countDistinct())
+                .from(recipe)
+                .join(recipe.ingredients, recipeIngredient)
+                .where(ingredientBuilder)
+                .fetchOne();
+        
+        // DTO 변환
+        List<RecipeListResponse.RecipeSimpleInfo> recipeInfos = recipes.stream()
+                .map(this::convertRecipeEntityToSimpleInfo)
+                .collect(Collectors.toList());
+        
+        return RecipeListResponse.builder()
+                .recipes(recipeInfos)
+                .totalCount(totalCount != null ? totalCount.intValue() : 0)
+                .source("all")
+                .build();
+    }
+
+    /**
+     * 영양 정보 기반 레시피 검색 (DB 기반)
+     * 
+     * @param maxCalories 최대 열량
+     * @param maxCarbohydrate 최대 탄수화물
+     * @param maxProtein 최대 단백질
+     * @param maxFat 최대 지방
+     * @param maxSodium 최대 나트륨
+     * @param pageable 페이징 정보
+     * @return 검색된 레시피 목록
+     */
+    public RecipeListResponse findRecipesByNutrition(
+            Integer maxCalories,
+            Integer maxCarbohydrate,
+            Integer maxProtein,
+            Integer maxFat,
+            Integer maxSodium,
+            Pageable pageable) {
+        
+        log.info("영양정보 기반 레시피 검색: calories<={}, carbs<={}, protein<={}, fat<={}, sodium<={}",
+                 maxCalories, maxCarbohydrate, maxProtein, maxFat, maxSodium);
+        
+        // QueryDSL을 사용한 동적 쿼리 생성
+        com.recipemate.domain.recipe.entity.QRecipe recipe = 
+            com.recipemate.domain.recipe.entity.QRecipe.recipe;
+        
+        BooleanBuilder builder = new BooleanBuilder();
+        
+        // 영양 정보가 null이 아닌 레시피만 검색
+        // (TheMealDB는 영양 정보가 없으므로 자동으로 제외됨)
+        
+        if (maxCalories != null && maxCalories > 0) {
+            builder.and(recipe.calories.isNotNull())
+                   .and(recipe.calories.loe(maxCalories));
+        }
+        
+        if (maxCarbohydrate != null && maxCarbohydrate > 0) {
+            builder.and(recipe.carbohydrate.isNotNull())
+                   .and(recipe.carbohydrate.loe(maxCarbohydrate));
+        }
+        
+        if (maxProtein != null && maxProtein > 0) {
+            builder.and(recipe.protein.isNotNull())
+                   .and(recipe.protein.loe(maxProtein));
+        }
+        
+        if (maxFat != null && maxFat > 0) {
+            builder.and(recipe.fat.isNotNull())
+                   .and(recipe.fat.loe(maxFat));
+        }
+        
+        if (maxSodium != null && maxSodium > 0) {
+            builder.and(recipe.sodium.isNotNull())
+                   .and(recipe.sodium.loe(maxSodium));
+        }
+        
+        // 필터가 없으면 영양 정보가 있는 모든 레시피 반환
+        if (!builder.hasValue()) {
+            builder.and(recipe.calories.isNotNull());
+        }
+        
+        // 페이징 쿼리 (칼로리 낮은 순)
+        List<Recipe> recipes = queryFactory
+                .selectFrom(recipe)
+                .where(builder)
+                .orderBy(recipe.calories.asc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+        
+        // 전체 개수 조회
+        Long totalCount = queryFactory
+                .select(recipe.count())
+                .from(recipe)
+                .where(builder)
+                .fetchOne();
+        
+        // DTO 변환
+        List<RecipeListResponse.RecipeSimpleInfo> recipeInfos = recipes.stream()
+                .map(this::convertRecipeEntityToSimpleInfo)
+                .collect(Collectors.toList());
+        
+        return RecipeListResponse.builder()
+                .recipes(recipeInfos)
+                .totalCount(totalCount != null ? totalCount.intValue() : 0)
+                .source("foodsafety") // 영양 정보는 식품안전나라만 제공
+                .build();
+    }
+
+    /**
+     * 레시피 상세 조회 (DB 기반)
+     * DB에 있으면 DB에서 조회, 없으면 외부 API 호출 후 저장
+     * 
+     * @param recipeId 레시피 DB ID
+     * @return 레시피 상세 정보
+     */
+    public RecipeDetailResponse getRecipeDetailById(Long recipeId) {
+        Recipe recipe = recipeRepository.findByIdWithIngredientsAndSteps(recipeId)
+                .orElseThrow(() -> new CustomException(ErrorCode.RECIPE_NOT_FOUND));
+        
+        return convertRecipeEntityToDetailResponse(recipe);
+    }
+
+    /**
+     * API ID로 레시피 상세 조회 (DB 우선)
+     * DB에 있으면 DB에서 조회, 없으면 외부 API 호출
+     * 
+     * @param apiId API ID (meal-{id} 또는 food-{id} 형식)
+     * @return 레시피 상세 정보
+     */
+    public RecipeDetailResponse getRecipeDetailByApiId(String apiId) {
+        validateApiId(apiId);
+        
+        // DB에서 먼저 조회 시도
+        RecipeSource source;
+        String sourceApiId;
+        
+        if (apiId.startsWith(MEAL_PREFIX)) {
+            source = RecipeSource.MEAL_DB;
+            sourceApiId = apiId.substring(MEAL_PREFIX.length());
+        } else if (apiId.startsWith(FOOD_PREFIX)) {
+            source = RecipeSource.FOOD_SAFETY;
+            sourceApiId = apiId.substring(FOOD_PREFIX.length());
+        } else {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        
+        // DB에서 조회 시도
+        return recipeRepository.findBySourceApiAndSourceApiIdWithIngredients(source, sourceApiId)
+                .map(this::convertRecipeEntityToDetailResponse)
+                .orElseGet(() -> {
+                    // DB에 없으면 기존 API 호출 방식 사용 (fallback)
+                    log.warn("레시피가 DB에 없어 API를 직접 호출합니다: {}", apiId);
+                    return getRecipeDetail(apiId);
+                });
+    }
+
     // ========== 변환 메서드 ==========
+
+    /**
+     * Recipe 엔티티를 RecipeSimpleInfo로 변환
+     */
+    private RecipeListResponse.RecipeSimpleInfo convertRecipeEntityToSimpleInfo(Recipe recipe) {
+        String apiId = recipe.getSourceApi() == RecipeSource.MEAL_DB 
+                ? MEAL_PREFIX + recipe.getSourceApiId()
+                : FOOD_PREFIX + recipe.getSourceApiId();
+        
+        String imageUrl = recipe.getThumbnailImageUrl() != null 
+                ? recipe.getThumbnailImageUrl() 
+                : recipe.getFullImageUrl();
+        
+        return RecipeListResponse.RecipeSimpleInfo.builder()
+                .id(apiId)
+                .name(recipe.getTitle())
+                .imageUrl(imageUrl)
+                .category(recipe.getCategory())
+                .source(recipe.getSourceApi().name().toLowerCase())
+                .build();
+    }
+
+    /**
+     * Recipe 엔티티를 RecipeDetailResponse로 변환
+     */
+    private RecipeDetailResponse convertRecipeEntityToDetailResponse(Recipe recipe) {
+        String apiId = recipe.getSourceApi() == RecipeSource.MEAL_DB 
+                ? MEAL_PREFIX + recipe.getSourceApiId()
+                : FOOD_PREFIX + recipe.getSourceApiId();
+        
+        // 재료 정보 변환
+        List<RecipeDetailResponse.IngredientInfo> ingredients = recipe.getIngredients().stream()
+                .map(ing -> RecipeDetailResponse.IngredientInfo.builder()
+                        .name(ing.getName())
+                        .measure(ing.getMeasure())
+                        .build())
+                .collect(Collectors.toList());
+        
+        // 조리 단계 변환
+        List<RecipeDetailResponse.ManualStep> manualSteps = recipe.getSteps().stream()
+                .sorted((a, b) -> a.getStepNumber().compareTo(b.getStepNumber()))
+                .map(step -> RecipeDetailResponse.ManualStep.builder()
+                        .stepNumber(step.getStepNumber())
+                        .description(step.getDescription())
+                        .imageUrl(step.getImageUrl())
+                        .build())
+                .collect(Collectors.toList());
+        
+        // 영양 정보 변환 (있는 경우만)
+        RecipeDetailResponse.NutritionInfo nutritionInfo = null;
+        if (recipe.getCalories() != null) {
+            nutritionInfo = RecipeDetailResponse.NutritionInfo.builder()
+                    .weight(recipe.getServingSize())
+                    .energy(recipe.getCalories() != null ? recipe.getCalories().toString() : null)
+                    .carbohydrate(recipe.getCarbohydrate() != null ? recipe.getCarbohydrate().toString() : null)
+                    .protein(recipe.getProtein() != null ? recipe.getProtein().toString() : null)
+                    .fat(recipe.getFat() != null ? recipe.getFat().toString() : null)
+                    .sodium(recipe.getSodium() != null ? recipe.getSodium().toString() : null)
+                    .build();
+        }
+        
+        return RecipeDetailResponse.builder()
+                .id(apiId)
+                .name(recipe.getTitle())
+                .imageUrl(recipe.getFullImageUrl() != null ? recipe.getFullImageUrl() : recipe.getThumbnailImageUrl())
+                .category(recipe.getCategory())
+                .area(recipe.getArea())
+                .instructions(null) // TheMealDB는 steps에, FoodSafety는 manualSteps에 저장됨
+                .youtubeUrl(recipe.getYoutubeUrl())
+                .sourceUrl(recipe.getSourceUrl())
+                .ingredients(ingredients)
+                .manualSteps(manualSteps.isEmpty() ? null : manualSteps)
+                .nutritionInfo(nutritionInfo)
+                .source(recipe.getSourceApi().name().toLowerCase())
+                .build();
+    }
 
     /**
      * MealResponse를 RecipeSimpleInfo로 변환
@@ -346,6 +761,22 @@ public class RecipeService {
      */
     private void validateCategory(String category) {
         if (category == null || category.trim().isEmpty()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    /**
+     * 재료 목록 유효성 검증
+     */
+    private void validateIngredients(List<String> ingredients) {
+        if (ingredients == null || ingredients.isEmpty()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        
+        // 빈 문자열 제거
+        ingredients.removeIf(ing -> ing == null || ing.trim().isEmpty());
+        
+        if (ingredients.isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }

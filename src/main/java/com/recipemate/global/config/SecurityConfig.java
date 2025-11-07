@@ -30,7 +30,10 @@ public class SecurityConfig {
         http
                 // CSRF 보호 활성화 (세션 기반 폼 로그인 보호)
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/h2-console/**") // H2 콘솔만 제외
+                        .ignoringRequestMatchers(
+                                "/h2-console/**",           // H2 콘솔
+                                "/recipes/admin/**"         // Admin API endpoints
+                        )
                 )
                 .authorizeHttpRequests(auth -> auth
                         // Static resources

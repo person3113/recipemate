@@ -808,6 +808,44 @@
     - 어드민 계정: admin@recipemate.com / admin123
 - [x] 로그인 에러나 공동구매에서 "마감일은 현재보다 이후여야 합니다" 에러 뜨면서 새로고침되는데 기존에 작성하던 내용은 그대로 유지되게.
 
+#### [x] Task 4-5-5: Recipe 서비스 및 컨트롤러 DB 기반 리팩터링
+- [x] RecipeService 리팩터링 (DB-First 아키텍처)
+    - **새로운 메서드 구현**:
+        - `findRecipes()` - 다중 필터 검색 (키워드, 카테고리, 지역, 출처)
+        - `findRecipesByIngredients()` - 재료 기반 검색 (OR 로직)`
+        - `findRecipesByNutrition()` - 영양정보 필터링
+        - `getRecipeDetailById()` - DB ID로 상세 조회
+        - `getRecipeDetailByApiId()` - API ID로 조회 (DB 우선, API 폴백)
+    - **JPA Criteria API 사용**: 동적 쿼리 생성, null-safe 필터링
+    - **페이징 지원**: Page, Pageable 인터페이스 활용
+    - **기존 메서드 유지**: 하위 호환성을 위해 deprecated 표시
+- [x] RecipeController 업데이트
+    - **GET /recipes** 완전 개편:
+        - 지원 파라미터: `keyword`, `category`, `area`, `source`, `ingredients`, `maxCalories`, `maxCarbohydrate`, `maxProtein`, `maxFat`, `maxSodium`, `page`, `size`
+        - 재료/영양정보/일반 검색 자동 라우팅
+        - 페이징: 기본 20/page, 최대 100/page
+    - **GET /recipes/{recipeId}** 개선:
+        - 숫자 ID → DB 조회
+        - 접두사 ID (meal-*, food-*) → API ID 조회
+        - 하위 호환성 100% 유지
+- [x] GroupBuyController 리팩터링
+    - **레시피 기반 공구 생성 로직 개선**:
+        - ❌ BEFORE: `selectedIngredientsJson` → ObjectMapper 수동 파싱
+        - ✅ AFTER: `recipeApiId` → RecipeService로 재료 직접 조회
+        - 장점: 타입 안정성, 에러 감소, 코드 간소화
+    - **ObjectMapper 의존성 제거**: 더 이상 JSON 파싱 불필요
+    - **DB 우선 조회**: `getRecipeDetailByApiId()` 사용
+- [x] 빌드 및 실행 검증
+    - 컴파일 에러 해결 (SelectedIngredient 필드명 수정)
+    - 빌드 성공: `gradlew clean build -x test`
+    - 애플리케이션 정상 실행 확인
+    - 데이터베이스 스키마 자동 생성 확인
+
+**기술적 의사 결정**:
+- **Criteria API vs QueryDSL**: JPA 네이티브 API 사용, 코드 생성 불필요
+- **DB-First 전략**: 빠른 응답, API 호출 감소, 고급 필터링 지원
+- **하위 호환성**: 기존 API ID 형식 (meal-*, food-*) 완전 지원
+
 ### 3.1. 도메인 모델과 비즈니스 로직 (Anemic Domain Model)
 - **문제점**: `GroupBuy`, `User`, `Post` 등 핵심 엔티티들이 대부분 필드와 Getter만 가진 '빈약한 도메인 모델(Anemic Domain Model)'입니다. `increaseParticipant()`, `close()` 같은 일부 로직은 엔티티에 존재하지만, 생성(`createGeneral`), 수정(`update`) 등 핵심 비즈니스 로직 대부분이 **서비스 계층(`GroupBuyService`)에 위임**되어 있습니다. 이로 인해 엔티티는 단순 데이터 전달 객체(DTO)처럼 사용되고, 서비스 계층은 점점 비대해져 응집도가 낮아지고 유지보수가 어려워집니다.
 - **제안**:

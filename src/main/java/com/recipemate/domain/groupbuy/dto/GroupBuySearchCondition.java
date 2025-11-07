@@ -1,5 +1,6 @@
 package com.recipemate.domain.groupbuy.dto;
 
+import com.recipemate.global.common.GroupBuyCategory;
 import com.recipemate.global.common.GroupBuyStatus;
 import lombok.*;
 
@@ -12,7 +13,7 @@ public class GroupBuySearchCondition {
     /**
      * 카테고리 필터
      */
-    private String category;
+    private GroupBuyCategory category;
 
     /**
      * 공구 상태 필터 (RECRUITING, IMMINENT, CLOSED)

@@ -6,6 +6,20 @@ build/
 .opencode/
 #docs/
 
+### Database ###
+# H2 file-based database
+data/
+*.db
+*.mv.db
+*.trace.db
+
+### Environment ###
+.env
+.env.local
+.env.*.local
+# 주의: .env.dev와 .env.prod는 템플릿이므로 커밋 가능
+# 실제 시크릿은 .env.*.local에 저장하고 gitignore 처리
+
 ### STS ###
 .apt_generated
 .classpath

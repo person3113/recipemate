@@ -47,7 +47,7 @@ public class GroupBuyRepositoryImpl implements GroupBuyRepositoryCustom {
         }
 
         // 카테고리 필터
-        if (StringUtils.hasText(condition.getCategory())) {
+        if (condition.getCategory() != null) {
             builder.and(groupBuy.category.eq(condition.getCategory()));
         }
 

@@ -3,6 +3,7 @@ package com.recipemate.domain.wishlist.dto;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.wishlist.entity.Wishlist;
 import com.recipemate.global.common.DeliveryMethod;
+import com.recipemate.global.common.GroupBuyCategory;
 import com.recipemate.global.common.GroupBuyStatus;
 import lombok.*;
 
@@ -21,7 +22,7 @@ public class WishlistResponse {
     // 공구 정보
     private Long groupBuyId;
     private String title;
-    private String category;
+    private GroupBuyCategory category;
     private Integer totalPrice;
     private Integer targetHeadcount;
     private Integer currentHeadcount;

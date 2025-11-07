@@ -65,6 +65,7 @@ public class GroupBuyService {
                 host,
                 request.getTitle(),
                 request.getContent(),
+                request.getIngredients(), // 재료 목록 별도 전달
                 request.getCategory(),
                 request.getTotalPrice(),
                 request.getTargetHeadcount(),
@@ -155,16 +156,12 @@ public class GroupBuyService {
         // 선택된 재료만 필터링하여 문자열로 변환
         String ingredientsText = buildSelectedIngredientsText(request.getSelectedIngredients());
         
-        // 기존 content에 재료 정보 추가
-        String enrichedContent = request.getContent();
-        if (ingredientsText != null && !ingredientsText.isEmpty()) {
-            enrichedContent = request.getContent() + "\n\n" + ingredientsText;
-        }
-        
         // 새로운 요청 객체 생성 (레시피 정보 보강)
+        // 재료 정보는 content에 추가하지 않고 별도 필드로 관리
         return CreateGroupBuyRequest.builder()
             .title(request.getTitle())
-            .content(enrichedContent)
+            .content(request.getContent())
+            .ingredients(ingredientsText) // 재료는 별도 필드로 저장
             .category(request.getCategory())
             .totalPrice(request.getTotalPrice())
             .targetHeadcount(request.getTargetHeadcount())
@@ -395,6 +392,7 @@ public class GroupBuyService {
             .id(groupBuy.getId())
             .title(groupBuy.getTitle())
             .content(groupBuy.getContent())
+            .ingredients(groupBuy.getIngredients())
             .category(groupBuy.getCategory())
             .totalPrice(groupBuy.getTotalPrice())
             .targetHeadcount(groupBuy.getTargetHeadcount())
@@ -427,7 +425,7 @@ public class GroupBuyService {
         if (request.getContent() == null || request.getContent().isBlank()) {
             throw new CustomException(ErrorCode.INVALID_CONTENT);
         }
-        if (request.getCategory() == null || request.getCategory().isBlank()) {
+        if (request.getCategory() == null) {
             throw new CustomException(ErrorCode.INVALID_CATEGORY);
         }
         if (request.getTotalPrice() == null) {

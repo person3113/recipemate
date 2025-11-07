@@ -3,6 +3,7 @@ package com.recipemate.domain.groupbuy.entity;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.global.common.BaseEntity;
 import com.recipemate.global.common.DeliveryMethod;
+import com.recipemate.global.common.GroupBuyCategory;
 import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
@@ -50,9 +51,13 @@ public class GroupBuy extends BaseEntity {
 
     @Column(nullable = false, length = 2000)
     private String content;
+    
+    @Column(length = 1000)
+    private String ingredients; // 구조화된 재료 목록 (별도 저장)
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private String category;
+    private GroupBuyCategory category;
 
     @Column(nullable = false)
     private Integer totalPrice;
@@ -107,7 +112,7 @@ public class GroupBuy extends BaseEntity {
 
     //== 생성 메서드 ==//
     public static GroupBuy createGeneral(
-        User host, String title, String content, String category, Integer totalPrice,
+        User host, String title, String content, GroupBuyCategory category, Integer totalPrice,
         Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
         String meetupLocation, Integer parcelFee, boolean isParticipantListPublic
     ) {
@@ -116,6 +121,7 @@ public class GroupBuy extends BaseEntity {
             .host(host)
             .title(title)
             .content(content)
+            .ingredients(null) // 일반 공구는 재료 없음
             .category(category)
             .totalPrice(totalPrice)
             .targetHeadcount(targetHeadcount)
@@ -130,7 +136,7 @@ public class GroupBuy extends BaseEntity {
     }
 
     public static GroupBuy createRecipeBased(
-        User host, String title, String content, String category, Integer totalPrice,
+        User host, String title, String content, String ingredients, GroupBuyCategory category, Integer totalPrice,
         Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
         String meetupLocation, Integer parcelFee, boolean isParticipantListPublic,
         String recipeApiId, String recipeName, String recipeImageUrl
@@ -140,6 +146,7 @@ public class GroupBuy extends BaseEntity {
             .host(host)
             .title(title)
             .content(content)
+            .ingredients(ingredients) // 레시피 기반 공구는 재료 목록 별도 저장
             .category(category)
             .totalPrice(totalPrice)
             .targetHeadcount(targetHeadcount)
@@ -170,7 +177,7 @@ public class GroupBuy extends BaseEntity {
 
     //== 수정 메서드 ==//
     public void update(
-        String title, String content, String category, Integer totalPrice,
+        String title, String content, GroupBuyCategory category, Integer totalPrice,
         Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
         String meetupLocation, Integer parcelFee, boolean isParticipantListPublic
     ) {

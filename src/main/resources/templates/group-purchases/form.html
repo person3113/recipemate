@@ -106,8 +106,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                <!-- Hidden input for selected ingredients JSON -->
-                                <input type="hidden" id="selectedIngredientsJson" name="selectedIngredientsJson">
                             </div>
                             
                             <!-- Title -->
@@ -133,12 +131,9 @@
                                 </label>
                                 <select id="category" th:field="*{category}" class="form-select" required>
                                     <option value="">카테고리를 선택하세요</option>
-                                    <option value="육류">육류</option>
-                                    <option value="채소">채소</option>
-                                    <option value="과일">과일</option>
-                                    <option value="수산물">수산물</option>
-                                    <option value="유제품">유제품</option>
-                                    <option value="기타">기타</option>
+                                    <option th:each="cat : ${categories}" 
+                                            th:value="${cat.name()}" 
+                                            th:text="${cat.displayName}"></option>
                                 </select>
                             </div>
                             
@@ -342,26 +337,27 @@
             const form = document.getElementById('groupBuyForm');
             const addIngredientBtn = document.getElementById('addIngredientBtn');
             const ingredientsList = document.getElementById('ingredientsList');
-            const selectedIngredientsInput = document.getElementById('selectedIngredientsJson');
             let ingredientIndex = [[${recipe.ingredients.size()}]];
             
-            if (!form || !selectedIngredientsInput) {
+            if (!form) {
                 console.error('필수 요소를 찾을 수 없습니다.');
                 return;
             }
             
             // 폼 제출 시 선택된 재료를 JSON으로 변환
             form.addEventListener('submit', function(e) {
-                const selectedIngredients = [];
                 const checkboxes = document.querySelectorAll('.ingredient-checkbox');
+                const selectedIngredients = [];
                 
                 checkboxes.forEach((checkbox, index) => {
                     if (checkbox.checked) {
                         const measureInput = document.getElementById('measure-' + index) || 
                                            checkbox.closest('.ingredient-item').querySelector('.ingredient-measure');
+                        
                         selectedIngredients.push({
-                            name: checkbox.dataset.name,
-                            measure: measureInput ? measureInput.value : ''
+                            name: checkbox.dataset.name || '',
+                            measure: measureInput ? measureInput.value : '',
+                            selected: true
                         });
                     }
                 });
@@ -372,6 +368,15 @@
                     return false;
                 }
                 
+                // JSON 문자열로 변환하여 hidden input에 저장
+                let selectedIngredientsInput = document.getElementById('selectedIngredientsJson');
+                if (!selectedIngredientsInput) {
+                    selectedIngredientsInput = document.createElement('input');
+                    selectedIngredientsInput.type = 'hidden';
+                    selectedIngredientsInput.id = 'selectedIngredientsJson';
+                    selectedIngredientsInput.name = 'selectedIngredientsJson';
+                    form.appendChild(selectedIngredientsInput);
+                }
                 selectedIngredientsInput.value = JSON.stringify(selectedIngredients);
             });
             

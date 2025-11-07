@@ -2,6 +2,7 @@ package com.recipemate.domain.groupbuy.dto;
 
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.global.common.DeliveryMethod;
+import com.recipemate.global.common.GroupBuyCategory;
 import com.recipemate.global.common.GroupBuyStatus;
 import lombok.*;
 
@@ -17,7 +18,8 @@ public class GroupBuyResponse {
     private Long id;
     private String title;
     private String content;
-    private String category;
+    private String ingredients; // 재료 목록 (별도 필드)
+    private GroupBuyCategory category;
     private Integer totalPrice;
     private Integer targetHeadcount;
     private Integer currentHeadcount;
@@ -51,6 +53,7 @@ public class GroupBuyResponse {
                 .id(groupBuy.getId())
                 .title(groupBuy.getTitle())
                 .content(groupBuy.getContent())
+                .ingredients(groupBuy.getIngredients()) // 재료 목록 추가
                 .category(groupBuy.getCategory())
                 .totalPrice(groupBuy.getTotalPrice())
                 .targetHeadcount(groupBuy.getTargetHeadcount())

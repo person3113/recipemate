@@ -83,12 +83,35 @@
                         </h4>
                     </div>
                     <div class="card-body">
-                        <p class="text-pre-wrap lh-lg" th:text="${recipe.instructions}">조리 방법</p>
+                        <!-- Manual Steps (FOOD_SAFETY 레시피의 구조화된 조리 단계) -->
+                        <div th:if="${recipe.manualSteps != null and !recipe.manualSteps.isEmpty()}">
+                            <div th:each="step, iterStat : ${recipe.manualSteps}" class="mb-4">
+                                <div class="d-flex align-items-start">
+                                    <span class="badge bg-primary rounded-circle me-3 mt-1" 
+                                          style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"
+                                          th:text="${step.stepNumber}">1</span>
+                                    <div class="flex-grow-1">
+                                        <p class="mb-2 lh-lg" th:text="${step.description}">조리 단계 설명</p>
+                                        <img th:if="${step.imageUrl != null and !step.imageUrl.isEmpty()}" 
+                                             th:src="${step.imageUrl}" 
+                                             th:alt="'Step ' + ${step.stepNumber}"
+                                             class="img-fluid rounded mt-2"
+                                             style="max-height: 300px; object-fit: cover;">
+                                    </div>
+                                </div>
+                                <hr th:if="${!iterStat.last}" class="my-3">
+                            </div>
+                        </div>
+                        
+                        <!-- Instructions (TheMealDB 레시피의 텍스트 형식 조리법) -->
+                        <p th:if="${recipe.manualSteps == null or recipe.manualSteps.isEmpty()}" 
+                           class="text-pre-wrap lh-lg" 
+                           th:text="${recipe.instructions}">조리 방법</p>
                     </div>
                 </div>
                 
                 <!-- External Links Card -->
-                <div th:if="${recipe.youtubeUrl != null or recipe.sourceUrl != null}" class="card shadow-sm mb-4">
+                <div th:if="${(recipe.youtubeUrl != null and !recipe.youtubeUrl.isEmpty()) or (recipe.sourceUrl != null and !recipe.sourceUrl.isEmpty())}" class="card shadow-sm mb-4">
                     <div class="card-header bg-white">
                         <h5 class="mb-0 fw-bold">
                             <i class="bi bi-link-45deg text-primary"></i> 참고 링크
@@ -96,13 +119,13 @@
                     </div>
                     <div class="card-body">
                         <div class="d-grid gap-2">
-                            <a th:if="${recipe.youtubeUrl != null}" 
+                            <a th:if="${recipe.youtubeUrl != null and !recipe.youtubeUrl.isEmpty()}" 
                                th:href="${recipe.youtubeUrl}" 
                                target="_blank"
                                class="btn btn-outline-danger">
                                 <i class="bi bi-youtube"></i> YouTube 영상 보기
                             </a>
-                            <a th:if="${recipe.sourceUrl != null}" 
+                            <a th:if="${recipe.sourceUrl != null and !recipe.sourceUrl.isEmpty()}" 
                                th:href="${recipe.sourceUrl}" 
                                target="_blank"
                                class="btn btn-outline-secondary">

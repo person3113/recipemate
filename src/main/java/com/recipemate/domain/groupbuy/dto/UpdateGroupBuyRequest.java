@@ -1,6 +1,7 @@
 package com.recipemate.domain.groupbuy.dto;
 
 import com.recipemate.global.common.DeliveryMethod;
+import com.recipemate.global.common.GroupBuyCategory;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -21,9 +22,8 @@ public class UpdateGroupBuyRequest {
     @Size(max = 2000, message = "내용은 2000자 이내여야 합니다")
     private String content;
 
-    @NotBlank(message = "카테고리는 필수입니다")
-    @Size(max = 50, message = "카테고리는 50자 이내여야 합니다")
-    private String category;
+    @NotNull(message = "카테고리는 필수입니다")
+    private GroupBuyCategory category;
 
     @NotNull(message = "총 금액은 필수입니다")
     @Min(value = 0, message = "총 금액은 0원 이상이어야 합니다")

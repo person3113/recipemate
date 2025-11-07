@@ -110,6 +110,16 @@ a:hover {
     object-fit: cover;
 }
 
+/* Lazy Loading Images */
+.lazy-load {
+    opacity: 0;
+    transition: opacity 0.3s ease-in;
+}
+
+.lazy-loaded {
+    opacity: 1;
+}
+
 /* Group Buy Item Cards */
 .group-buy-item {
     transition: transform 0.2s ease;

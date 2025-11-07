@@ -103,7 +103,8 @@ public class PostController {
         UpdatePostRequest formData = new UpdatePostRequest();
         formData.setTitle(post.getTitle());
         formData.setContent(post.getContent());
-        
+        formData.setCategory(post.getCategory());
+
         model.addAttribute("formData", formData);
         return "community-posts/form";
     }

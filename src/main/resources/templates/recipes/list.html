@@ -21,7 +21,7 @@
         <h1 class="mb-4">레시피 탐색</h1>
         
         <!-- Filter Indicators -->
-        <div th:if="${keyword != null or category != null or ingredients != null or area != null or source != null}" 
+        <div th:if="${keyword != null or category != null or ingredients != null}" 
              class="alert alert-primary mb-4">
             <div class="d-flex flex-wrap align-items-center gap-3">
                 <div th:if="${keyword != null}">
@@ -35,14 +35,6 @@
                 <div th:if="${category != null}">
                     <i class="bi bi-tag-fill me-2"></i>
                     카테고리: <strong th:text="${category}"></strong>
-                </div>
-                <div th:if="${area != null}">
-                    <i class="bi bi-geo-alt-fill me-2"></i>
-                    지역: <strong th:text="${area}"></strong>
-                </div>
-                <div th:if="${source != null}">
-                    <i class="bi bi-database-fill me-2"></i>
-                    출처: <strong th:text="${source}"></strong>
                 </div>
                 <a href="/recipes" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-x-circle"></i> 필터 해제
@@ -153,7 +145,7 @@
                             <!-- Previous Button -->
                             <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
                                 <a class="page-link" 
-                                   th:href="@{/recipes(keyword=${keyword},category=${category},area=${area},source=${source},ingredients=${ingredients},sort=${sort},direction=${direction},maxCalories=${maxCalories},maxCarbohydrate=${maxCarbohydrate},maxProtein=${maxProtein},maxFat=${maxFat},maxSodium=${maxSodium},page=${currentPage - 1},size=${pageSize})}"
+                                   th:href="@{/recipes(keyword=${keyword},category=${category},ingredients=${ingredients},sort=${sort},direction=${direction},page=${currentPage - 1},size=${pageSize})}"
                                    aria-label="Previous">
                                     <span aria-hidden="true">&laquo;</span>
                                 </a>
@@ -166,7 +158,7 @@
                                     class="page-item" 
                                     th:classappend="${i == currentPage} ? 'active'">
                                     <a class="page-link" 
-                                       th:href="@{/recipes(keyword=${keyword},category=${category},area=${area},source=${source},ingredients=${ingredients},sort=${sort},direction=${direction},maxCalories=${maxCalories},maxCarbohydrate=${maxCarbohydrate},maxProtein=${maxProtein},maxFat=${maxFat},maxSodium=${maxSodium},page=${i},size=${pageSize})}"
+                                       th:href="@{/recipes(keyword=${keyword},category=${category},ingredients=${ingredients},sort=${sort},direction=${direction},page=${i},size=${pageSize})}"
                                        th:text="${i + 1}"></a>
                                 </li>
                             </th:block>
@@ -174,7 +166,7 @@
                             <!-- Next Button -->
                             <li class="page-item" th:classappend="${currentPage >= totalPages - 1} ? 'disabled'">
                                 <a class="page-link" 
-                                   th:href="@{/recipes(keyword=${keyword},category=${category},area=${area},source=${source},ingredients=${ingredients},sort=${sort},direction=${direction},maxCalories=${maxCalories},maxCarbohydrate=${maxCarbohydrate},maxProtein=${maxProtein},maxFat=${maxFat},maxSodium=${maxSodium},page=${currentPage + 1},size=${pageSize})}"
+                                   th:href="@{/recipes(keyword=${keyword},category=${category},ingredients=${ingredients},sort=${sort},direction=${direction},page=${currentPage + 1},size=${pageSize})}"
                                    aria-label="Next">
                                     <span aria-hidden="true">&raquo;</span>
                                 </a>
@@ -204,45 +196,5 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Lazy Loading Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const lazyImages = document.querySelectorAll('img.lazy-load');
-            
-            // Use Intersection Observer for lazy loading
-            if ('IntersectionObserver' in window) {
-                const imageObserver = new IntersectionObserver(function(entries, observer) {
-                    entries.forEach(function(entry) {
-                        if (entry.isIntersecting) {
-                            const img = entry.target;
-                            const src = img.getAttribute('data-src');
-                            if (src) {
-                                img.src = src;
-                                img.classList.remove('lazy-load');
-                                img.classList.add('lazy-loaded');
-                                imageObserver.unobserve(img);
-                            }
-                        }
-                    });
-                }, {
-                    rootMargin: '50px 0px', // Start loading 50px before entering viewport
-                    threshold: 0.01
-                });
-                
-                lazyImages.forEach(function(img) {
-                    imageObserver.observe(img);
-                });
-            } else {
-                // Fallback for browsers that don't support Intersection Observer
-                lazyImages.forEach(function(img) {
-                    const src = img.getAttribute('data-src');
-                    if (src) {
-                        img.src = src;
-                    }
-                });
-            }
-        });
-    </script>
 </body>
 </html>

@@ -28,42 +28,14 @@
             </div>
         </div>
 
-        <!-- Random Count Form -->
-        <div class="row mb-4">
-            <div class="col-lg-12">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <form method="get" action="/recipes/random" class="row g-3 align-items-center">
-                            <div class="col-auto">
-                                <label for="count" class="col-form-label fw-semibold">
-                                    <i class="bi bi-list-ol"></i> 추천 개수:
-                                </label>
-                            </div>
-                            <div class="col-auto">
-                                <input type="number" 
-                                       id="count" 
-                                       name="count" 
-                                       class="form-control filter-select" 
-                                       th:value="${count}" 
-                                       min="1" 
-                                       max="100" 
-                                       value="5">
-                            </div>
-                            <div class="col-auto">
-                                <input type="hidden" name="refresh" value="true">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-arrow-clockwise"></i> 다시 추천받기
-                                </button>
-                            </div>
-                            <div class="col-auto ms-3">
-                                <small class="text-muted">
-                                    <i class="bi bi-info-circle"></i> 1~100개까지 선택 가능
-                                </small>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+        <!-- Quick Actions -->
+        <div class="mb-4">
+            <a href="/recipes" class="btn btn-outline-primary me-2">
+                <i class="bi bi-search"></i> 레시피 탐색
+            </a>
+            <a href="/recipes/random?refresh=true" class="btn btn-primary">
+                <i class="bi bi-arrow-clockwise"></i> 다시 추천받기
+            </a>
         </div>
 
         <!-- Random Recipe Results -->
@@ -80,9 +52,10 @@
                     <div class="card h-100 shadow-sm card-hover">
                         <!-- Recipe Image -->
                         <div th:if="${recipe.imageUrl != null}" class="position-relative">
-                            <img th:src="${recipe.imageUrl}" 
+                            <img th:data-src="${recipe.imageUrl}" 
                                  th:alt="${recipe.name}" 
-                                 class="card-img-top recipe-card-img">
+                                 class="card-img-top recipe-card-img lazy-load"
+                                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'%3E%3Crect width='400' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%23999'%3ELoading...%3C/text%3E%3C/svg%3E">
                             <span class="position-absolute top-0 end-0 m-2 badge bg-primary">
                                 <i class="bi bi-shuffle"></i> 랜덤
                             </span>
@@ -116,6 +89,52 @@
                 </div>
             </div>
 
+            <!-- Pagination -->
+            <nav th:if="${recipes.totalCount > pageSize}" aria-label="Random recipe pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <!-- Total pages calculation -->
+                    <th:block th:with="totalPages=${(recipes.totalCount + pageSize - 1) / pageSize}">
+                        <!-- Previous Button -->
+                        <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                            <a class="page-link" 
+                               th:href="@{/recipes/random(page=${currentPage - 1},size=${pageSize})}"
+                               aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        
+                        <!-- Page Numbers (show max 10 pages) -->
+                        <th:block th:with="startPage=${currentPage - 4 < 0 ? 0 : currentPage - 4}, 
+                                          endPage=${startPage + 9 >= totalPages ? totalPages - 1 : startPage + 9}">
+                            <li th:each="i : ${#numbers.sequence(startPage, endPage)}" 
+                                class="page-item" 
+                                th:classappend="${i == currentPage} ? 'active'">
+                                <a class="page-link" 
+                                   th:href="@{/recipes/random(page=${i},size=${pageSize})}"
+                                   th:text="${i + 1}"></a>
+                            </li>
+                        </th:block>
+                        
+                        <!-- Next Button -->
+                        <li class="page-item" th:classappend="${currentPage >= totalPages - 1} ? 'disabled'">
+                            <a class="page-link" 
+                               th:href="@{/recipes/random(page=${currentPage + 1},size=${pageSize})}"
+                               aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </th:block>
+                </ul>
+                
+                <!-- Page Info -->
+                <div class="text-center text-muted small">
+                    <th:block th:with="totalPages=${(recipes.totalCount + pageSize - 1) / pageSize}">
+                        페이지 <strong th:text="${currentPage + 1}"></strong> / <strong th:text="${totalPages}"></strong>
+                        (총 <strong th:text="${recipes.totalCount}"></strong>개)
+                    </th:block>
+                </div>
+            </nav>
+
             <!-- Empty State -->
             <div th:if="${recipes.recipes.isEmpty()}" class="text-center py-5">
                 <div class="mb-4">
@@ -126,30 +145,6 @@
                 <a href="/recipes/random" class="btn btn-primary">
                     <i class="bi bi-arrow-clockwise"></i> 다시 시도
                 </a>
-            </div>
-        </div>
-
-        <!-- Quick Links -->
-        <div class="row mt-5">
-            <div class="col-lg-12">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title mb-3">
-                            <i class="bi bi-link-45deg"></i> 다른 메뉴 보기
-                        </h5>
-                        <div class="d-flex gap-2 flex-wrap">
-                            <a href="/recipes" class="btn btn-outline-primary">
-                                <i class="bi bi-search"></i> 레시피 검색
-                            </a>
-                            <a href="/recipes/categories" class="btn btn-outline-primary">
-                                <i class="bi bi-grid-3x3-gap"></i> 카테고리 보기
-                            </a>
-                            <a href="/" class="btn btn-outline-secondary">
-                                <i class="bi bi-house"></i> 홈으로
-                            </a>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </main>

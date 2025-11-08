@@ -47,33 +47,21 @@ public class RecipeController {
     private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 100;
     private static final String SESSION_KEY_RANDOM_RECIPES = "randomRecipes";
-    private static final String SESSION_KEY_RANDOM_COUNT = "randomCount";
 
     /**
-     * 레시피 검색 페이지 (DB 기반)
-     * GET /recipes?keyword={keyword}&category={category}&area={area}&source={source}&ingredients={ing1,ing2}&maxCalories={cal}&sort={sort}&page={page}&size={size}
+     * 레시피 목록 페이지 (통합 검색 + 필터 + 정렬 + 페이징)
      * 
-     * 지원하는 필터:
-     * - keyword: 제목 검색
+     * 파라미터:
+     * - keyword: 제목 검색 키워드
      * - category: 카테고리 필터
-     * - area: 지역 필터
-     * - source: 데이터 출처 (themealdb, foodsafety)
      * - ingredients: 재료 검색 (쉼표로 구분)
-     * - maxCalories, maxCarbohydrate, maxProtein, maxFat, maxSodium: 영양정보 필터
      * - sort: 정렬 기준 (latest, name, popularity)
      */
     @GetMapping
     public String searchRecipesPage(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String area,
-            @RequestParam(required = false) String source,
             @RequestParam(required = false) String ingredients,
-            @RequestParam(required = false) Integer maxCalories,
-            @RequestParam(required = false) Integer maxCarbohydrate,
-            @RequestParam(required = false) Integer maxProtein,
-            @RequestParam(required = false) Integer maxFat,
-            @RequestParam(required = false) Integer maxSodium,
             @RequestParam(defaultValue = "latest") String sort,
             @RequestParam(defaultValue = "desc") String direction,
             @RequestParam(defaultValue = "0") int page,
@@ -105,50 +93,22 @@ public class RecipeController {
         
         RecipeListResponse recipes;
         
-        // 영양정보 필터가 있는 경우
-        if (maxCalories != null || maxCarbohydrate != null || 
-                   maxProtein != null || maxFat != null || maxSodium != null) {
-            
-            recipes = recipeService.findRecipesByNutrition(
-                    maxCalories, maxCarbohydrate, maxProtein, maxFat, maxSodium, pageable);
-            
-            model.addAttribute("maxCalories", maxCalories);
-            model.addAttribute("maxCarbohydrate", maxCarbohydrate);
-            model.addAttribute("maxProtein", maxProtein);
-            model.addAttribute("maxFat", maxFat);
-            model.addAttribute("maxSodium", maxSodium);
-            
-        // 통합 검색 (키워드, 재료, 카테고리, 지역, 출처)
-        } else {
-            // 재료 리스트 파싱
-            List<String> ingredientList = null;
-            if (ingredients != null && !ingredients.trim().isEmpty()) {
-                ingredientList = Arrays.stream(ingredients.split(","))
-                        .map(String::trim)
-                        .filter(s -> !s.isEmpty())
-                        .collect(Collectors.toList());
-            }
-            
-            // 출처 파싱
-            RecipeSource sourceApi = null;
-            if (source != null && !source.trim().isEmpty()) {
-                try {
-                    sourceApi = RecipeSource.valueOf(source.toUpperCase());
-                } catch (IllegalArgumentException e) {
-                    log.warn("Invalid source parameter: {}", source);
-                }
-            }
-            
-            // 통합 검색 메서드 호출
-            recipes = recipeService.findRecipes(keyword, ingredientList, category, area, sourceApi, sort, direction, pageable);
-            
-            // 모든 검색 파라미터를 모델에 추가
-            model.addAttribute("keyword", keyword);
-            model.addAttribute("ingredients", ingredients);
-            model.addAttribute("category", category);
-            model.addAttribute("area", area);
-            model.addAttribute("source", source);
+        // 재료 리스트 파싱
+        List<String> ingredientList = null;
+        if (ingredients != null && !ingredients.trim().isEmpty()) {
+            ingredientList = Arrays.stream(ingredients.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
         }
+        
+        // 통합 검색 메서드 호출
+        recipes = recipeService.findRecipes(keyword, ingredientList, category, sort, direction, pageable);
+        
+        // 모든 검색 파라미터를 모델에 추가
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("ingredients", ingredients);
+        model.addAttribute("category", category);
         
         model.addAttribute("recipes", recipes);
         model.addAttribute("sort", sort);
@@ -195,35 +155,59 @@ public class RecipeController {
 
     /**
      * 랜덤 레시피 추천 페이지
-     * GET /recipes/random?count={count}&refresh={true/false}
+     * GET /recipes/random?page={page}&size={size}&refresh={true/false}
      * 
-     * refresh 파라미터가 없거나 false인 경우: 세션에 저장된 이전 결과 사용 (뒤로가기 대응)
-     * refresh=true인 경우: 새로운 랜덤 레시피 조회 (다시 추천받기 버튼)
+     * refresh 파라미터가 true인 경우: 새로운 랜덤 레시피 조회 (다시 추천받기 버튼)
+     * refresh가 없거나 false인 경우: 세션에 저장된 결과를 페이징하여 표시
      */
     @GetMapping("/random")
     public String randomRecipesPage(
-            @RequestParam(defaultValue = "5") int count,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false, defaultValue = "false") boolean refresh,
             HttpSession session,
             Model model) {
         
-        RecipeListResponse recipes = null;
-        Integer sessionCount = (Integer) session.getAttribute(SESSION_KEY_RANDOM_COUNT);
+        // 페이지 사이즈 제한
+        size = Math.min(size, MAX_PAGE_SIZE);
         
-        // 세션에 저장된 결과가 있고, refresh가 false이고, count가 같으면 세션 결과 사용
-        if (!refresh && sessionCount != null && sessionCount == count) {
-            recipes = (RecipeListResponse) session.getAttribute(SESSION_KEY_RANDOM_RECIPES);
+        RecipeListResponse allRecipes = null;
+        
+        // refresh=true이거나 세션에 결과가 없으면 새로 조회 (최대 100개)
+        if (refresh || session.getAttribute(SESSION_KEY_RANDOM_RECIPES) == null) {
+            allRecipes = recipeService.getRandomRecipes(100);
+            session.setAttribute(SESSION_KEY_RANDOM_RECIPES, allRecipes);
+        } else {
+            // 세션에서 가져오기
+            allRecipes = (RecipeListResponse) session.getAttribute(SESSION_KEY_RANDOM_RECIPES);
         }
         
-        // 세션에 결과가 없거나 refresh=true이거나 count가 다르면 새로 조회
-        if (recipes == null) {
-            recipes = recipeService.getRandomRecipes(count);
-            session.setAttribute(SESSION_KEY_RANDOM_RECIPES, recipes);
-            session.setAttribute(SESSION_KEY_RANDOM_COUNT, count);
+        // 페이지네이션 적용
+        List<RecipeListResponse.RecipeSimpleInfo> allRecipesList = allRecipes.getRecipes();
+        int totalCount = allRecipesList.size();
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, totalCount);
+        
+        // 페이지 범위를 벗어나면 첫 페이지로
+        if (fromIndex >= totalCount && totalCount > 0) {
+            fromIndex = 0;
+            toIndex = Math.min(size, totalCount);
+            page = 0;
         }
         
-        model.addAttribute("recipes", recipes);
-        model.addAttribute("count", count);
+        List<RecipeListResponse.RecipeSimpleInfo> pagedRecipes = 
+            fromIndex < totalCount ? allRecipesList.subList(fromIndex, toIndex) : List.of();
+        
+        // 페이징된 결과로 새 응답 생성
+        RecipeListResponse pagedResponse = RecipeListResponse.builder()
+                .recipes(pagedRecipes)
+                .totalCount(totalCount)
+                .source(allRecipes.getSource())
+                .build();
+        
+        model.addAttribute("recipes", pagedResponse);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("pageSize", size);
         
         return "recipes/random";
     }

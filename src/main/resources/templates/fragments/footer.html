@@ -2,22 +2,64 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
     <!-- Footer Fragment -->
-    <footer th:fragment="footer" class="mt-auto py-4 bg-dark text-white">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                    <h5 class="mb-1 fw-bold">
-                        <i class="bi bi-basket text-primary"></i> RecipeMate
-                    </h5>
-                    <p class="mb-0 small text-muted">레시피 기반 공동구매 플랫폼</p>
-                </div>
-                <div class="col-md-6 text-center text-md-end">
-                    <p class="mb-0 small text-muted">
-                        &copy; 2025 RecipeMate. All rights reserved.
-                    </p>
+    <th:block th:fragment="footer">
+        <footer class="mt-auto py-4 bg-dark text-white">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                        <h5 class="mb-1 fw-bold">
+                            <i class="bi bi-basket text-primary"></i> RecipeMate
+                        </h5>
+                        <p class="mb-0 small text-muted">레시피 기반 공동구매 플랫폼</p>
+                    </div>
+                    <div class="col-md-6 text-center text-md-end">
+                        <p class="mb-0 small text-muted">
+                            &copy; 2025 RecipeMate. All rights reserved.
+                        </p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </footer>
+        </footer>
+        
+        <!-- Lazy Loading Script -->
+        <script th:inline="javascript">
+            document.addEventListener('DOMContentLoaded', function() {
+                const lazyImages = document.querySelectorAll('img.lazy-load');
+                
+                // Use Intersection Observer for lazy loading
+                if ('IntersectionObserver' in window) {
+                    const imageObserver = new IntersectionObserver(function(entries, observer) {
+                        entries.forEach(function(entry) {
+                            if (entry.isIntersecting) {
+                                const img = entry.target;
+                                const src = img.getAttribute('data-src');
+                                if (src) {
+                                    img.src = src;
+                                    img.classList.remove('lazy-load');
+                                    img.classList.add('lazy-loaded');
+                                    imageObserver.unobserve(img);
+                                }
+                            }
+                        });
+                    }, {
+                        rootMargin: '50px 0px', // Start loading 50px before entering viewport
+                        threshold: 0.01
+                    });
+                    
+                    lazyImages.forEach(function(img) {
+                        imageObserver.observe(img);
+                    });
+                } else {
+                    // Fallback for browsers that don't support Intersection Observer
+                    lazyImages.forEach(function(img) {
+                        const src = img.getAttribute('data-src');
+                        if (src) {
+                            img.src = src;
+                        }
+                    });
+                }
+            });
+        </script>
+    </th:block>
 </body>
 </html>

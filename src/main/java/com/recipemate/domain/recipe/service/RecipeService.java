@@ -272,8 +272,6 @@ public class RecipeService {
      * @param keyword 검색어 (제목 검색)
      * @param ingredients 재료명 리스트 (여러 재료 OR 조건)
      * @param category 카테고리
-     * @param area 지역
-     * @param sourceApi 데이터 출처
      * @param sort 정렬 기준 (latest, name, popularity)
      * @param direction 정렬 방향 (asc, desc)
      * @param pageable 페이징 정보
@@ -283,14 +281,12 @@ public class RecipeService {
             String keyword,
             List<String> ingredients,
             String category,
-            String area,
-            RecipeSource sourceApi,
             String sort,
             String direction,
             Pageable pageable) {
         
-        log.info("DB 기반 레시피 통합 검색: keyword={}, ingredients={}, category={}, area={}, source={}, sort={}", 
-                 keyword, ingredients, category, area, sourceApi, sort);
+        log.info("DB 기반 레시피 통합 검색: keyword={}, ingredients={}, category={}, sort={}", 
+                 keyword, ingredients, category, sort);
 
         // QueryDSL을 사용한 동적 쿼리 생성
         com.recipemate.domain.recipe.entity.QRecipe recipe = 
@@ -324,16 +320,6 @@ public class RecipeService {
         // 카테고리 필터
         if (category != null && !category.trim().isEmpty()) {
             builder.and(recipe.category.eq(category));
-        }
-        
-        // 지역 필터
-        if (area != null && !area.trim().isEmpty()) {
-            builder.and(recipe.area.eq(area));
-        }
-        
-        // 데이터 출처 필터
-        if (sourceApi != null) {
-            builder.and(recipe.sourceApi.eq(sourceApi));
         }
         
         // 정렬 기준 결정
@@ -453,12 +439,10 @@ public class RecipeService {
                 .map(this::convertRecipeEntityToSimpleInfo)
                 .collect(Collectors.toList());
         
-        String source = sourceApi != null ? sourceApi.name().toLowerCase() : "all";
-        
         return RecipeListResponse.builder()
                 .recipes(recipeInfos)
                 .totalCount(totalCount != null ? totalCount.intValue() : 0)
-                .source(source)
+                .source("all")
                 .build();
     }
 

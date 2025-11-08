@@ -28,12 +28,6 @@ public class NotificationService {
 
     /**
      * 알림 생성
-     *
-     * @param recipientId       알림 수신자 ID
-     * @param type              알림 타입
-     * @param actorId           행동자 ID (시스템 알림의 경우 null)
-     * @param relatedEntityId   관련 엔티티 ID
-     * @param relatedEntityType 관련 엔티티 타입
      */
     public void createNotification(
             Long recipientId,
@@ -80,10 +74,6 @@ public class NotificationService {
 
     /**
      * 알림 목록 조회
-     *
-     * @param userId 사용자 ID
-     * @param isRead 읽음 여부 (null이면 전체 조회)
-     * @return 알림 목록
      */
     @Transactional(readOnly = true)
     public List<NotificationResponse> getNotifications(Long userId, Boolean isRead) {
@@ -102,11 +92,6 @@ public class NotificationService {
 
     /**
      * 알림 목록 조회 with 페이징
-     *
-     * @param userId 사용자 ID
-     * @param isRead 읽음 여부 (null이면 전체 조회)
-     * @param pageable 페이징 정보
-     * @return 알림 페이지
      */
     @Transactional(readOnly = true)
     public Page<NotificationResponse> getNotifications(Long userId, Boolean isRead, Pageable pageable) {
@@ -123,9 +108,6 @@ public class NotificationService {
 
     /**
      * 알림 읽음 처리
-     *
-     * @param userId         사용자 ID
-     * @param notificationId 알림 ID
      */
     public void markNotificationAsRead(Long userId, Long notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
@@ -140,9 +122,32 @@ public class NotificationService {
     }
 
     /**
+     * 전체 알림 읽음 처리
+     */
+    public void markAllNotificationsAsRead(Long userId) {
+        List<Notification> notifications = notificationRepository
+                .findByUserIdAndIsReadOrderByCreatedAtDesc(userId, false);
+        
+        notifications.forEach(Notification::markAsRead);
+    }
+
+    /**
+     * 개별 알림 삭제
+     */
+    public void deleteNotification(Long userId, Long notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
+
+        // 권한 확인
+        if (!notification.getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        notificationRepository.delete(notification);
+    }
+
+    /**
      * 전체 알림 삭제
-     *
-     * @param userId 사용자 ID
      */
     public void deleteAllNotifications(Long userId) {
         notificationRepository.deleteByUserId(userId);
@@ -150,9 +155,6 @@ public class NotificationService {
 
     /**
      * 읽지 않은 알림 개수 조회
-     *
-     * @param userId 사용자 ID
-     * @return 읽지 않은 알림 개수
      */
     @Transactional(readOnly = true)
     public Long getUnreadCount(Long userId) {
@@ -187,7 +189,7 @@ public class NotificationService {
 
         return switch (entityType) {
             case GROUP_BUY -> "/group-purchases/" + entityId;
-            case POST -> "/posts/" + entityId;
+            case POST -> "/community-posts/" + entityId;
             case COMMENT -> "/comments/" + entityId;
             case REVIEW -> "/reviews/" + entityId;
             case RECIPE -> "/recipes/" + entityId;

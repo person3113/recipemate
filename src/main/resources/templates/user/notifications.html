@@ -21,17 +21,26 @@
             <div class="col-lg-8">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h1 class="h3 mb-0"><i class="bi bi-bell"></i> 알림</h1>
-                    <form th:action="@{/api/notifications/read-all}" method="post" class="d-inline">
-                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                        <button type="submit" class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-check-all"></i> 모두 읽음 처리
-                        </button>
-                    </form>
+                    <div>
+                        <form th:action="@{/api/notifications/read-all}" method="post" class="d-inline me-2">
+                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-check-all"></i> 모두 읽음 처리
+                            </button>
+                        </form>
+                        <form th:action="@{/api/notifications}" method="post" class="d-inline" onsubmit="return confirm('모든 알림을 삭제하시겠습니까?')">
+                            <input type="hidden" name="_method" value="delete"/>
+                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash"></i> 전체 삭제
+                            </button>
+                        </form>
+                    </div>
                 </div>
                 
                 <!-- Success Message -->
-                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="bi bi-check-circle"></i> <span th:text="${successMessage}">성공</span>
+                <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle"></i> <span th:text="${message}">성공</span>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
                 
@@ -44,44 +53,29 @@
                             <div class="d-flex align-items-start">
                                 <!-- Notification Icon -->
                                 <div class="me-3 fs-2">
-                                    <span th:if="${notification.type.name() == 'GROUP_BUY_PARTICIPATION'}">👥</span>
-                                    <span th:if="${notification.type.name() == 'GROUP_BUY_CLOSED'}">✅</span>
-                                    <span th:if="${notification.type.name() == 'COMMENT_REPLY'}">💬</span>
-                                    <span th:if="${notification.type.name() == 'REVIEW_REMINDER'}">⭐</span>
-                                    <span th:if="${notification.type.name() == 'MANNER_EVALUATION'}">🌡️</span>
-                                    <span th:if="${notification.type.name() == 'BADGE_EARNED'}">🏆</span>
-                                    <span th:if="${notification.type.name() == 'SYSTEM'}">📢</span>
+                                    <span th:if="${notification.type.name() == 'JOIN_GROUP_BUY'}">👥</span>
+                                    <span th:if="${notification.type.name() == 'CANCEL_PARTICIPATION'}">👋</span>
+                                    <span th:if="${notification.type.name() == 'COMMENT_GROUP_BUY'}">💬</span>
+                                    <span th:if="${notification.type.name() == 'COMMENT_POST'}">💬</span>
+                                    <span th:if="${notification.type.name() == 'REPLY_COMMENT'}">↩️</span>
+                                    <span th:if="${notification.type.name() == 'REVIEW_GROUP_BUY'}">⭐</span>
+                                    <span th:if="${notification.type.name() == 'GROUP_BUY_DEADLINE'}">⏰</span>
+                                    <span th:if="${notification.type.name() == 'GROUP_BUY_COMPLETED'}">✅</span>
                                 </div>
                                 
                                 <!-- Notification Content -->
                                 <div class="flex-grow-1">
-                                    <p class="mb-1 fw-semibold" th:text="${notification.message}">알림 메시지</p>
+                                    <p class="mb-1 fw-semibold" th:text="${notification.content}">알림 메시지</p>
                                     <small class="text-muted">
                                         <i class="bi bi-clock"></i> 
                                         <span th:text="${#temporals.format(notification.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</span>
                                     </small>
                                     
                                     <!-- Related Link -->
-                                    <div th:if="${notification.relatedEntityId != null}" class="mt-2">
-                                        <a th:if="${notification.type.name() == 'GROUP_BUY_PARTICIPATION' or notification.type.name() == 'GROUP_BUY_CLOSED'}"
-                                           th:href="@{/group-purchases/{id}(id=${notification.relatedEntityId})}" 
+                                    <div th:if="${notification.url != null}" class="mt-2">
+                                        <a th:href="@{${notification.url}}" 
                                            class="text-primary text-decoration-none">
-                                            공동구매 보기 <i class="bi bi-arrow-right"></i>
-                                        </a>
-                                        <a th:if="${notification.type.name() == 'COMMENT_REPLY'}"
-                                           th:href="@{/community-posts/{id}(id=${notification.relatedEntityId})}" 
-                                           class="text-primary text-decoration-none">
-                                            댓글 보기 <i class="bi bi-arrow-right"></i>
-                                        </a>
-                                        <a th:if="${notification.type.name() == 'REVIEW_REMINDER'}"
-                                           th:href="@{/group-purchases/{id}(id=${notification.relatedEntityId})}" 
-                                           class="text-primary text-decoration-none">
-                                            후기 작성하기 <i class="bi bi-arrow-right"></i>
-                                        </a>
-                                        <a th:if="${notification.type.name() == 'BADGE_EARNED'}"
-                                           th:href="@{/users/me/badges}" 
-                                           class="text-primary text-decoration-none">
-                                            배지 확인하기 <i class="bi bi-arrow-right"></i>
+                                            자세히 보기 <i class="bi bi-arrow-right"></i>
                                         </a>
                                     </div>
                                 </div>

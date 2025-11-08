@@ -2,8 +2,10 @@ package com.recipemate.global.config;
 
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.filter.HiddenHttpMethodFilter;
 
 /**
  * 웹 서버 설정
@@ -23,5 +25,16 @@ public class WebConfig {
             connector.setProperty("maxParameterCount", "1000");
             connector.setMaxPostSize(31457280); // 30MB
         });
+    }
+
+    /**
+     * HiddenHttpMethodFilter 설정
+     * HTML 폼에서 _method 파라미터를 사용하여 PUT, PATCH, DELETE 요청을 시뮬레이션
+     */
+    @Bean
+    public FilterRegistrationBean<HiddenHttpMethodFilter> hiddenHttpMethodFilter() {
+        FilterRegistrationBean<HiddenHttpMethodFilter> filterRegistrationBean = new FilterRegistrationBean<>(new HiddenHttpMethodFilter());
+        filterRegistrationBean.addUrlPatterns("/*");
+        return filterRegistrationBean;
     }
 }

@@ -9,6 +9,7 @@ import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.GroupBuyStatus;
+import com.recipemate.global.event.GroupBuyCompletedEvent;
 import com.recipemate.global.event.ParticipationCancelledEvent;
 import com.recipemate.global.event.ParticipationCreatedEvent;
 import com.recipemate.global.exception.CustomException;
@@ -71,6 +72,11 @@ public class ParticipationService {
 
         // 5. 참여 생성 관련 이벤트 발행 (알림, 포인트, 뱃지 등)
         eventPublisher.publishEvent(new ParticipationCreatedEvent(userId, groupBuyId));
+        
+        // 6. 목표 인원 달성 시 알림 이벤트 발행
+        if (groupBuy.getCurrentHeadcount() >= groupBuy.getTargetHeadcount()) {
+            eventPublisher.publishEvent(new GroupBuyCompletedEvent(groupBuyId));
+        }
     }
 
     @Transactional

@@ -82,4 +82,9 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSp
     List<GroupBuy> findByStatusAndDeadlineBetween(@Param("status") GroupBuyStatus status,
                                                    @Param("start") LocalDateTime start,
                                                    @Param("end") LocalDateTime end);
+
+    @Query("SELECT g FROM GroupBuy g WHERE g.deadline BETWEEN :start AND :end AND g.status IN :statuses")
+    List<GroupBuy> findByDeadlineBetweenAndStatusIn(@Param("start") LocalDateTime start,
+                                                     @Param("end") LocalDateTime end,
+                                                     @Param("statuses") List<GroupBuyStatus> statuses);
 }

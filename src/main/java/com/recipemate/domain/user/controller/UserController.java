@@ -112,6 +112,8 @@ public class UserController {
     /**
      * 내 알림 목록 페이지 렌더링
      * GET /users/me/notifications
+     * 
+     * 알림 관리 기능(읽음/삭제 등)은 NotificationController에서 처리
      */
     @GetMapping("/me/notifications")
     public String myNotificationsPage(
@@ -129,39 +131,6 @@ public class UserController {
         model.addAttribute("unreadCount", unreadCount);
         model.addAttribute("currentFilter", isRead);
         return "user/notifications";
-    }
-
-    /**
-     * 알림 읽음 처리
-     * POST /users/me/notifications/{notificationId}/read
-     */
-    @PostMapping("/me/notifications/{notificationId}/read")
-    public String markNotificationAsRead(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable Long notificationId,
-            RedirectAttributes redirectAttributes) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        
-        notificationService.markNotificationAsRead(user.getId(), notificationId);
-        redirectAttributes.addFlashAttribute("message", "알림을 읽음 처리했습니다.");
-        return "redirect:/users/me/notifications";
-    }
-
-    /**
-     * 전체 알림 삭제
-     * POST /users/me/notifications/delete-all
-     */
-    @PostMapping("/me/notifications/delete-all")
-    public String deleteAllNotifications(
-            @AuthenticationPrincipal UserDetails userDetails,
-            RedirectAttributes redirectAttributes) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        
-        notificationService.deleteAllNotifications(user.getId());
-        redirectAttributes.addFlashAttribute("message", "모든 알림이 삭제되었습니다.");
-        return "redirect:/users/me/notifications";
     }
 
     /**

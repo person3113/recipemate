@@ -62,7 +62,8 @@ public class SecurityConfig {
                             "/group-purchases/{id:[0-9]+}",       // Group purchase detail
                             "/community-posts/list",              // Community post list
                             "/community-posts/{id:[0-9]+}",       // Community post detail
-                            "/search/**"                          // Search pages
+                            "/search/**",                         // Search pages
+                            "/comments/fragments"                 // Comment list fragments (HTMX)
                         ).permitAll()
                         
                         // All other requests require authentication

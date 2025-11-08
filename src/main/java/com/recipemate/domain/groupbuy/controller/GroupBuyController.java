@@ -58,7 +58,10 @@ public class GroupBuyController {
         @RequestParam(required = false) GroupBuyStatus status,
         @RequestParam(required = false, defaultValue = "false") Boolean recipeOnly,
         @RequestParam(required = false) String keyword,
-        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+        @RequestParam(required = false) String ingredients,
+        @RequestParam(required = false, defaultValue = "latest") String sortBy,
+        @RequestParam(required = false, defaultValue = "desc") String direction,
+        @PageableDefault(size = 20) Pageable pageable,
         Model model
     ) {
         // 문자열 category를 GroupBuyCategory enum으로 변환
@@ -77,6 +80,9 @@ public class GroupBuyController {
             .status(status)
             .recipeOnly(recipeOnly)
             .keyword(keyword)
+            .ingredients(ingredients)
+            .sortBy(sortBy)
+            .direction(direction)
             .build();
         
         Page<GroupBuyResponse> result = groupBuyService.getGroupBuyList(condition, pageable);

@@ -30,4 +30,19 @@ public class GroupBuySearchCondition {
      * 검색 키워드 (제목 또는 내용에서 검색)
      */
     private String keyword;
+
+    /**
+     * 재료명 검색
+     */
+    private String ingredients;
+
+    /**
+     * 정렬 기준: latest(최신순), deadline(마감임박순), price(가격순), participants(참여자순)
+     */
+    private String sortBy;
+
+    /**
+     * 정렬 방향: asc(오름차순), desc(내림차순)
+     */
+    private String direction;
 }

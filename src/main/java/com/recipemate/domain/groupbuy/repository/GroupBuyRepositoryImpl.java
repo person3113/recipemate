@@ -3,6 +3,7 @@ package com.recipemate.domain.groupbuy.repository;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
@@ -46,6 +47,11 @@ public class GroupBuyRepositoryImpl implements GroupBuyRepositoryCustom {
             );
         }
 
+        // 재료명 검색
+        if (StringUtils.hasText(condition.getIngredients())) {
+            builder.and(groupBuy.ingredients.containsIgnoreCase(condition.getIngredients()));
+        }
+
         // 카테고리 필터
         if (condition.getCategory() != null) {
             builder.and(groupBuy.category.eq(condition.getCategory()));
@@ -78,26 +84,25 @@ public class GroupBuyRepositoryImpl implements GroupBuyRepositoryCustom {
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize());
 
-        // 정렬 적용
-        if (pageable.getSort().isSorted()) {
-            pageable.getSort().forEach(order -> {
-                Order direction = order.isAscending() ? Order.ASC : Order.DESC;
-                String property = order.getProperty();
-                
-                OrderSpecifier<?> orderSpecifier = switch (property) {
-                    case "createdAt" -> new OrderSpecifier<>(direction, groupBuy.createdAt);
-                    case "deadline" -> new OrderSpecifier<>(direction, groupBuy.deadline);
-                    case "title" -> new OrderSpecifier<>(direction, groupBuy.title);
-                    case "currentHeadcount" -> new OrderSpecifier<>(direction, groupBuy.currentHeadcount);
-                    default -> new OrderSpecifier<>(direction, groupBuy.createdAt);
-                };
-                
-                query.orderBy(orderSpecifier);
-            });
-        } else {
-            // 기본 정렬: 최신순
-            query.orderBy(groupBuy.createdAt.desc());
-        }
+        // 커스텀 정렬 로직 (condition의 sortBy, direction 우선 사용)
+        String sortBy = condition.getSortBy() != null ? condition.getSortBy() : "latest";
+        String direction = condition.getDirection() != null ? condition.getDirection() : "desc";
+        Order sortOrder = "asc".equals(direction) ? Order.ASC : Order.DESC;
+
+        OrderSpecifier<?> orderSpecifier = switch (sortBy) {
+            case "latest" -> new OrderSpecifier<>(sortOrder, groupBuy.createdAt);
+            case "deadline" -> new OrderSpecifier<>(sortOrder, groupBuy.deadline);
+            case "participants" -> new OrderSpecifier<>(sortOrder, groupBuy.currentHeadcount);
+            case "price" -> {
+                // 1인당 가격 = totalPrice / targetHeadcount
+                NumberExpression<Double> pricePerPerson = 
+                    groupBuy.totalPrice.doubleValue().divide(groupBuy.targetHeadcount.doubleValue());
+                yield new OrderSpecifier<>(sortOrder, pricePerPerson);
+            }
+            default -> new OrderSpecifier<>(sortOrder, groupBuy.createdAt);
+        };
+
+        query.orderBy(orderSpecifier);
 
         List<GroupBuy> content = query.fetch();
 

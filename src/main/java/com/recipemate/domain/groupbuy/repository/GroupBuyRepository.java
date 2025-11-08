@@ -25,6 +25,9 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSp
     Page<GroupBuy> findByHostIdAndNotDeleted(@Param("hostId") Long hostId, Pageable pageable);
 
     List<GroupBuy> findByRecipeApiId(String recipeApiId);
+    
+    @Query("SELECT g FROM GroupBuy g WHERE g.recipeApiId = :recipeApiId AND g.deletedAt IS NULL")
+    List<GroupBuy> findByRecipeApiIdAndNotDeleted(@Param("recipeApiId") String recipeApiId);
 
     @Query("SELECT g FROM GroupBuy g WHERE g.category = :category AND g.status = :status ORDER BY g.createdAt DESC")
     Page<GroupBuy> findByCategoryAndStatus(@Param("category") com.recipemate.global.common.GroupBuyCategory category, 

@@ -241,13 +241,13 @@ public class RecipeService {
      * 레시피 관련 공동구매 조회
      * 특정 레시피 ID와 연결된 활성 공동구매 목록 반환
      * @param recipeApiId 레시피 API ID (meal-{id} 또는 food-{id} 형식)
-     * @return 활성 상태의 공동구매 목록
+     * @return 활성 상태의 공동구매 목록 (삭제되지 않은 것만)
      */
     public List<GroupBuyResponse> getRelatedGroupBuys(String recipeApiId) {
         validateRecipeApiId(recipeApiId);
 
-        // 레시피 ID로 공동구매 조회
-        List<GroupBuy> groupBuys = groupBuyRepository.findByRecipeApiId(recipeApiId);
+        // 레시피 ID로 삭제되지 않은 공동구매 조회
+        List<GroupBuy> groupBuys = groupBuyRepository.findByRecipeApiIdAndNotDeleted(recipeApiId);
 
         // 활성 상태 (RECRUITING, IMMINENT)인 공동구매만 필터링하여 변환
         return groupBuys.stream()

@@ -56,6 +56,7 @@
                         <select name="status" class="form-select">
                             <option value="">전체 상태</option>
                             <option value="RECRUITING" th:selected="${searchCondition.status?.name() == 'RECRUITING'}">모집중</option>
+                            <option value="IMMINENT" th:selected="${searchCondition.status?.name() == 'IMMINENT'}">마감 임박</option>
                             <option value="CLOSED" th:selected="${searchCondition.status?.name() == 'CLOSED'}">마감</option>
                         </select>
                     </div>
@@ -99,8 +100,8 @@
                                    th:text="${groupBuy.title}"></a>
                             </h5>
                             <span class="badge" 
-                                  th:classappend="${groupBuy.status.name() == 'RECRUITING'} ? 'bg-success' : 'bg-secondary'"
-                                  th:text="${groupBuy.status.name() == 'RECRUITING' ? '모집중' : '마감'}"></span>
+                                  th:classappend="${groupBuy.status.name() == 'RECRUITING'} ? 'bg-success' : (${groupBuy.status.name() == 'IMMINENT'} ? 'bg-warning' : 'bg-secondary')"
+                                  th:text="${groupBuy.status.name() == 'RECRUITING' ? '모집중' : (groupBuy.status.name() == 'IMMINENT' ? '마감 임박' : '마감')}"></span>
                         </div>
                         <p class="card-text text-muted small" th:text="${groupBuy.content}"></p>
                         <div class="mb-2">

@@ -31,7 +31,7 @@ public class RecipeMapper {
         }
 
         Recipe recipe = Recipe.builder()
-                .title(mealResponse.getName())
+                .title(mealResponse.getName() != null ? mealResponse.getName().trim() : null)
                 .fullImageUrl(mealResponse.getThumbnail())
                 .thumbnailImageUrl(mealResponse.getThumbnail())
                 .category(mealResponse.getCategory())
@@ -71,7 +71,7 @@ public class RecipeMapper {
         }
 
         Recipe recipe = Recipe.builder()
-                .title(cookResponse.getRcpNm())
+                .title(cookResponse.getRcpNm() != null ? cookResponse.getRcpNm().trim() : null)
                 .fullImageUrl(cookResponse.getAttFileNoMk())
                 .thumbnailImageUrl(cookResponse.getAttFileNoMain())
                 .category(cookResponse.getRcpPat2())

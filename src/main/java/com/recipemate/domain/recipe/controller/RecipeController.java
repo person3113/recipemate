@@ -51,7 +51,7 @@ public class RecipeController {
 
     /**
      * 레시피 검색 페이지 (DB 기반)
-     * GET /recipes?keyword={keyword}&category={category}&area={area}&source={source}&ingredients={ing1,ing2}&maxCalories={cal}&page={page}&size={size}
+     * GET /recipes?keyword={keyword}&category={category}&area={area}&source={source}&ingredients={ing1,ing2}&maxCalories={cal}&sort={sort}&page={page}&size={size}
      * 
      * 지원하는 필터:
      * - keyword: 제목 검색
@@ -60,6 +60,7 @@ public class RecipeController {
      * - source: 데이터 출처 (themealdb, foodsafety)
      * - ingredients: 재료 검색 (쉼표로 구분)
      * - maxCalories, maxCarbohydrate, maxProtein, maxFat, maxSodium: 영양정보 필터
+     * - sort: 정렬 기준 (latest, name, popularity)
      */
     @GetMapping
     public String searchRecipesPage(
@@ -73,28 +74,39 @@ public class RecipeController {
             @RequestParam(required = false) Integer maxProtein,
             @RequestParam(required = false) Integer maxFat,
             @RequestParam(required = false) Integer maxSodium,
+            @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(defaultValue = "desc") String direction,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             Model model) {
         
+        // 카테고리 목록 조회 (드롭다운 필터용)
+        List<CategoryResponse> categories = recipeService.getCategories();
+        model.addAttribute("categories", categories);
+        
         // 페이지 사이즈 제한
         size = Math.min(size, MAX_PAGE_SIZE);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("lastSyncedAt").descending());
+        
+        // 정렬 방향 결정
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort sortOrder;
+        
+        if ("name".equals(sort)) {
+            sortOrder = Sort.by(sortDirection, "title");
+        } else if ("popularity".equals(sort)) {
+            // 인기순 정렬은 복잡하므로 서비스 레이어에서 별도 처리
+            sortOrder = Sort.unsorted();
+        } else {
+            // latest (최신순)
+            sortOrder = Sort.by(sortDirection, "lastSyncedAt");
+        }
+        
+        Pageable pageable = PageRequest.of(page, size, sortOrder);
         
         RecipeListResponse recipes;
         
-        // 재료 검색이 있는 경우
-        if (ingredients != null && !ingredients.trim().isEmpty()) {
-            List<String> ingredientList = Arrays.stream(ingredients.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toList());
-            
-            recipes = recipeService.findRecipesByIngredients(ingredientList, pageable);
-            model.addAttribute("ingredients", ingredients);
-            
         // 영양정보 필터가 있는 경우
-        } else if (maxCalories != null || maxCarbohydrate != null || 
+        if (maxCalories != null || maxCarbohydrate != null || 
                    maxProtein != null || maxFat != null || maxSodium != null) {
             
             recipes = recipeService.findRecipesByNutrition(
@@ -106,8 +118,18 @@ public class RecipeController {
             model.addAttribute("maxFat", maxFat);
             model.addAttribute("maxSodium", maxSodium);
             
-        // 일반 검색 (키워드, 카테고리, 지역, 출처)
+        // 통합 검색 (키워드, 재료, 카테고리, 지역, 출처)
         } else {
+            // 재료 리스트 파싱
+            List<String> ingredientList = null;
+            if (ingredients != null && !ingredients.trim().isEmpty()) {
+                ingredientList = Arrays.stream(ingredients.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .collect(Collectors.toList());
+            }
+            
+            // 출처 파싱
             RecipeSource sourceApi = null;
             if (source != null && !source.trim().isEmpty()) {
                 try {
@@ -117,15 +139,20 @@ public class RecipeController {
                 }
             }
             
-            recipes = recipeService.findRecipes(keyword, category, area, sourceApi, pageable);
+            // 통합 검색 메서드 호출
+            recipes = recipeService.findRecipes(keyword, ingredientList, category, area, sourceApi, sort, direction, pageable);
             
+            // 모든 검색 파라미터를 모델에 추가
             model.addAttribute("keyword", keyword);
+            model.addAttribute("ingredients", ingredients);
             model.addAttribute("category", category);
             model.addAttribute("area", area);
             model.addAttribute("source", source);
         }
         
         model.addAttribute("recipes", recipes);
+        model.addAttribute("sort", sort);
+        model.addAttribute("direction", direction);
         model.addAttribute("currentPage", page);
         model.addAttribute("pageSize", size);
         
@@ -201,17 +228,7 @@ public class RecipeController {
         return "recipes/random";
     }
 
-    /**
-     * 카테고리 목록 페이지
-     * GET /recipes/categories
-     */
-    @GetMapping("/categories")
-    public String categoriesPage(Model model) {
-        List<CategoryResponse> categories = recipeService.getCategories();
-        model.addAttribute("categories", categories);
-        
-        return "recipes/categories";
-    }
+
 
     /**
      * 레시피 관련 공동구매 목록 조회 API

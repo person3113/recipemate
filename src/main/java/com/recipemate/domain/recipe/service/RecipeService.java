@@ -270,31 +270,55 @@ public class RecipeService {
      * 여러 필터 조건을 조합하여 레시피 검색
      * 
      * @param keyword 검색어 (제목 검색)
+     * @param ingredients 재료명 리스트 (여러 재료 OR 조건)
      * @param category 카테고리
      * @param area 지역
      * @param sourceApi 데이터 출처
+     * @param sort 정렬 기준 (latest, name, popularity)
+     * @param direction 정렬 방향 (asc, desc)
      * @param pageable 페이징 정보
      * @return 검색된 레시피 목록
      */
     public RecipeListResponse findRecipes(
             String keyword,
+            List<String> ingredients,
             String category,
             String area,
             RecipeSource sourceApi,
+            String sort,
+            String direction,
             Pageable pageable) {
         
-        log.info("DB 기반 레시피 검색: keyword={}, category={}, area={}, source={}", 
-                 keyword, category, area, sourceApi);
+        log.info("DB 기반 레시피 통합 검색: keyword={}, ingredients={}, category={}, area={}, source={}, sort={}", 
+                 keyword, ingredients, category, area, sourceApi, sort);
 
         // QueryDSL을 사용한 동적 쿼리 생성
         com.recipemate.domain.recipe.entity.QRecipe recipe = 
             com.recipemate.domain.recipe.entity.QRecipe.recipe;
+        com.recipemate.domain.recipe.entity.QRecipeIngredient recipeIngredient = 
+            com.recipemate.domain.recipe.entity.QRecipeIngredient.recipeIngredient;
+        com.recipemate.domain.groupbuy.entity.QGroupBuy groupBuy = 
+            com.recipemate.domain.groupbuy.entity.QGroupBuy.groupBuy;
         
         BooleanBuilder builder = new BooleanBuilder();
         
         // 키워드 검색 (제목에 포함)
         if (keyword != null && !keyword.trim().isEmpty()) {
             builder.and(recipe.title.toLowerCase().contains(keyword.toLowerCase()));
+        }
+        
+        // 재료 검색 (OR 조건)
+        boolean hasIngredients = ingredients != null && !ingredients.isEmpty();
+        if (hasIngredients) {
+            BooleanBuilder ingredientBuilder = new BooleanBuilder();
+            for (String ingredient : ingredients) {
+                if (ingredient != null && !ingredient.trim().isEmpty()) {
+                    ingredientBuilder.or(recipeIngredient.name.toLowerCase().contains(ingredient.trim().toLowerCase()));
+                }
+            }
+            if (ingredientBuilder.hasValue()) {
+                builder.and(ingredientBuilder);
+            }
         }
         
         // 카테고리 필터
@@ -312,21 +336,117 @@ public class RecipeService {
             builder.and(recipe.sourceApi.eq(sourceApi));
         }
         
-        // 페이징 쿼리
-        List<Recipe> recipes = queryFactory
-                .selectFrom(recipe)
-                .where(builder)
-                .orderBy(recipe.lastSyncedAt.desc())
+        // 정렬 기준 결정
+        JPAQuery<Recipe> query;
+        
+        // direction 파라미터를 Sort.Direction으로 변환
+        Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction) 
+            ? Sort.Direction.ASC 
+            : Sort.Direction.DESC;
+        
+        // popularity 정렬인 경우 GroupBuy 테이블과 조인
+        if ("popularity".equals(sort)) {
+            // 인기순은 항상 count 기준, direction에 따라 오름차순/내림차순 결정
+            com.querydsl.core.types.OrderSpecifier<?> popularityOrder = 
+                sortDirection == Sort.Direction.ASC 
+                    ? groupBuy.id.count().asc() 
+                    : groupBuy.id.count().desc();
+            
+            query = queryFactory
+                    .select(recipe)
+                    .from(recipe)
+                    .leftJoin(groupBuy).on(groupBuy.recipeApiId.eq(
+                        com.querydsl.core.types.dsl.Expressions.stringTemplate(
+                            "CASE WHEN {0} = 'MEAL_DB' THEN CONCAT('meal-', {1}) ELSE CONCAT('food-', {1}) END",
+                            recipe.sourceApi, recipe.sourceApiId
+                        )
+                    ).and(groupBuy.deletedAt.isNull()))
+                    .where(builder)
+                    .groupBy(recipe.id)
+                    .orderBy(popularityOrder, recipe.lastSyncedAt.desc());
+            
+            // 재료 검색이 있으면 조인 추가 (distinct 제거 - GROUP BY로 중복 제거됨)
+            if (hasIngredients) {
+                query = queryFactory
+                        .select(recipe)
+                        .from(recipe)
+                        .join(recipe.ingredients, recipeIngredient)
+                        .leftJoin(groupBuy).on(groupBuy.recipeApiId.eq(
+                            com.querydsl.core.types.dsl.Expressions.stringTemplate(
+                                "CASE WHEN {0} = 'MEAL_DB' THEN CONCAT('meal-', {1}) ELSE CONCAT('food-', {1}) END",
+                                recipe.sourceApi, recipe.sourceApiId
+                            )
+                        ).and(groupBuy.deletedAt.isNull()))
+                        .where(builder)
+                        .groupBy(recipe.id)
+                        .orderBy(popularityOrder, recipe.lastSyncedAt.desc());
+            }
+        } else if ("name".equals(sort)) {
+            // 이름순: direction에 따라 오름차순/내림차순
+            com.querydsl.core.types.OrderSpecifier<?> nameOrder = 
+                sortDirection == Sort.Direction.ASC 
+                    ? recipe.title.asc() 
+                    : recipe.title.desc();
+            
+            query = queryFactory
+                    .selectFrom(recipe)
+                    .where(builder)
+                    .orderBy(nameOrder);
+            
+            // 재료 검색이 있으면 조인 추가 및 distinct 적용
+            if (hasIngredients) {
+                query = queryFactory
+                        .selectFrom(recipe)
+                        .distinct()
+                        .join(recipe.ingredients, recipeIngredient)
+                        .where(builder)
+                        .orderBy(nameOrder);
+            }
+        } else {
+            // 기본값: latest (최신순): direction에 따라 오름차순/내림차순
+            com.querydsl.core.types.OrderSpecifier<?> dateOrder = 
+                sortDirection == Sort.Direction.ASC 
+                    ? recipe.lastSyncedAt.asc() 
+                    : recipe.lastSyncedAt.desc();
+            
+            query = queryFactory
+                    .selectFrom(recipe)
+                    .where(builder)
+                    .orderBy(dateOrder);
+            
+            // 재료 검색이 있으면 조인 추가 및 distinct 적용
+            if (hasIngredients) {
+                query = queryFactory
+                        .selectFrom(recipe)
+                        .distinct()
+                        .join(recipe.ingredients, recipeIngredient)
+                        .where(builder)
+                        .orderBy(dateOrder);
+            }
+        }
+        
+        // 페이징 적용
+        List<Recipe> recipes = query
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
         
         // 전체 개수 조회
-        Long totalCount = queryFactory
-                .select(recipe.count())
-                .from(recipe)
-                .where(builder)
-                .fetchOne();
+        Long totalCount;
+        if (hasIngredients) {
+            totalCount = queryFactory
+                    .select(recipe.countDistinct())
+                    .from(recipe)
+                    .join(recipe.ingredients, recipeIngredient)
+                    .where(builder)
+                    .fetchOne();
+        } else {
+            totalCount = queryFactory
+                    .select(recipe.count())
+                    .from(recipe)
+                    .where(builder)
+                    .fetchOne();
+        }
         
         // DTO 변환
         List<RecipeListResponse.RecipeSimpleInfo> recipeInfos = recipes.stream()
@@ -342,61 +462,6 @@ public class RecipeService {
                 .build();
     }
 
-    /**
-     * 재료명으로 레시피 검색 (DB 기반)
-     * MVP 버전: 단순 문자열 포함 검색 (LIKE '%재료명%')
-     * 
-     * @param ingredients 재료명 리스트
-     * @param pageable 페이징 정보
-     * @return 검색된 레시피 목록
-     */
-    public RecipeListResponse findRecipesByIngredients(List<String> ingredients, Pageable pageable) {
-        validateIngredients(ingredients);
-        
-        log.info("재료 기반 레시피 검색: ingredients={}", ingredients);
-        
-        // QueryDSL을 사용한 동적 쿼리 생성
-        com.recipemate.domain.recipe.entity.QRecipe recipe = 
-            com.recipemate.domain.recipe.entity.QRecipe.recipe;
-        com.recipemate.domain.recipe.entity.QRecipeIngredient recipeIngredient = 
-            com.recipemate.domain.recipe.entity.QRecipeIngredient.recipeIngredient;
-        
-        // 각 재료명에 대한 LIKE 조건 생성 (OR 조건)
-        BooleanBuilder ingredientBuilder = new BooleanBuilder();
-        for (String ing : ingredients) {
-            ingredientBuilder.or(recipeIngredient.name.toLowerCase().contains(ing.toLowerCase()));
-        }
-        
-        // 페이징 쿼리
-        List<Recipe> recipes = queryFactory
-                .selectFrom(recipe)
-                .distinct()
-                .join(recipe.ingredients, recipeIngredient)
-                .where(ingredientBuilder)
-                .orderBy(recipe.lastSyncedAt.desc())
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch();
-        
-        // 전체 개수 조회
-        Long totalCount = queryFactory
-                .select(recipe.countDistinct())
-                .from(recipe)
-                .join(recipe.ingredients, recipeIngredient)
-                .where(ingredientBuilder)
-                .fetchOne();
-        
-        // DTO 변환
-        List<RecipeListResponse.RecipeSimpleInfo> recipeInfos = recipes.stream()
-                .map(this::convertRecipeEntityToSimpleInfo)
-                .collect(Collectors.toList());
-        
-        return RecipeListResponse.builder()
-                .recipes(recipeInfos)
-                .totalCount(totalCount != null ? totalCount.intValue() : 0)
-                .source("all")
-                .build();
-    }
 
     /**
      * 영양 정보 기반 레시피 검색 (DB 기반)
@@ -765,21 +830,6 @@ public class RecipeService {
         }
     }
 
-    /**
-     * 재료 목록 유효성 검증
-     */
-    private void validateIngredients(List<String> ingredients) {
-        if (ingredients == null || ingredients.isEmpty()) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
-        }
-        
-        // 빈 문자열 제거
-        ingredients.removeIf(ing -> ing == null || ing.trim().isEmpty());
-        
-        if (ingredients.isEmpty()) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
-        }
-    }
 
     /**
      * 검색 결과 출처 결정

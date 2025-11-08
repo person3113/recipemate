@@ -29,23 +29,24 @@
      class="comment-item mb-3"
      th:classappend="${comment.isDeleted} ? 'deleted' : ''">
     
-    <div th:if="${!comment.isDeleted}" class="card">
+    <div class="card" th:classappend="${comment.isDeleted} ? 'bg-light' : ''">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <div class="d-flex align-items-center">
-                    <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2 comment-avatar">
+                    <div class="avatar text-white rounded-circle d-flex align-items-center justify-content-center me-2 comment-avatar"
+                         th:classappend="${comment.isDeleted} ? 'bg-secondary' : 'bg-primary'">
                         <span th:text="${#strings.substring(comment.authorNickname, 0, 1)}">A</span>
                     </div>
                     <div>
                         <div class="fw-bold" th:text="${comment.authorNickname}">작성자</div>
                         <small class="text-muted" th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</small>
-                        <span th:if="${comment.updatedAt != null and comment.updatedAt.isAfter(comment.createdAt)}" class="badge bg-secondary ms-1">수정됨</span>
+                        <span th:if="${!comment.isDeleted and comment.updatedAt != null and comment.updatedAt.isAfter(comment.createdAt)}" class="badge bg-secondary ms-1">수정됨</span>
                     </div>
                 </div>
                 
-                <!-- 댓글 작성자만 보이는 액션 버튼 -->
+                <!-- 댓글 작성자만 보이는 액션 버튼 (삭제된 댓글에는 표시 안함) -->
                 <div sec:authorize="isAuthenticated()" 
-                     th:if="${#authentication.principal.username == comment.authorEmail}">
+                     th:if="${!comment.isDeleted and #authentication.principal.username == comment.authorEmail}">
                     <div class="btn-group btn-group-sm">
                         <button type="button" 
                                 class="btn btn-outline-secondary"
@@ -71,13 +72,14 @@
                 </div>
             </div>
 
-            <!-- 댓글 내용 -->
+            <!-- 댓글 내용 (삭제된 경우 다른 메시지 표시) -->
             <div class="comment-content" th:id="'content-' + ${comment.id}">
-                <p class="mb-2" th:text="${comment.content}">댓글 내용</p>
+                <p class="mb-2" th:classappend="${comment.isDeleted} ? 'text-muted fst-italic' : ''" 
+                   th:text="${comment.isDeleted} ? '삭제된 댓글입니다.' : ${comment.content}">댓글 내용</p>
             </div>
 
-            <!-- 댓글 수정 폼 (숨김 상태) -->
-            <div class="comment-edit-form d-none" th:id="'edit-form-' + ${comment.id}">
+            <!-- 댓글 수정 폼 (삭제된 댓글에는 표시 안함) -->
+            <div th:if="${!comment.isDeleted}" class="comment-edit-form d-none" th:id="'edit-form-' + ${comment.id}">
                 <form th:action="@{/comments/{id}/edit(id=${comment.id})}" method="post"
                       hx-post th:hx-post="@{/comments/{id}/fragment(id=${comment.id})}"
                       hx-target th:hx-target="'#comment-' + ${comment.id}"
@@ -107,8 +109,8 @@
                 </form>
             </div>
 
-            <!-- 대댓글 버튼 -->
-            <div class="mt-2">
+            <!-- 대댓글 버튼 (삭제된 댓글에는 표시 안함) -->
+            <div th:if="${!comment.isDeleted}" class="mt-2">
                 <button type="button" 
                         class="btn btn-sm btn-link text-decoration-none p-0"
                         onclick="toggleReplyForm(this)"
@@ -119,15 +121,18 @@
                 </button>
             </div>
 
-            <!-- 대댓글 작성 폼 (숨김 상태) -->
-            <div class="reply-form d-none mt-3" 
+            <!-- 대댓글 작성 폼 (삭제된 댓글에는 표시 안함) -->
+            <div th:if="${!comment.isDeleted}" 
+                 class="reply-form d-none mt-3" 
                  th:id="'reply-form-' + ${comment.id}"
                  sec:authorize="isAuthenticated()">
                 <form th:action="@{/comments}" method="post"
-                      hx-post th:hx-post="@{/comments/fragment}"
+                      hx-post th:hx-post="@{/comments/{id}/replies(id=${comment.id})}"
                       hx-target th:hx-target="'#replies-' + ${comment.id}"
                       hx-swap="beforeend">
-                    <input type="hidden" name="parentId" th:value="${comment.id}"/>
+                    <input type="hidden" name="targetType" th:value="${targetType}"/>
+                    <input type="hidden" name="targetId" th:value="${targetId}"/>
+                    <input type="hidden" name="type" value="GENERAL"/>
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                     <div class="card border-0 bg-light">
                         <div class="card-body py-2">
@@ -160,32 +165,8 @@
         <div th:if="${comment.replies != null and !comment.replies.empty}" 
              class="replies-container bg-light border-top"
              th:id="'replies-' + ${comment.id}">
-            <div th:each="reply : ${comment.replies}" 
-                 class="reply-item p-3 border-bottom"
-                 th:id="'reply-' + ${reply.id}">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-arrow-return-right text-muted me-2"></i>
-                        <div class="avatar bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2 reply-avatar">
-                            <span th:text="${#strings.substring(reply.authorNickname, 0, 1)}">A</span>
-                        </div>
-                        <div>
-                            <div class="fw-bold small" th:text="${reply.authorNickname}">작성자</div>
-                            <small class="text-muted" th:text="${#temporals.format(reply.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</small>
-                        </div>
-                    </div>
-                    
-                    <div sec:authorize="isAuthenticated()" 
-                         th:if="${#authentication.principal.username == reply.authorEmail}">
-                        <button type="button" 
-                                class="btn btn-sm btn-outline-danger"
-                                onclick="deleteReply(this)"
-                                th:attr="data-reply-id=${reply.id}">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </div>
-                <p class="mb-0 ms-5 small" th:text="${reply.content}">답글 내용</p>
+            <div th:each="reply : ${comment.replies}">
+                <div th:replace="~{fragments/comments :: reply-item(${reply})}"></div>
             </div>
         </div>
 
@@ -195,13 +176,90 @@
              class="replies-container bg-light d-none">
         </div>
     </div>
+</div>
 
-    <!-- 삭제된 댓글 표시 -->
-    <div th:if="${comment.isDeleted}" class="card bg-light">
-        <div class="card-body text-center text-muted py-3">
-            <i class="bi bi-trash me-2"></i>
-            삭제된 댓글입니다.
+<!-- 단일 대댓글 아이템 프래그먼트 -->
+<div th:fragment="reply-item(reply)" 
+     class="reply-item p-3 border-bottom"
+     th:id="'reply-' + ${reply.id}"
+     th:classappend="${reply.isDeleted} ? 'bg-light' : ''">
+    <div class="d-flex justify-content-between align-items-start mb-2">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-arrow-return-right text-muted me-2"></i>
+            <div class="avatar bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2 reply-avatar">
+                <span th:text="${#strings.substring(reply.authorNickname, 0, 1)}">A</span>
+            </div>
+            <div>
+                <div class="fw-bold small" th:text="${reply.authorNickname}">작성자</div>
+                <small class="text-muted" th:text="${#temporals.format(reply.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</small>
+                <span th:if="${!reply.isDeleted and reply.updatedAt != null and reply.updatedAt.isAfter(reply.createdAt)}" class="badge bg-secondary ms-1">수정됨</span>
+            </div>
         </div>
+        
+        <!-- 대댓글 작성자만 보이는 액션 버튼 (삭제된 답글에는 표시 안함) -->
+        <div sec:authorize="isAuthenticated()" 
+             th:if="${!reply.isDeleted and #authentication.principal.username == reply.authorEmail}">
+            <div class="btn-group btn-group-sm">
+                <button type="button" 
+                        class="btn btn-sm btn-outline-secondary"
+                        onclick="toggleReplyEditForm(this)"
+                        th:attr="data-reply-id=${reply.id}">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <form th:action="@{/comments/replies/{id}/delete(id=${reply.id})}" 
+                      method="post"
+                      style="display: inline;"
+                      hx-post th:hx-post="@{/comments/replies/{id}/delete(id=${reply.id})}"
+                      th:hx-target="'#reply-' + ${reply.id}"
+                      hx-swap="outerHTML"
+                      hx-confirm="정말 삭제하시겠습니까?">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <input type="hidden" name="targetType" th:value="${targetType}"/>
+                    <input type="hidden" name="targetId" th:value="${targetId}"/>
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 대댓글 내용 (삭제된 경우 다른 메시지 표시) -->
+    <div class="reply-content" th:id="'reply-content-' + ${reply.id}">
+        <p class="mb-0 ms-5 small" 
+           th:classappend="${reply.isDeleted} ? 'text-muted fst-italic' : ''"
+           th:text="${reply.isDeleted} ? '삭제된 답글입니다.' : ${reply.content}">답글 내용</p>
+    </div>
+    
+    <!-- 대댓글 수정 폼 (삭제된 답글에는 표시 안함) -->
+    <div th:if="${!reply.isDeleted}" class="reply-edit-form d-none ms-5" th:id="'reply-edit-form-' + ${reply.id}">
+        <form th:action="@{/comments/replies/{id}(id=${reply.id})}" method="post"
+              hx-put th:hx-put="@{/comments/replies/{id}(id=${reply.id})}"
+              hx-target th:hx-target="'#reply-' + ${reply.id}"
+              hx-swap="outerHTML">
+            <input type="hidden" name="targetType" th:value="${targetType}"/>
+            <input type="hidden" name="targetId" th:value="${targetId}"/>
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <div class="mb-2">
+                <textarea name="content" 
+                          class="form-control form-control-sm" 
+                          rows="2" 
+                          required
+                          maxlength="500"
+                          th:text="${reply.content}"></textarea>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" 
+                        class="btn btn-sm btn-secondary"
+                        onclick="toggleReplyEditForm(this)"
+                        th:attr="data-reply-id=${reply.id}">
+                    취소
+                </button>
+                <button type="submit" class="btn btn-sm btn-primary">
+                    수정 완료
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -210,7 +268,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h5 class="mb-0">
             <i class="bi bi-chat-dots me-2"></i>
-            댓글 <span class="badge bg-primary rounded-pill" th:text="${comments.totalElements}">0</span>
+            댓글 <span class="badge bg-primary rounded-pill" id="total-comment-count" th:text="${totalCommentCount ?: comments.totalElements}">0</span>
         </h5>
     </div>
 
@@ -309,267 +367,6 @@
     </nav>
 </div>
 
-    <!-- 댓글 작성 폼 (로그인한 경우만) -->
-    <div sec:authorize="isAuthenticated()" class="mb-4">
-        <form th:action="@{/comments}" method="post" 
-              hx-post th:hx-post="@{/comments/fragment}"
-              hx-target="#comments-container"
-              hx-swap="beforeend"
-              class="comment-form">
-            <input type="hidden" name="targetType" th:value="${targetType}"/>
-            <input type="hidden" name="targetId" th:value="${targetId}"/>
-            <input type="hidden" name="type" value="GENERAL"/>
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            
-            <div class="card border-0 bg-light">
-                <div class="card-body">
-                    <div class="mb-3">
-                        <textarea name="content" 
-                                  class="form-control" 
-                                  rows="3" 
-                                  placeholder="댓글을 작성해주세요..."
-                                  required
-                                  maxlength="500"></textarea>
-                        <div class="form-text text-end mt-1">
-                            <small class="text-muted">
-                                <span class="char-count">0</span>/500
-                            </small>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-send me-1"></i>
-                            등록
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    <!-- 로그인 안한 경우 -->
-    <div sec:authorize="!isAuthenticated()" class="alert alert-info mb-4">
-        <i class="bi bi-info-circle me-2"></i>
-        댓글을 작성하려면 <a th:href="@{/login}" class="alert-link">로그인</a>이 필요합니다.
-    </div>
-
-    <!-- 댓글 목록 -->
-    <div id="comments-container" class="comments-container">
-        <div th:if="${comments.empty}" class="text-center text-muted py-5">
-            <i class="bi bi-chat-text" style="font-size: 3rem;"></i>
-            <p class="mt-3 mb-0">아직 댓글이 없습니다. 첫 댓글을 작성해보세요!</p>
-        </div>
-
-        <div th:unless="${comments.empty}">
-            <div th:each="comment, iterStat : ${comments.content}" 
-                 th:id="'comment-' + ${comment.id}"
-                 class="comment-item mb-3"
-                 th:classappend="${comment.isDeleted} ? 'deleted' : ''">
-                
-                <div th:if="${!comment.isDeleted}" class="card">
-                    <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div class="d-flex align-items-center">
-                                    <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2 comment-avatar">
-                                        <span th:text="${#strings.substring(comment.authorNickname, 0, 1)}">A</span>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold" th:text="${comment.authorNickname}">작성자</div>
-                                        <small class="text-muted" th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</small>
-                                        <span th:if="${comment.updatedAt != null and comment.updatedAt.isAfter(comment.createdAt)}" class="badge bg-secondary ms-1">수정됨</span>
-                                    </div>
-                                </div>
-                                
-                                <!-- 댓글 작성자만 보이는 액션 버튼 -->
-                                <div sec:authorize="isAuthenticated()" 
-                                     th:if="${#authentication.principal.username == comment.authorEmail}">
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="button" 
-                                                class="btn btn-outline-secondary"
-                                                onclick="toggleEditForm(this)"
-                                                th:attr="data-comment-id=${comment.id}">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button type="button" 
-                                                class="btn btn-outline-danger"
-                                                onclick="deleteComment(this)"
-                                                th:attr="data-comment-id=${comment.id}">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                        <!-- 댓글 내용 -->
-                        <div class="comment-content" th:id="'content-' + ${comment.id}">
-                            <p class="mb-2" th:text="${comment.content}">댓글 내용</p>
-                        </div>
-
-                        <!-- 댓글 수정 폼 (숨김 상태) -->
-                        <div class="comment-edit-form d-none" th:id="'edit-form-' + ${comment.id}">
-                            <form th:action="@{/comments/{id}(id=${comment.id})}" method="post"
-                                  hx-put th:hx-put="@{/comments/{id}(id=${comment.id})}"
-                                  hx-target th:hx-target="'#comment-' + ${comment.id}"
-                                  hx-swap="outerHTML">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                                <div class="mb-2">
-                                    <textarea name="content" 
-                                              class="form-control" 
-                                              rows="3" 
-                                              required
-                                              maxlength="500"
-                                              th:text="${comment.content}"></textarea>
-                                </div>
-                                <div class="d-flex justify-content-end gap-2">
-                                    <button type="button" 
-                                            class="btn btn-sm btn-secondary"
-                                            onclick="toggleEditForm(this)"
-                                            th:attr="data-comment-id=${comment.id}">
-                                        취소
-                                    </button>
-                                    <button type="submit" class="btn btn-sm btn-primary">
-                                        수정 완료
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-
-                        <!-- 대댓글 버튼 -->
-                        <div class="mt-2">
-                            <button type="button" 
-                                    class="btn btn-sm btn-link text-decoration-none p-0"
-                                    onclick="toggleReplyForm(this)"
-                                    th:attr="data-comment-id=${comment.id}"
-                                    sec:authorize="isAuthenticated()">
-                                <i class="bi bi-reply me-1"></i>
-                                답글
-                            </button>
-                        </div>
-
-                        <!-- 대댓글 작성 폼 (숨김 상태) -->
-                        <div class="reply-form d-none mt-3" 
-                             th:id="'reply-form-' + ${comment.id}"
-                             sec:authorize="isAuthenticated()">
-                            <form th:action="@{/comments/{id}/replies(id=${comment.id})}" method="post"
-                                  hx-post th:hx-post="@{/comments/{id}/replies(id=${comment.id})}"
-                                  hx-target th:hx-target="'#replies-' + ${comment.id}"
-                                  hx-swap="beforeend">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                                <div class="card border-0 bg-light">
-                                    <div class="card-body py-2">
-                                        <div class="mb-2">
-                                            <textarea name="content" 
-                                                      class="form-control form-control-sm" 
-                                                      rows="2" 
-                                                      placeholder="답글을 작성해주세요..."
-                                                      required
-                                                      maxlength="500"></textarea>
-                                        </div>
-                                        <div class="d-flex justify-content-end gap-2">
-                                            <button type="button" 
-                                                    class="btn btn-sm btn-secondary"
-                                                    onclick="toggleReplyForm(this)"
-                                                    th:attr="data-comment-id=${comment.id}">
-                                                취소
-                                            </button>
-                                            <button type="submit" class="btn btn-sm btn-primary">
-                                                등록
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- 대댓글 목록 -->
-                    <div th:if="${comment.replies != null and !comment.replies.empty}" 
-                         class="replies-container bg-light border-top"
-                         th:id="'replies-' + ${comment.id}">
-                        <div th:each="reply : ${comment.replies}" 
-                             class="reply-item p-3 border-bottom"
-                             th:id="'reply-' + ${reply.id}">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-arrow-return-right text-muted me-2"></i>
-                                    <div class="avatar bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2 reply-avatar">
-                                        <span th:text="${#strings.substring(reply.authorNickname, 0, 1)}">A</span>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold small" th:text="${reply.authorNickname}">작성자</div>
-                                        <small class="text-muted" th:text="${#temporals.format(reply.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</small>
-                                    </div>
-                                </div>
-                                
-                                <div sec:authorize="isAuthenticated()" 
-                                     th:if="${#authentication.principal.username == reply.authorEmail}">
-                                    <button type="button" 
-                                            class="btn btn-sm btn-outline-danger"
-                                            onclick="deleteReply(this)"
-                                            th:attr="data-reply-id=${reply.id}">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <p class="mb-0 ms-5 small" th:text="${reply.content}">답글 내용</p>
-                        </div>
-                    </div>
-
-                    <!-- 대댓글이 없을 때 컨테이너 (htmx로 추가될 곳) -->
-                    <div th:unless="${comment.replies != null and !comment.replies.empty}"
-                         th:id="'replies-' + ${comment.id}"
-                         class="replies-container bg-light d-none">
-                    </div>
-                </div>
-
-                <!-- 삭제된 댓글 표시 -->
-                <div th:if="${comment.isDeleted}" class="card bg-light">
-                    <div class="card-body text-center text-muted py-3">
-                        <i class="bi bi-trash me-2"></i>
-                        삭제된 댓글입니다.
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 페이지네이션 -->
-    <nav th:if="${comments.totalPages > 1}" aria-label="댓글 페이지네이션" class="mt-4">
-        <ul class="pagination justify-content-center">
-            <li class="page-item" th:classappend="${comments.first} ? 'disabled'">
-                <a class="page-link" 
-                   th:href="@{''(page=${comments.number - 1})}"
-                   hx-get th:hx-get="@{/comments(targetType=${targetType}, targetId=${targetId}, page=${comments.number - 1})}"
-                   hx-target="#comments-container"
-                   hx-swap="outerHTML">
-                    이전
-                </a>
-            </li>
-            
-            <li th:each="pageNum : ${#numbers.sequence(0, comments.totalPages - 1)}"
-                class="page-item"
-                th:classappend="${pageNum == comments.number} ? 'active'">
-                <a class="page-link" 
-                   th:href="@{''(page=${pageNum})}"
-                   th:text="${pageNum + 1}"
-                   hx-get th:hx-get="@{/comments(targetType=${targetType}, targetId=${targetId}, page=${pageNum})}"
-                   hx-target="#comments-container"
-                   hx-swap="outerHTML">1</a>
-            </li>
-            
-            <li class="page-item" th:classappend="${comments.last} ? 'disabled'">
-                <a class="page-link" 
-                   th:href="@{''(page=${comments.number + 1})}"
-                   hx-get th:hx-get="@{/comments(targetType=${targetType}, targetId=${targetId}, page=${comments.number + 1})}"
-                   hx-target="#comments-container"
-                   hx-swap="outerHTML">
-                    다음
-                </a>
-            </li>
-        </ul>
-    </nav>
-</div>
-
 <!-- JavaScript -->
 <script th:fragment="comment-scripts">
     // 문자 수 카운터
@@ -609,83 +406,48 @@
         }
     }
 
-    // 댓글 삭제
-    function deleteComment(button) {
-        if (!confirm('정말 삭제하시겠습니까?')) {
-            return;
-        }
-        
-        const commentId = button.dataset.commentId;
-        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content || 
-                         document.querySelector('input[name="_csrf"]')?.value;
-        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content || '_csrf';
-        
-        fetch(`/comments/${commentId}/delete`, {
-            method: 'POST',
-            headers: {
-                [csrfHeader]: csrfToken
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                const commentElement = document.getElementById('comment-' + commentId);
-                commentElement.remove();
-                // 댓글 수 업데이트
-                const badge = document.querySelector('.comments-section .badge');
-                if (badge) {
-                    const currentCount = parseInt(badge.textContent);
-                    badge.textContent = currentCount - 1;
-                }
-            } else {
-                alert('삭제에 실패했습니다.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('삭제 중 오류가 발생했습니다.');
-        });
-    }
-
-    // 답글 삭제
-    function deleteReply(button) {
-        if (!confirm('정말 삭제하시겠습니까?')) {
-            return;
-        }
-        
+    // 대댓글 수정 폼 토글
+    function toggleReplyEditForm(button) {
         const replyId = button.dataset.replyId;
-        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content || 
-                         document.querySelector('input[name="_csrf"]')?.value;
-        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content || '_csrf';
+        const contentDiv = document.getElementById('reply-content-' + replyId);
+        const editForm = document.getElementById('reply-edit-form-' + replyId);
         
-        fetch(`/comments/replies/${replyId}/delete`, {
-            method: 'POST',
-            headers: {
-                [csrfHeader]: csrfToken
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                const replyElement = document.getElementById('reply-' + replyId);
-                replyElement.remove();
-            } else {
-                alert('삭제에 실패했습니다.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('삭제 중 오류가 발생했습니다.');
-        });
+        contentDiv.classList.toggle('d-none');
+        editForm.classList.toggle('d-none');
     }
 
-    // htmx 이벤트 핸들러
-    document.body.addEventListener('htmx:afterSwap', function(event) {
-        // 폼 초기화
-        if (event.detail.target.classList.contains('comments-container') || 
-            event.detail.target.classList.contains('replies-container')) {
+    // 댓글 삭제 - htmx로 대체되어 제거됨
+    // deleteReply() - htmx로 대체되어 제거됨
+
+    // htmx 이벤트 핸들러 - afterRequest로 변경 (더 정확한 감지)
+    document.body.addEventListener('htmx:afterRequest', function(event) {
+        // 성공적인 POST 요청만 처리
+        if (!event.detail.successful || event.detail.requestConfig.verb !== 'post') {
+            return;
+        }
+        
+        const url = event.detail.requestConfig.path;
+        console.log('htmx:afterRequest', { url: url, successful: event.detail.successful });
+        
+        // 댓글 추가 (/comments/fragment)
+        if (url.includes('/comments/fragment')) {
+            console.log('Updating comment count +1 (comment)');
+            updateCommentCount(1);
+            // 폼 리셋
             const form = event.detail.elt;
             if (form && form.tagName === 'FORM') {
                 form.reset();
-                // 답글 폼 숨기기
+            }
+        }
+        
+        // 대댓글 추가 (/comments/{id}/replies)
+        if (url.includes('/comments/') && url.includes('/replies')) {
+            console.log('Updating comment count +1 (reply)');
+            updateCommentCount(1);
+            // 폼 리셋 및 숨기기
+            const form = event.detail.elt;
+            if (form && form.tagName === 'FORM') {
+                form.reset();
                 const replyForm = form.closest('.reply-form');
                 if (replyForm) {
                     replyForm.classList.add('d-none');
@@ -693,6 +455,24 @@
             }
         }
     });
+    
+    // afterSwap 이벤트 - 답글 컨테이너 표시용
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+        // 답글 컨테이너가 비어있으면 표시
+        if (event.detail.target.id && event.detail.target.id.startsWith('replies-')) {
+            event.detail.target.classList.remove('d-none');
+        }
+    });
+    
+    // 댓글 카운트 업데이트 함수
+    function updateCommentCount(delta) {
+        const badge = document.getElementById('total-comment-count');
+        if (badge) {
+            const currentCount = parseInt(badge.textContent) || 0;
+            const newCount = Math.max(0, currentCount + delta);
+            badge.textContent = newCount;
+        }
+    }
 </script>
 
 </html>

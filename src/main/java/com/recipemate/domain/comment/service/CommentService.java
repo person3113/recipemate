@@ -109,7 +109,11 @@ public class CommentService {
         }
 
         comment.updateContent(request.getContent());
-        return CommentResponse.from(comment);
+        
+        // updatedAt 필드가 즉시 갱신되도록 명시적으로 flush
+        Comment updatedComment = commentRepository.saveAndFlush(comment);
+        
+        return CommentResponse.from(updatedComment);
     }
 
     /**
@@ -131,6 +135,18 @@ public class CommentService {
         }
 
         comment.markAsDeleted();
+    }
+
+    /**
+     * 댓글 단건 조회 (삭제된 댓글 포함)
+     */
+    public CommentResponse getCommentById(Long commentId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+        
+        // 대댓글도 함께 조회
+        List<Comment> replies = commentRepository.findByParentIdOrderByCreatedAtAsc(comment.getId());
+        return CommentResponse.fromWithReplies(comment, replies);
     }
 
     /**
@@ -171,5 +187,18 @@ public class CommentService {
             List<Comment> replies = commentRepository.findByParentIdOrderByCreatedAtAsc(comment.getId());
             return CommentResponse.fromWithReplies(comment, replies);
         });
+    }
+    
+    /**
+     * 특정 대상의 전체 댓글 개수 조회 (부모 댓글 + 대댓글, 삭제되지 않은 것만)
+     */
+    public long getTotalCommentCount(EntityType targetType, Long targetId) {
+        if (targetType == EntityType.GROUP_BUY) {
+            return commentRepository.countByGroupBuyIdAndNotDeleted(targetId);
+        } else if (targetType == EntityType.POST) {
+            return commentRepository.countByPostIdAndNotDeleted(targetId);
+        } else {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
     }
 }

@@ -28,21 +28,21 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findByPostIdAndParentIsNullOrderByCreatedAtAsc(Long postId);
 
     /**
-     * 공구에 달린 최상위 댓글 페이지네이션 조회 (삭제되지 않은 것만)
+     * 공구에 달린 최상위 댓글 페이지네이션 조회 (삭제된 것 포함)
      * @param groupBuyId 공구 ID
      * @param pageable 페이지 정보
      * @return 최상위 댓글 페이지
      */
-    @Query("SELECT c FROM Comment c WHERE c.groupBuy.id = :groupBuyId AND c.parent IS NULL AND c.deletedAt IS NULL ORDER BY c.createdAt ASC")
+    @Query("SELECT c FROM Comment c WHERE c.groupBuy.id = :groupBuyId AND c.parent IS NULL ORDER BY c.createdAt ASC")
     Page<Comment> findByGroupBuyIdAndParentIsNullPageable(@Param("groupBuyId") Long groupBuyId, Pageable pageable);
 
     /**
-     * 게시글에 달린 최상위 댓글 페이지네이션 조회 (삭제되지 않은 것만)
+     * 게시글에 달린 최상위 댓글 페이지네이션 조회 (삭제된 것 포함)
      * @param postId 게시글 ID
      * @param pageable 페이지 정보
      * @return 최상위 댓글 페이지
      */
-    @Query("SELECT c FROM Comment c WHERE c.post.id = :postId AND c.parent IS NULL AND c.deletedAt IS NULL ORDER BY c.createdAt ASC")
+    @Query("SELECT c FROM Comment c WHERE c.post.id = :postId AND c.parent IS NULL ORDER BY c.createdAt ASC")
     Page<Comment> findByPostIdAndParentIsNullPageable(@Param("postId") Long postId, Pageable pageable);
 
     /**
@@ -76,18 +76,18 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findByAuthorId(Long authorId);
 
     /**
-     * 공구에 달린 댓글 개수 조회 (삭제되지 않은 것만)
+     * 공구에 달린 댓글 개수 조회 (삭제된 것 포함 - 소프트 삭제)
      * @param groupBuyId 공구 ID
      * @return 댓글 개수
      */
-    @Query("SELECT COUNT(c) FROM Comment c WHERE c.groupBuy.id = :groupBuyId AND c.deletedAt IS NULL")
+    @Query("SELECT COUNT(c) FROM Comment c WHERE c.groupBuy.id = :groupBuyId")
     long countByGroupBuyIdAndNotDeleted(@Param("groupBuyId") Long groupBuyId);
 
     /**
-     * 게시글에 달린 댓글 개수 조회 (삭제되지 않은 것만)
+     * 게시글에 달린 댓글 개수 조회 (삭제된 것 포함 - 소프트 삭제)
      * @param postId 게시글 ID
      * @return 댓글 개수
      */
-    @Query("SELECT COUNT(c) FROM Comment c WHERE c.post.id = :postId AND c.deletedAt IS NULL")
+    @Query("SELECT COUNT(c) FROM Comment c WHERE c.post.id = :postId")
     long countByPostIdAndNotDeleted(@Param("postId") Long postId);
 }

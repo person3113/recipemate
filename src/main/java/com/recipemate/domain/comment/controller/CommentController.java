@@ -139,7 +139,7 @@ public class CommentController {
     /**
      * 댓글 삭제 폼 제출
      * POST /comments/{commentId}/delete
-     * htmx 요청인 경우: 빈 응답 반환 (클라이언트에서 DOM 요소 제거)
+     * htmx 요청인 경우: 삭제된 상태의 댓글 fragment 반환 (소프트 삭제 UI)
      * 일반 폼 제출인 경우: 리다이렉트
      */
     @PostMapping("/{commentId}/delete")
@@ -149,7 +149,8 @@ public class CommentController {
             @RequestParam EntityType targetType,
             @RequestParam Long targetId,
             @RequestHeader(value = "HX-Request", required = false) String htmxRequest,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            Model model) {
         
         try {
             // 1. 사용자 조회 및 댓글 삭제
@@ -158,9 +159,14 @@ public class CommentController {
             
             commentService.deleteComment(user.getId(), commentId);
             
-            // 2. htmx 요청인 경우 빈 fragment 반환 (클라이언트에서 hx-swap="outerHTML"로 요소 제거)
+            // 2. htmx 요청인 경우 삭제된 상태의 댓글 fragment 반환
             if (htmxRequest != null && htmxRequest.equals("true")) {
-                return "fragments/comments :: empty";
+                // 삭제된 댓글 데이터를 다시 조회하여 fragment에 전달
+                CommentResponse deletedComment = commentService.getCommentById(commentId);
+                model.addAttribute("comment", deletedComment);
+                model.addAttribute("targetType", targetType);
+                model.addAttribute("targetId", targetId);
+                return "fragments/comments :: comment-item";
             }
             
             // 3. 일반 폼 제출인 경우 리다이렉트
@@ -189,7 +195,10 @@ public class CommentController {
             Model model) {
         
         Page<CommentResponse> comments = commentService.getCommentsByTargetPageable(targetType, targetId, pageable);
+        long totalCommentCount = commentService.getTotalCommentCount(targetType, targetId);
+        
         model.addAttribute("comments", comments);
+        model.addAttribute("totalCommentCount", totalCommentCount);
         model.addAttribute("targetType", targetType);
         model.addAttribute("targetId", targetId);
         
@@ -231,6 +240,8 @@ public class CommentController {
         
         CommentResponse comment = commentService.createComment(user.getId(), request);
         model.addAttribute("comment", comment);
+        model.addAttribute("targetType", targetType);
+        model.addAttribute("targetId", targetId);
         
         // 4. 단일 댓글 아이템 Fragment 반환
         return "fragments/comments :: comment-item";
@@ -268,9 +279,121 @@ public class CommentController {
         
         CommentResponse comment = commentService.updateComment(user.getId(), commentId, request);
         model.addAttribute("comment", comment);
+        model.addAttribute("targetType", targetType);
+        model.addAttribute("targetId", targetId);
         
         // 4. 수정된 댓글 아이템 Fragment 반환 (htmx가 outerHTML로 교체)
         return "fragments/comments :: comment-item";
+    }
+
+    // ========== 대댓글(Reply) 엔드포인트 ==========
+
+    /**
+     * 대댓글 작성 - HTML Fragment 반환 (htmx용)
+     * POST /comments/{commentId}/replies
+     */
+    @PostMapping("/{commentId}/replies")
+    public String createReply(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long commentId,
+            @RequestParam("targetType") EntityType targetType,
+            @RequestParam("targetId") Long targetId,
+            @RequestParam("content") String content,
+            @RequestParam("type") CommentType type,
+            Model model) {
+        
+        // 1. DTO 생성 (parentId를 commentId로 설정)
+        CreateCommentRequest request = CreateCommentRequest.builder()
+                .targetType(targetType)
+                .targetId(targetId)
+                .content(content)
+                .type(type)
+                .parentId(commentId)
+                .build();
+        
+        // 2. 수동 유효성 검증
+        Set<ConstraintViolation<CreateCommentRequest>> violations = validator.validate(request);
+        if (!violations.isEmpty()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        
+        // 3. 사용자 조회 및 대댓글 생성
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        CommentResponse reply = commentService.createComment(user.getId(), request);
+        model.addAttribute("reply", reply);
+        model.addAttribute("targetType", targetType);
+        model.addAttribute("targetId", targetId);
+        
+        // 4. 대댓글 아이템 Fragment 반환
+        return "fragments/comments :: reply-item";
+    }
+
+    /**
+     * 대댓글 수정 - HTML Fragment 반환 (htmx용)
+     * PUT /comments/replies/{replyId}
+     */
+    @PutMapping("/replies/{replyId}")
+    public String updateReply(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long replyId,
+            @RequestParam("targetType") EntityType targetType,
+            @RequestParam("targetId") Long targetId,
+            @RequestParam("content") String content,
+            Model model) {
+        
+        // 1. DTO 생성
+        UpdateCommentRequest request = UpdateCommentRequest.builder()
+                .content(content)
+                .targetType(targetType)
+                .targetId(targetId)
+                .build();
+        
+        // 2. 수동 유효성 검증
+        Set<ConstraintViolation<UpdateCommentRequest>> violations = validator.validate(request);
+        if (!violations.isEmpty()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        
+        // 3. 사용자 조회 및 대댓글 수정
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        CommentResponse reply = commentService.updateComment(user.getId(), replyId, request);
+        model.addAttribute("reply", reply);
+        model.addAttribute("targetType", targetType);
+        model.addAttribute("targetId", targetId);
+        
+        // 4. 수정된 대댓글 아이템 Fragment 반환
+        return "fragments/comments :: reply-item";
+    }
+
+    /**
+     * 대댓글 삭제
+     * POST /comments/replies/{replyId}/delete
+     */
+    @PostMapping("/replies/{replyId}/delete")
+    public String deleteReply(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long replyId,
+            @RequestParam EntityType targetType,
+            @RequestParam Long targetId,
+            @RequestHeader(value = "HX-Request", required = false) String htmxRequest,
+            Model model) {
+        
+        // 1. 사용자 조회 및 대댓글 삭제
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        commentService.deleteComment(user.getId(), replyId);
+        
+        // 2. 삭제된 상태의 대댓글 fragment 반환
+        CommentResponse deletedReply = commentService.getCommentById(replyId);
+        model.addAttribute("reply", deletedReply);
+        model.addAttribute("targetType", targetType);
+        model.addAttribute("targetId", targetId);
+        return "fragments/comments :: reply-item";
     }
 
     // ========== Helper Methods ==========

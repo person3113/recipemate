@@ -1,6 +1,8 @@
 package com.recipemate.domain.notification.repository;
 
 import com.recipemate.domain.notification.entity.Notification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,6 +32,29 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      */
     @Query("SELECT n FROM Notification n LEFT JOIN FETCH n.actor WHERE n.user.id = :userId ORDER BY n.createdAt DESC")
     List<Notification> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
+
+    /**
+     * 사용자의 모든 알림 목록 조회 with 페이징 (최신순)
+     * Actor(행동자) 정보를 Fetch Join으로 함께 조회하여 N+1 문제 방지
+     * @param userId 사용자 ID
+     * @param pageable 페이징 정보
+     * @return 알림 페이지
+     */
+    @Query(value = "SELECT n FROM Notification n LEFT JOIN FETCH n.actor WHERE n.user.id = :userId",
+           countQuery = "SELECT count(n) FROM Notification n WHERE n.user.id = :userId")
+    Page<Notification> findByUserIdWithActor(@Param("userId") Long userId, Pageable pageable);
+
+    /**
+     * 사용자의 읽음 여부에 따른 알림 목록 조회 with 페이징 (최신순)
+     * Actor(행동자) 정보를 Fetch Join으로 함께 조회하여 N+1 문제 방지
+     * @param userId 사용자 ID
+     * @param isRead 읽음 여부
+     * @param pageable 페이징 정보
+     * @return 알림 페이지
+     */
+    @Query(value = "SELECT n FROM Notification n LEFT JOIN FETCH n.actor WHERE n.user.id = :userId AND n.isRead = :isRead",
+           countQuery = "SELECT count(n) FROM Notification n WHERE n.user.id = :userId AND n.isRead = :isRead")
+    Page<Notification> findByUserIdAndIsReadWithActor(@Param("userId") Long userId, @Param("isRead") Boolean isRead, Pageable pageable);
 
     /**
      * 사용자의 읽지 않은 알림 개수 조회

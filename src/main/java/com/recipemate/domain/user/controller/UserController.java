@@ -117,11 +117,12 @@ public class UserController {
     public String myNotificationsPage(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) Boolean isRead,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Model model) {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
-        List<NotificationResponse> notifications = notificationService.getNotifications(user.getId(), isRead);
+        Page<NotificationResponse> notifications = notificationService.getNotifications(user.getId(), isRead, pageable);
         Long unreadCount = notificationService.getUnreadCount(user.getId());
         
         model.addAttribute("notifications", notifications);

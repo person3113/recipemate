@@ -10,6 +10,8 @@ import com.recipemate.global.common.NotificationType;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -96,6 +98,27 @@ public class NotificationService {
         return notifications.stream()
                 .map(NotificationResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 알림 목록 조회 with 페이징
+     *
+     * @param userId 사용자 ID
+     * @param isRead 읽음 여부 (null이면 전체 조회)
+     * @param pageable 페이징 정보
+     * @return 알림 페이지
+     */
+    @Transactional(readOnly = true)
+    public Page<NotificationResponse> getNotifications(Long userId, Boolean isRead, Pageable pageable) {
+        Page<Notification> notifications;
+        
+        if (isRead == null) {
+            notifications = notificationRepository.findByUserIdWithActor(userId, pageable);
+        } else {
+            notifications = notificationRepository.findByUserIdAndIsReadWithActor(userId, isRead, pageable);
+        }
+        
+        return notifications.map(NotificationResponse::from);
     }
 
     /**

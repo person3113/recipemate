@@ -11,6 +11,8 @@ import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.common.NotificationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,12 +34,32 @@ public class GroupBuyScheduler {
     private final NotificationRepository notificationRepository;
 
     /**
+     * 서버 시작 시 공구 상태 업데이트
+     * - 서버 재시작 중 누락된 상태 업데이트를 보완
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    @Transactional
+    public void onApplicationReady() {
+        log.info("서버 시작 - 공구 상태 일괄 업데이트 시작");
+        
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 1. 마감일이 지난 공구 → CLOSED
+        updateExpiredGroupBuys(now);
+        
+        // 2. D-1, D-2 공구 → IMMINENT
+        updateImminentGroupBuys(now);
+        
+        log.info("서버 시작 - 공구 상태 일괄 업데이트 완료");
+    }
+
+    /**
      * 공구 상태 자동 업데이트
      * - 마감일이 지난 공구: RECRUITING/IMMINENT → CLOSED
      * - D-1 또는 D-2 공구: RECRUITING → IMMINENT
-     * 매일 자정에 실행
+     * 매 시간 정각에 실행
      */
-    @Scheduled(cron = "0 0 0 * * *") // 매일 00:00:00
+    @Scheduled(cron = "0 0 * * * *") // 매시 00분 00초
     @Transactional
     public void updateGroupBuyStatus() {
         log.info("공구 상태 자동 업데이트 배치 시작");

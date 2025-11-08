@@ -150,16 +150,22 @@
             <div th:each="groupBuy : ${groupBuys}" class="col-md-6 col-lg-4 mb-4">
                 <div class="card h-100 shadow-sm group-buy-item">
                     <div class="card-body">
-                        <!-- 제목과 상태 배지 -->
+                        <!-- 제목과 상태 배지 (실시간 계산) -->
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <h5 class="card-title mb-0">
                                 <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" 
                                    class="text-decoration-none text-dark"
                                    th:text="${groupBuy.title}"></a>
                             </h5>
-                            <span class="badge" 
-                                  th:classappend="${groupBuy.status.name() == 'RECRUITING'} ? 'bg-success' : (${groupBuy.status.name() == 'IMMINENT'} ? 'bg-warning' : 'bg-secondary')"
-                                  th:text="${groupBuy.status.name() == 'RECRUITING' ? '모집중' : (groupBuy.status.name() == 'IMMINENT' ? '마감 임박' : '마감')}"></span>
+                            <!-- 실시간 상태 계산 -->
+                            <th:block th:with="deadlineDate=${groupBuy.deadline.toLocalDate()},
+                                               today=${T(java.time.LocalDate).now()},
+                                               daysUntil=${T(java.time.temporal.ChronoUnit).DAYS.between(today, deadlineDate)},
+                                               realStatus=${daysUntil < 0 ? 'CLOSED' : (daysUntil <= 2 ? 'IMMINENT' : 'RECRUITING')}">
+                                <span class="badge" 
+                                      th:classappend="${realStatus == 'RECRUITING'} ? 'bg-success' : (${realStatus == 'IMMINENT'} ? 'bg-warning' : 'bg-secondary')"
+                                      th:text="${realStatus == 'RECRUITING' ? '모집중' : (realStatus == 'IMMINENT' ? '마감 임박' : '마감')}"></span>
+                            </th:block>
                         </div>
                         
                         <!-- 내용 -->

@@ -20,6 +20,9 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSp
     Page<GroupBuy> findByStatus(GroupBuyStatus status, Pageable pageable);
 
     Page<GroupBuy> findByHostId(Long hostId, Pageable pageable);
+    
+    @Query("SELECT g FROM GroupBuy g WHERE g.host.id = :hostId AND g.deletedAt IS NULL ORDER BY g.createdAt DESC")
+    Page<GroupBuy> findByHostIdAndNotDeleted(@Param("hostId") Long hostId, Pageable pageable);
 
     List<GroupBuy> findByRecipeApiId(String recipeApiId);
 
@@ -48,6 +51,11 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSp
     Page<GroupBuy> findByHostIdAndStatusIn(@Param("hostId") Long hostId, 
                                            @Param("statuses") List<GroupBuyStatus> statuses, 
                                            Pageable pageable);
+    
+    @Query("SELECT g FROM GroupBuy g WHERE g.host.id = :hostId AND g.status IN :statuses AND g.deletedAt IS NULL ORDER BY g.createdAt DESC")
+    Page<GroupBuy> findByHostIdAndStatusInAndNotDeleted(@Param("hostId") Long hostId, 
+                                                         @Param("statuses") List<GroupBuyStatus> statuses, 
+                                                         Pageable pageable);
 
     long countByHostIdAndStatus(Long hostId, GroupBuyStatus status);
 

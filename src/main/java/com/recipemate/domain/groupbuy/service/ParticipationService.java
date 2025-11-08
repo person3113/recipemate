@@ -42,6 +42,7 @@ public class ParticipationService {
     @Transactional
     @Retryable(
         retryFor = ObjectOptimisticLockingFailureException.class,
+        noRetryFor = CustomException.class,
         maxAttempts = 3,
         backoff = @Backoff(delay = 100, multiplier = 2)
     )
@@ -75,6 +76,7 @@ public class ParticipationService {
     @Transactional
     @Retryable(
         retryFor = ObjectOptimisticLockingFailureException.class,
+        noRetryFor = CustomException.class,
         maxAttempts = 3,
         backoff = @Backoff(delay = 100, multiplier = 2)
     )
@@ -92,6 +94,38 @@ public class ParticipationService {
         eventPublisher.publishEvent(new ParticipationCancelledEvent(userId, groupBuyId));
     }
 
+    @Transactional
+    @Retryable(
+        retryFor = ObjectOptimisticLockingFailureException.class,
+        noRetryFor = CustomException.class,
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 100, multiplier = 2)
+    )
+    public void forceRemoveParticipant(Long hostId, Long groupBuyId, Long participantUserId) {
+        // 1. 공구 조회 (주최자 정보 포함)
+        GroupBuy groupBuy = groupBuyRepository.findByIdWithHost(groupBuyId)
+            .orElseThrow(() -> new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
+
+        // 2. 주최자 확인
+        User host = userRepository.findById(hostId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (!groupBuy.isHost(host)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_GROUP_BUY_ACCESS);
+        }
+
+        // 3. 참여자 조회
+        Participation participation = participationRepository.findByUserIdAndGroupBuyIdWithGroupBuy(participantUserId, groupBuyId)
+            .orElseThrow(() -> new CustomException(ErrorCode.PARTICIPATION_NOT_FOUND));
+
+        // 4. 강제 탈퇴 (마감일 제한 없음)
+        groupBuy.forceRemoveParticipant(participation);
+
+        // 5. 강제 탈퇴 이벤트 발행 (알림 등)
+        eventPublisher.publishEvent(new ParticipationCancelledEvent(participantUserId, groupBuyId));
+        log.info("강제 탈퇴 완료 - hostId: {}, groupBuyId: {}, participantUserId: {}", hostId, groupBuyId, participantUserId);
+    }
+
     @Recover
     public void participate(ObjectOptimisticLockingFailureException e, Long userId, Long groupBuyId, ParticipateRequest request) {
         log.error("공구 참여 재시도 실패 - userId: {}, groupBuyId: {}, 최대 재시도 횟수 초과", userId, groupBuyId, e);
@@ -99,9 +133,35 @@ public class ParticipationService {
     }
 
     @Recover
+    public void participate(CustomException e, Long userId, Long groupBuyId, ParticipateRequest request) {
+        log.debug("공구 참여 비즈니스 로직 실패 - userId: {}, groupBuyId: {}, error: {}", userId, groupBuyId, e.getMessage());
+        throw e; // 비즈니스 예외는 그대로 전파
+    }
+
+    @Recover
     public void cancelParticipation(ObjectOptimisticLockingFailureException e, Long userId, Long groupBuyId) {
         log.error("공구 참여 취소 재시도 실패 - userId: {}, groupBuyId: {}, 최대 재시도 횟수 초과", userId, groupBuyId, e);
         throw new CustomException(ErrorCode.CONCURRENCY_FAILURE);
+    }
+
+    @Recover
+    public void cancelParticipation(CustomException e, Long userId, Long groupBuyId) {
+        log.debug("공구 참여 취소 비즈니스 로직 실패 - userId: {}, groupBuyId: {}, error: {}", userId, groupBuyId, e.getMessage());
+        throw e; // 비즈니스 예외는 그대로 전파
+    }
+
+    @Recover
+    public void forceRemoveParticipant(ObjectOptimisticLockingFailureException e, Long hostId, Long groupBuyId, Long participantUserId) {
+        log.error("강제 탈퇴 재시도 실패 - hostId: {}, groupBuyId: {}, participantUserId: {}, 최대 재시도 횟수 초과", 
+            hostId, groupBuyId, participantUserId, e);
+        throw new CustomException(ErrorCode.CONCURRENCY_FAILURE);
+    }
+
+    @Recover
+    public void forceRemoveParticipant(CustomException e, Long hostId, Long groupBuyId, Long participantUserId) {
+        log.debug("강제 탈퇴 비즈니스 로직 실패 - hostId: {}, groupBuyId: {}, participantUserId: {}, error: {}", 
+            hostId, groupBuyId, participantUserId, e.getMessage());
+        throw e; // 비즈니스 예외는 그대로 전파
     }
 
     public List<ParticipantResponse> getParticipants(Long groupBuyId, Long currentUserId) {

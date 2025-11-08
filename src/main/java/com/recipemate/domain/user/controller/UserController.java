@@ -210,9 +210,9 @@ public class UserController {
         
         Page<GroupBuy> groupBuys;
         if (statuses != null && !statuses.isEmpty()) {
-            groupBuys = groupBuyRepository.findByHostIdAndStatusIn(user.getId(), statuses, pageable);
+            groupBuys = groupBuyRepository.findByHostIdAndStatusInAndNotDeleted(user.getId(), statuses, pageable);
         } else {
-            groupBuys = groupBuyRepository.findByHostId(user.getId(), pageable);
+            groupBuys = groupBuyRepository.findByHostIdAndNotDeleted(user.getId(), pageable);
         }
         
         model.addAttribute("groupBuys", groupBuys);

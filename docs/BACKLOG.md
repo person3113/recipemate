@@ -19,10 +19,6 @@
 
 ## 🟡 MEDIUM Priority
 
-- 참여공구 목록 관련
-  - http://localhost:8080/group-purchases/194/participants -> 참여자 관리 버튼 누른 거지. 그럼 No static resource group-purchases/194/participants. 404 이런 오류 페이지가 렌더링됨.
-  - http://localhost:8080/api/group-purchases/194 -> 삭제 버튼 누르니까. 404. No static resource api/group-purchases/194. 
-
 
 ---
 
@@ -64,16 +60,3 @@
     ~~- 레시피 조회 시 자동 번역 옵션~~
     ~~- 사용자 언어 설정에 따라 번역 제공~~
 
-#### [ ] Task 4-5-7: 실시간 채팅 (선택 - 복잡도 높음)
-=> // Option 1: 댓글 기능으로 대체 (권장)
-- 구현 시간: 2-4시간
-- 기존 지식으로 충분
-- 충분히 실용적
-- [ ] ~~WebSocket 설정~~
-~~- [ ] ChatMessage 엔티티 작성~~
-~~- [ ] ChatService 구현~~
-~~- [ ] WebSocket 컨트롤러 작성~~
-~~- [ ] 프론트엔드 통합~~
-~~- [ ] 주의사항~~
-    ~~- 복잡도가 높아 시간 여유가 충분할 때만 구현~~
-    ~~- 대안: 기본 댓글 기능으로 대체 가능~~

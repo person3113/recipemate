@@ -98,10 +98,9 @@
                                     
                                     <!-- Cancel Participation Button (Only for RECRUITING status) -->
                                     <form th:if="${participation.groupBuyStatus == 'RECRUITING'}" 
-                                          th:action="@{/api/group-purchases/{id}/participations(id=${participation.groupBuyId})}" 
+                                          th:action="@{/group-purchases/{id}/participate/cancel(id=${participation.groupBuyId})}" 
                                           method="post"
                                           onsubmit="return confirm('참여를 취소하시겠습니까?')">
-                                        <input type="hidden" name="_method" value="delete"/>
                                         <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                                         <button type="submit" class="btn btn-outline-danger btn-sm w-100">
                                             <i class="bi bi-x-circle"></i> 참여 취소

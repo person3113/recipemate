@@ -48,9 +48,9 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" 
-                           th:href="@{/users/me/group-purchases(status='COMPLETED')}"
-                           th:classappend="${status == 'COMPLETED'} ? 'active' : ''">
-                            완료
+                           th:href="@{/users/me/group-purchases(status='IMMINENT')}"
+                           th:classappend="${status == 'IMMINENT'} ? 'active' : ''">
+                            임박
                         </a>
                     </li>
                 </ul>
@@ -70,8 +70,8 @@
                                                    th:text="${groupBuy.title}">공구 제목</a>
                                             </h5>
                                             <span class="badge" 
-                                                  th:classappend="${groupBuy.status.name() == 'RECRUITING'} ? 'bg-info' : (${groupBuy.status.name() == 'CLOSED'} ? 'bg-secondary' : 'bg-success')"
-                                                  th:text="${groupBuy.status.name() == 'RECRUITING'} ? '모집중' : (${groupBuy.status.name() == 'CLOSED'} ? '마감' : '완료')">
+                                                  th:classappend="${groupBuy.status.name() == 'RECRUITING'} ? 'bg-info' : (${groupBuy.status.name() == 'IMMINENT'} ? 'bg-warning' : 'bg-secondary')"
+                                                  th:text="${groupBuy.status.name() == 'RECRUITING'} ? '모집중' : (${groupBuy.status.name() == 'IMMINENT'} ? '마감임박' : '마감')">
                                                 상태
                                             </span>
                                         </div>
@@ -129,33 +129,10 @@
                                                 <i class="bi bi-pencil"></i> 수정
                                             </a>
                                             
-                                            <!-- Close Button (Only for RECRUITING status and target reached) -->
-                                            <form th:if="${groupBuy.status.name() == 'RECRUITING' and groupBuy.currentHeadcount >= groupBuy.targetHeadcount}" 
-                                                  th:action="@{/api/group-purchases/{id}/close(id=${groupBuy.id})}" 
-                                                  method="post"
-                                                  onsubmit="return confirm('공동구매를 마감하시겠습니까?')">
-                                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                                                <button type="submit" class="btn btn-success w-100">
-                                                    <i class="bi bi-check-circle"></i> 마감하기
-                                                </button>
-                                            </form>
-                                            
-                                            <!-- Complete Button (Only for CLOSED status) -->
-                                            <form th:if="${groupBuy.status.name() == 'CLOSED'}" 
-                                                  th:action="@{/api/group-purchases/{id}/complete(id=${groupBuy.id})}" 
-                                                  method="post"
-                                                  onsubmit="return confirm('공동구매를 완료하시겠습니까? 완료 후에는 변경할 수 없습니다.')">
-                                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                                                <button type="submit" class="btn btn-primary w-100">
-                                                    <i class="bi bi-check-all"></i> 완료하기
-                                                </button>
-                                            </form>
-                                            
                                             <!-- Delete Button -->
-                                            <form th:action="@{/api/group-purchases/{id}(id=${groupBuy.id})}" 
+                                            <form th:action="@{/group-purchases/{id}/delete(id=${groupBuy.id})}" 
                                                   method="post"
-                                                  onsubmit="return confirm('공동구매를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')">
-                                                <input type="hidden" name="_method" value="delete"/>
+                                                  th:attr="onsubmit=${groupBuy.currentHeadcount > 0} ? 'alert(\'참여자가 있어 삭제할 수 없습니다.\'); return false;' : 'return confirm(\'정말 삭제하시겠습니까?\');'">
                                                 <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                                                 <button type="submit" class="btn btn-outline-danger w-100">
                                                     <i class="bi bi-trash"></i> 삭제

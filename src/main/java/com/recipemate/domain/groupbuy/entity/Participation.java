@@ -107,4 +107,34 @@ public class Participation extends BaseEntity {
         validateDeliveryMethodCompatibility(this.groupBuy.getDeliveryMethod(), deliveryMethod);
         this.selectedDeliveryMethod = deliveryMethod;
     }
+
+    //== 편의 메서드 (템플릿용) ==//
+    public Long getGroupBuyId() {
+        return groupBuy != null ? groupBuy.getId() : null;
+    }
+
+    public String getGroupBuyTitle() {
+        return groupBuy != null ? groupBuy.getTitle() : null;
+    }
+
+    public String getGroupBuyContent() {
+        return groupBuy != null ? groupBuy.getContent() : null;
+    }
+
+    public String getGroupBuyStatus() {
+        return groupBuy != null && groupBuy.getStatus() != null ? groupBuy.getStatus().name() : null;
+    }
+
+    public Integer getCurrentHeadcount() {
+        return groupBuy != null ? groupBuy.getCurrentHeadcount() : null;
+    }
+
+    public Integer getTargetHeadcount() {
+        return groupBuy != null ? groupBuy.getTargetHeadcount() : null;
+    }
+
+    public boolean getHasReview() {
+        // TODO: 리뷰 기능 구현 시 실제 리뷰 존재 여부 확인 로직 추가
+        return false;
+    }
 }

@@ -17,7 +17,8 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
      * 특정 사용자와 공구의 참여 정보 조회
      * 중복 참여 체크 시 사용
      */
-    Optional<Participation> findByUserIdAndGroupBuyId(Long userId, Long groupBuyId);
+    @Query("SELECT p FROM Participation p WHERE p.user.id = :userId AND p.groupBuy.id = :groupBuyId")
+    Optional<Participation> findByUserIdAndGroupBuyId(@Param("userId") Long userId, @Param("groupBuyId") Long groupBuyId);
 
     @Query("SELECT p FROM Participation p JOIN FETCH p.groupBuy WHERE p.user.id = :userId AND p.groupBuy.id = :groupBuyId")
     Optional<Participation> findByUserIdAndGroupBuyIdWithGroupBuy(@Param("userId") Long userId, @Param("groupBuyId") Long groupBuyId);
@@ -26,12 +27,14 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
     /**
      * 특정 공구의 모든 참여자 조회
      */
-    List<Participation> findByGroupBuyId(Long groupBuyId);
+    @Query("SELECT p FROM Participation p WHERE p.groupBuy.id = :groupBuyId")
+    List<Participation> findByGroupBuyId(@Param("groupBuyId") Long groupBuyId);
 
     /**
      * 특정 공구의 참여자 수 조회
      */
-    long countByGroupBuyId(Long groupBuyId);
+    @Query("SELECT COUNT(p) FROM Participation p WHERE p.groupBuy.id = :groupBuyId")
+    long countByGroupBuyId(@Param("groupBuyId") Long groupBuyId);
 
     /**
      * 특정 사용자가 참여한 모든 공구 조회
@@ -54,12 +57,14 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
     /**
      * 특정 사용자가 특정 공구에 참여했는지 확인
      */
-    boolean existsByUserIdAndGroupBuyId(Long userId, Long groupBuyId);
+    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Participation p WHERE p.user.id = :userId AND p.groupBuy.id = :groupBuyId")
+    boolean existsByUserIdAndGroupBuyId(@Param("userId") Long userId, @Param("groupBuyId") Long groupBuyId);
 
     /**
      * 특정 사용자가 참여한 공구 수
      */
-    long countByUserId(Long userId);
+    @Query("SELECT COUNT(p) FROM Participation p WHERE p.user.id = :userId")
+    long countByUserId(@Param("userId") Long userId);
 
     /**
      * 특정 사용자가 참여한 공구 목록 조회 (페이징, 상태별 필터링)

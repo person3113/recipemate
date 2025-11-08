@@ -249,6 +249,15 @@ public class GroupBuy extends BaseEntity {
         }
     }
 
+    public void forceRemoveParticipant(Participation participation) {
+        // 주최자 권한으로 강제 탈퇴 처리 (마감 기한 제한 없음)
+        this.participations.remove(participation);
+        decreaseParticipant();
+        if (this.status == GroupBuyStatus.CLOSED && !isTargetReached()) {
+            reopen();
+        }
+    }
+
     private void increaseParticipant() {
         if (this.currentHeadcount + 1 > this.targetHeadcount) {
             throw new CustomException(ErrorCode.MAX_PARTICIPANTS_EXCEEDED);

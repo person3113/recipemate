@@ -1,6 +1,7 @@
 package com.recipemate.domain.groupbuy.dto;
 
 import com.recipemate.domain.groupbuy.entity.Participation;
+import com.recipemate.global.common.DeliveryMethod;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,15 +16,21 @@ import java.time.LocalDateTime;
 @Builder
 public class ParticipantResponse {
 
+    private Long userId;
     private String nickname;
     private Double mannerTemperature;
     private LocalDateTime participatedAt;
+    private Integer quantity;
+    private DeliveryMethod selectedDeliveryMethod;
 
     public static ParticipantResponse from(Participation participation) {
         return ParticipantResponse.builder()
+            .userId(participation.getUser().getId())
             .nickname(participation.getUser().getNickname())
             .mannerTemperature(participation.getUser().getMannerTemperature())
             .participatedAt(participation.getParticipatedAt())
+            .quantity(participation.getQuantity())
+            .selectedDeliveryMethod(participation.getSelectedDeliveryMethod())
             .build();
     }
 }

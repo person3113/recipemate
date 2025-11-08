@@ -161,6 +161,27 @@ public class GroupBuyController {
         model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 전달
         return "group-purchases/form";
     }
+    
+    /**
+     * 참여자 관리 페이지 렌더링
+     */
+    @GetMapping("/{purchaseId}/participants")
+    public String participantsPage(
+        @PathVariable Long purchaseId,
+        @AuthenticationPrincipal UserDetails userDetails,
+        Model model
+    ) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
+        java.util.List<com.recipemate.domain.groupbuy.dto.ParticipantResponse> participants = 
+            participationService.getParticipants(purchaseId, user.getId());
+        
+        model.addAttribute("groupBuy", groupBuy);
+        model.addAttribute("participants", participants);
+        return "group-purchases/participants";
+    }
 
     // ========== 폼 처리 엔드포인트 ==========
 
@@ -353,12 +374,19 @@ public class GroupBuyController {
         User user = userRepository.findByEmail(userDetails.getUsername())
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
-        ParticipateRequest request = ParticipateRequest.builder()
-            .selectedDeliveryMethod(deliveryMethod)
-            .quantity(quantity)
-            .build();
-        participationService.participate(user.getId(), purchaseId, request);
-        redirectAttributes.addFlashAttribute("successMessage", "공동구매에 성공적으로 참여했습니다.");
+        try {
+            ParticipateRequest request = ParticipateRequest.builder()
+                .selectedDeliveryMethod(deliveryMethod)
+                .quantity(quantity)
+                .build();
+            participationService.participate(user.getId(), purchaseId, request);
+            redirectAttributes.addFlashAttribute("successMessage", "공동구매에 성공적으로 참여했습니다.");
+        } catch (CustomException e) {
+            log.error("참여 실패 - userId: {}, groupBuyId: {}, error: {}", 
+                user.getId(), purchaseId, e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        
         return "redirect:/group-purchases/" + purchaseId;
     }
 
@@ -374,9 +402,41 @@ public class GroupBuyController {
         User user = userRepository.findByEmail(userDetails.getUsername())
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
-        participationService.cancelParticipation(user.getId(), purchaseId);
-        redirectAttributes.addFlashAttribute("successMessage", "공동구매 참여가 취소되었습니다.");
+        try {
+            participationService.cancelParticipation(user.getId(), purchaseId);
+            redirectAttributes.addFlashAttribute("successMessage", "공동구매 참여가 취소되었습니다.");
+        } catch (CustomException e) {
+            log.error("참여 취소 실패 - userId: {}, groupBuyId: {}, error: {}", 
+                user.getId(), purchaseId, e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        
         return "redirect:/group-purchases/" + purchaseId;
+    }
+
+    /**
+     * 참여자 강제 탈퇴 폼 제출 (주최자 전용)
+     */
+    @PostMapping("/{purchaseId}/participants/{userId}/remove")
+    public String forceRemoveParticipant(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @PathVariable Long purchaseId,
+        @PathVariable Long userId,
+        RedirectAttributes redirectAttributes
+    ) {
+        User host = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        try {
+            participationService.forceRemoveParticipant(host.getId(), purchaseId, userId);
+            redirectAttributes.addFlashAttribute("successMessage", "참여자가 강제 탈퇴 처리되었습니다.");
+        } catch (CustomException e) {
+            log.error("강제 탈퇴 실패 - hostId: {}, groupBuyId: {}, participantUserId: {}, error: {}", 
+                host.getId(), purchaseId, userId, e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        
+        return "redirect:/group-purchases/" + purchaseId + "/participants";
     }
     
     /**

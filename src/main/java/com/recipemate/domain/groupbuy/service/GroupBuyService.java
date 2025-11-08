@@ -25,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -93,6 +94,10 @@ public class GroupBuyService {
                 isParticipantListPublic
             );
         }
+        
+        // 마감일을 기준으로 초기 상태 결정 및 설정
+        GroupBuyStatus initialStatus = determineStatus(request.getDeadline());
+        groupBuy.updateStatus(initialStatus);
 
         // 4. GroupBuy 저장
         GroupBuy savedGroupBuy = groupBuyRepository.save(groupBuy);
@@ -288,6 +293,10 @@ public class GroupBuyService {
             request.getIsParticipantListPublic() != null ? request.getIsParticipantListPublic() : false
         );
         
+        // 마감일을 기준으로 상태 재계산 및 업데이트
+        GroupBuyStatus updatedStatus = determineStatus(groupBuy.getDeadline());
+        groupBuy.updateStatus(updatedStatus);
+        
         // 5. 이미지 목록 조회
         List<String> imageUrls = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy)
             .stream()
@@ -440,5 +449,16 @@ public class GroupBuyService {
         if (request.getDeliveryMethod() == null) {
             throw new CustomException(ErrorCode.INVALID_DELIVERY_METHOD);
         }
+    }
+    
+    /**
+     * 마감일을 기준으로 적절한 GroupBuyStatus를 결정
+     * 마감일이 현재로부터 2일 이내면 IMMINENT, 그렇지 않으면 RECRUITING 반환
+     */
+    private GroupBuyStatus determineStatus(LocalDateTime deadline) {
+        if (deadline.isBefore(LocalDateTime.now().plusDays(2))) {
+            return GroupBuyStatus.IMMINENT;
+        }
+        return GroupBuyStatus.RECRUITING;
     }
 }

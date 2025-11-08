@@ -28,29 +28,29 @@
                     <li class="nav-item">
                         <a class="nav-link" 
                            th:href="@{/users/me/group-purchases}"
-                           th:classappend="${status == null or status == ''} ? 'active' : ''">
+                           th:classappend="${currentStatus == null} ? 'active' : ''">
                             전체
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" 
                            th:href="@{/users/me/group-purchases(status='RECRUITING')}"
-                           th:classappend="${status == 'RECRUITING'} ? 'active' : ''">
+                           th:classappend="${currentStatus != null and currentStatus.name() == 'RECRUITING'} ? 'active' : ''">
                             모집중
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link"
+                           th:href="@{/users/me/group-purchases(status='IMMINENT')}"
+                           th:classappend="${currentStatus != null and currentStatus.name() == 'IMMINENT'} ? 'active' : ''">
+                            임박
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" 
                            th:href="@{/users/me/group-purchases(status='CLOSED')}"
-                           th:classappend="${status == 'CLOSED'} ? 'active' : ''">
+                           th:classappend="${currentStatus != null and currentStatus.name() == 'CLOSED'} ? 'active' : ''">
                             마감
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" 
-                           th:href="@{/users/me/group-purchases(status='IMMINENT')}"
-                           th:classappend="${status == 'IMMINENT'} ? 'active' : ''">
-                            임박
                         </a>
                     </li>
                 </ul>
@@ -162,7 +162,7 @@
                 <nav th:if="${groupBuys != null and (groupBuys.hasPrevious() or groupBuys.hasNext())}" class="mt-4">
                     <ul class="pagination justify-content-center">
                         <li class="page-item" th:classappend="${!groupBuys.hasPrevious()} ? 'disabled'">
-                            <a class="page-link" th:href="@{/users/me/group-purchases(page=${groupBuys.number - 1}, status=${status})}">
+                            <a class="page-link" th:href="@{/users/me/group-purchases(page=${groupBuys.number - 1}, status=${currentStatus})}">
                                 <i class="bi bi-chevron-left"></i> 이전
                             </a>
                         </li>
@@ -172,7 +172,7 @@
                             </span>
                         </li>
                         <li class="page-item" th:classappend="${!groupBuys.hasNext()} ? 'disabled'">
-                            <a class="page-link" th:href="@{/users/me/group-purchases(page=${groupBuys.number + 1}, status=${status})}">
+                            <a class="page-link" th:href="@{/users/me/group-purchases(page=${groupBuys.number + 1}, status=${currentStatus})}">
                                 다음 <i class="bi bi-chevron-right"></i>
                             </a>
                         </li>

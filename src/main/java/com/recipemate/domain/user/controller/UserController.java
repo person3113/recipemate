@@ -202,21 +202,21 @@ public class UserController {
     @GetMapping("/me/group-purchases")
     public String myGroupPurchasesPage(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(required = false) List<GroupBuyStatus> statuses,
+            @RequestParam(required = false) GroupBuyStatus status,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Model model) {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
         Page<GroupBuy> groupBuys;
-        if (statuses != null && !statuses.isEmpty()) {
-            groupBuys = groupBuyRepository.findByHostIdAndStatusInAndNotDeleted(user.getId(), statuses, pageable);
+        if (status != null) {
+            groupBuys = groupBuyRepository.findByHostIdAndStatusInAndNotDeleted(user.getId(), List.of(status), pageable);
         } else {
             groupBuys = groupBuyRepository.findByHostIdAndNotDeleted(user.getId(), pageable);
         }
         
         model.addAttribute("groupBuys", groupBuys);
-        model.addAttribute("currentStatuses", statuses);
+        model.addAttribute("currentStatus", status);
         return "user/my-group-purchases";
     }
 
@@ -227,17 +227,18 @@ public class UserController {
     @GetMapping("/me/participations")
     public String myParticipationsPage(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(required = false) List<GroupBuyStatus> statuses,
+            @RequestParam(required = false) GroupBuyStatus status,
             @PageableDefault(size = 20, sort = "participatedAt", direction = Sort.Direction.DESC) Pageable pageable,
             Model model) {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
+        List<GroupBuyStatus> statusFilter = (status != null) ? List.of(status) : null;
         Page<Participation> participations = participationRepository.findByUserIdWithGroupBuyAndHost(
-                user.getId(), statuses, pageable);
+                user.getId(), statusFilter, pageable);
         
         model.addAttribute("participations", participations);
-        model.addAttribute("currentStatuses", statuses);
+        model.addAttribute("currentStatus", status);
         return "user/participations";
     }
     

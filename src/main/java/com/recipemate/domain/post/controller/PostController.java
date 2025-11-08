@@ -9,6 +9,7 @@ import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.PostCategory;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -73,10 +74,19 @@ public class PostController {
     
     /**
      * 게시글 상세 페이지 렌더링
+     * CQS 원칙 적용: 조회와 조회수 증가를 명시적으로 분리
      */
     @GetMapping("/{postId}")
-    public String detailPage(@PathVariable Long postId, Model model) {
+    public String detailPage(@PathVariable Long postId, HttpSession session, Model model) {
+        // 1. 게시글 조회 (순수 조회, 상태 변경 없음)
         PostResponse post = postService.getPostDetail(postId);
+
+        // 2. 조회수 증가 (세션 기반 중복 방지)
+        postService.increaseViewCount(postId, session);
+
+        // 3. 조회수가 증가된 최신 데이터 다시 조회
+        post = postService.getPostDetail(postId);
+
         model.addAttribute("post", post);
         return "community-posts/detail";
     }

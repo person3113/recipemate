@@ -11,6 +11,7 @@ import com.recipemate.global.common.PostCategory;
 import com.recipemate.global.config.CacheConfig;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -20,6 +21,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -28,6 +32,8 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+
+    private static final String VIEWED_POSTS_SESSION_KEY = "viewedPosts";
 
     @Transactional
     @CacheEvict(value = CacheConfig.VIEW_COUNTS_CACHE, allEntries = true)
@@ -48,7 +54,11 @@ public class PostService {
         return PostResponse.from(savedPost);
     }
 
-    @Transactional
+    /**
+     * 게시글 상세 조회 (조회수 증가 없이 순수 조회만)
+     * CQS 원칙 적용: 조회와 상태 변경을 분리
+     */
+    @Transactional(readOnly = true)
     public PostResponse getPostDetail(Long postId) {
         Post post = postRepository.findByIdWithAuthor(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
@@ -57,10 +67,46 @@ public class PostService {
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
 
-        // 조회수 증가 (즉시 DB에 반영하지 않고 나중에 배치로 처리)
+        return PostResponse.from(post);
+    }
+
+    /**
+     * 게시글 조회수 증가 (세션 기반 중복 방지)
+     * @param postId 게시글 ID
+     * @param session HTTP 세션
+     */
+    @Transactional
+    @CacheEvict(value = CacheConfig.VIEW_COUNTS_CACHE, allEntries = true)
+    public void increaseViewCount(Long postId, HttpSession session) {
+        // 세션에서 조회한 게시글 ID 목록 가져오기
+        @SuppressWarnings("unchecked")
+        Set<Long> viewedPosts = (Set<Long>) session.getAttribute(VIEWED_POSTS_SESSION_KEY);
+
+        if (viewedPosts == null) {
+            viewedPosts = new HashSet<>();
+        }
+
+        // 이미 조회한 게시글이면 조회수 증가 안 함
+        if (viewedPosts.contains(postId)) {
+            log.debug("게시글 ID {}는 이미 조회한 게시글입니다. 조회수를 증가시키지 않습니다.", postId);
+            return;
+        }
+
+        // 게시글 조회 및 조회수 증가
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        if (post.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.POST_NOT_FOUND);
+        }
+
         post.increaseViewCount();
         
-        return PostResponse.from(post);
+        // 세션에 조회한 게시글 ID 추가
+        viewedPosts.add(postId);
+        session.setAttribute(VIEWED_POSTS_SESSION_KEY, viewedPosts);
+
+        log.debug("게시글 ID {} 조회수 증가: {} -> {}", postId, post.getViewCount() - 1, post.getViewCount());
     }
 
     @Transactional

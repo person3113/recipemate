@@ -11,7 +11,8 @@ import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "point_histories", indexes = {
-        @Index(name = "idx_point_history_user_created", columnList = "user_id,created_at")
+        @Index(name = "idx_point_history_user_created", columnList = "user_id,created_at"),
+        @Index(name = "idx_point_history_user_desc_created", columnList = "user_id,description,created_at")
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

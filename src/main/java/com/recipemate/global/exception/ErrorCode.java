@@ -9,6 +9,7 @@ public enum ErrorCode {
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "USER-004", "비밀번호가 일치하지 않습니다."),
     DELETED_USER(HttpStatus.FORBIDDEN, "USER-005", "탈퇴한 회원입니다."),
     INSUFFICIENT_POINTS(HttpStatus.BAD_REQUEST, "USER-006", "포인트가 부족합니다."),
+    ALREADY_CHECKED_IN_TODAY(HttpStatus.CONFLICT, "USER-007", "오늘은 이미 출석 체크를 완료했습니다."),
     
     GROUP_BUY_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUP-001", "공동구매를 찾을 수 없습니다."),
     GROUP_BUY_CLOSED(HttpStatus.BAD_REQUEST, "GROUP-002", "마감된 공동구매입니다."),

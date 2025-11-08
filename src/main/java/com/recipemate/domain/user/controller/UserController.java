@@ -166,6 +166,31 @@ public class UserController {
     }
 
     /**
+     * 출석 체크 (HTML 폼용)
+     * POST /users/me/check-in
+     */
+    @PostMapping("/me/check-in")
+    public String checkIn(
+            @AuthenticationPrincipal UserDetails userDetails,
+            RedirectAttributes redirectAttributes) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        try {
+            pointService.dailyCheckIn(user.getId());
+            redirectAttributes.addFlashAttribute("message", "출석 체크 완료! 5포인트가 적립되었습니다.");
+        } catch (CustomException e) {
+            if (e.getErrorCode() == ErrorCode.ALREADY_CHECKED_IN_TODAY) {
+                redirectAttributes.addFlashAttribute("error", "오늘은 이미 출석 체크를 완료했습니다.");
+            } else {
+                throw e;
+            }
+        }
+        
+        return "redirect:/users/me/points";
+    }
+
+    /**
      * 내가 만든 공구 목록 페이지 렌더링
      * GET /users/me/group-purchases
      */

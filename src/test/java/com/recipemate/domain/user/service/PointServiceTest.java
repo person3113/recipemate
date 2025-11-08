@@ -21,12 +21,14 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -56,7 +58,7 @@ class PointServiceTest {
     }
 
     @Test
-    @DisplayName("포인트 적립 - 성공")
+    @DisplayName("포인트 적립 - 성공 (하루 1회 제한 통과)")
     void earnPoints_Success() {
         // given
         Long userId = testUser.getId();
@@ -64,6 +66,9 @@ class PointServiceTest {
         String description = "공동구매 생성";
 
         given(userRepository.findById(userId)).willReturn(Optional.of(testUser));
+        given(pointHistoryRepository.existsByUserAndDescriptionAndCreatedAtBetween(
+                eq(testUser), eq(description), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .willReturn(false);
 
         // when
         pointService.earnPoints(userId, amount, description);
@@ -82,6 +87,28 @@ class PointServiceTest {
     }
 
     @Test
+    @DisplayName("포인트 적립 - 하루 1회 제한으로 중복 지급 방지")
+    void earnPoints_AlreadyEarnedToday_DoesNothing() {
+        // given
+        Long userId = testUser.getId();
+        int amount = 50;
+        String description = "공동구매 생성";
+        int initialPoints = testUser.getPoints();
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(testUser));
+        given(pointHistoryRepository.existsByUserAndDescriptionAndCreatedAtBetween(
+                eq(testUser), eq(description), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .willReturn(true);
+
+        // when
+        pointService.earnPoints(userId, amount, description);
+
+        // then
+        assertThat(testUser.getPoints()).isEqualTo(initialPoints); // 포인트 변경 없음
+        then(pointHistoryRepository).shouldHaveNoInteractions(); // save 호출 안 됨
+    }
+
+    @Test
     @DisplayName("포인트 적립 - 사용자 없음 예외")
     void earnPoints_UserNotFound_ThrowsException() {
         // given
@@ -93,6 +120,68 @@ class PointServiceTest {
 
         // when & then
         assertThatThrownBy(() -> pointService.earnPoints(userId, amount, description))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("출석 체크 - 성공")
+    void dailyCheckIn_Success() {
+        // given
+        Long userId = testUser.getId();
+        int initialPoints = testUser.getPoints();
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(testUser));
+        given(pointHistoryRepository.existsByUserAndDescriptionAndCreatedAtBetween(
+                eq(testUser), eq("출석 체크"), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .willReturn(false);
+
+        // when
+        pointService.dailyCheckIn(userId);
+
+        // then
+        assertThat(testUser.getPoints()).isEqualTo(initialPoints + 5);
+        
+        ArgumentCaptor<PointHistory> captor = ArgumentCaptor.forClass(PointHistory.class);
+        then(pointHistoryRepository).should().save(captor.capture());
+
+        PointHistory savedHistory = captor.getValue();
+        assertThat(savedHistory.getUser()).isEqualTo(testUser);
+        assertThat(savedHistory.getAmount()).isEqualTo(5);
+        assertThat(savedHistory.getDescription()).isEqualTo("출석 체크");
+        assertThat(savedHistory.getType()).isEqualTo(PointType.EARN);
+    }
+
+    @Test
+    @DisplayName("출석 체크 - 이미 오늘 출석한 경우 예외 발생")
+    void dailyCheckIn_AlreadyCheckedIn_ThrowsException() {
+        // given
+        Long userId = testUser.getId();
+        int initialPoints = testUser.getPoints();
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(testUser));
+        given(pointHistoryRepository.existsByUserAndDescriptionAndCreatedAtBetween(
+                eq(testUser), eq("출석 체크"), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> pointService.dailyCheckIn(userId))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ALREADY_CHECKED_IN_TODAY);
+
+        assertThat(testUser.getPoints()).isEqualTo(initialPoints); // 포인트 변경 없음
+    }
+
+    @Test
+    @DisplayName("출석 체크 - 사용자 없음 예외")
+    void dailyCheckIn_UserNotFound_ThrowsException() {
+        // given
+        Long userId = 999L;
+
+        given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> pointService.dailyCheckIn(userId))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
     }

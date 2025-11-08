@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내가 작성한 댓글 - RecipeMate</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body class="bg-light">
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <main class="container py-4">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <div class="mb-4">
+                    <h1 class="h3 mb-0"><i class="bi bi-chat-left-text"></i> 내가 작성한 댓글</h1>
+                    <p class="text-muted">게시글 및 공동구매에 작성한 댓글 목록입니다.</p>
+                </div>
+
+                <!-- Comments List -->
+                <div th:if="${comments != null and !comments.isEmpty()}" class="row g-3">
+                    <div th:each="comment : ${comments}" class="col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <!-- Comment Content -->
+                                <div class="mb-3">
+                                    <p class="mb-2" th:text="${comment.content}">댓글 내용</p>
+                                </div>
+
+                                <!-- Target Info -->
+                                <div class="border-top pt-3">
+                                    <div th:if="${comment.post != null}">
+                                        <small class="text-muted">
+                                            <i class="bi bi-file-text"></i> 게시글:
+                                            <span th:if="${comment.post.deletedAt == null}">
+                                                <a th:href="@{/community-posts/{id}(id=${comment.post.id})}"
+                                                   class="text-decoration-none"
+                                                   th:text="${comment.post.title}">
+                                                    게시글 제목
+                                                </a>
+                                            </span>
+                                            <span th:if="${comment.post.deletedAt != null}" class="text-danger">
+                                                <i class="bi bi-trash"></i>
+                                                <span th:text="${comment.post.title}">게시글 제목</span>
+                                                <span class="badge bg-danger ms-1">삭제됨</span>
+                                            </span>
+                                        </small>
+                                    </div>
+                                    <div th:if="${comment.groupBuy != null}">
+                                        <small class="text-muted">
+                                            <i class="bi bi-shop"></i> 공동구매:
+                                            <span th:if="${comment.groupBuy.deletedAt == null}">
+                                                <a th:href="@{/group-purchases/{id}(id=${comment.groupBuy.id})}"
+                                                   class="text-decoration-none"
+                                                   th:text="${comment.groupBuy.title}">
+                                                    공구 제목
+                                                </a>
+                                            </span>
+                                            <span th:if="${comment.groupBuy.deletedAt != null}" class="text-danger">
+                                                <i class="bi bi-trash"></i>
+                                                <span th:text="${comment.groupBuy.title}">공구 제목</span>
+                                                <span class="badge bg-danger ms-1">삭제됨</span>
+                                            </span>
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- Info and Actions -->
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <div class="text-muted small">
+                                        <i class="bi bi-calendar"></i>
+                                        <span th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</span>
+                                        <span th:if="${comment.parent != null}" class="ms-2">
+                                            <i class="bi bi-reply"></i> 대댓글
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <!-- View Target Button - 삭제되지 않은 경우만 표시 -->
+                                        <a th:if="${comment.post != null and comment.post.deletedAt == null}"
+                                           th:href="@{/community-posts/{id}(id=${comment.post.id})}"
+                                           class="btn btn-sm btn-outline-primary me-1">
+                                            <i class="bi bi-eye"></i> 게시글 보기
+                                        </a>
+                                        <a th:if="${comment.groupBuy != null and comment.groupBuy.deletedAt == null}"
+                                           th:href="@{/group-purchases/{id}(id=${comment.groupBuy.id})}"
+                                           class="btn btn-sm btn-outline-primary me-1">
+                                            <i class="bi bi-eye"></i> 공구 보기
+                                        </a>
+
+                                        <!-- 삭제된 게시글/공구에 대한 안내 -->
+                                        <span th:if="${(comment.post != null and comment.post.deletedAt != null) or (comment.groupBuy != null and comment.groupBuy.deletedAt != null)}"
+                                              class="text-muted small me-1">
+                                            <i class="bi bi-info-circle"></i> 원본이 삭제되었습니다
+                                        </span>
+
+                                        <!-- Delete Comment Button -->
+                                        <form th:if="${comment.post != null}"
+                                              th:action="@{/comments/{id}/delete(id=${comment.id})}"
+                                              method="post"
+                                              style="display: inline;"
+                                              onsubmit="return confirm('댓글을 삭제하시겠습니까?')">
+                                            <input type="hidden" name="targetType" value="POST"/>
+                                            <input type="hidden" name="targetId" th:value="${comment.post.id}"/>
+                                            <input type="hidden" name="redirectUrl" value="/users/me/comments"/>
+                                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i> 삭제
+                                            </button>
+                                        </form>
+                                        <form th:if="${comment.groupBuy != null}"
+                                              th:action="@{/comments/{id}/delete(id=${comment.id})}"
+                                              method="post"
+                                              style="display: inline;"
+                                              onsubmit="return confirm('댓글을 삭제하시겠습니까?')">
+                                            <input type="hidden" name="targetType" value="GROUP_BUY"/>
+                                            <input type="hidden" name="targetId" th:value="${comment.groupBuy.id}"/>
+                                            <input type="hidden" name="redirectUrl" value="/users/me/comments"/>
+                                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i> 삭제
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div th:if="${comments == null or comments.isEmpty()}" class="card text-center py-5">
+                    <div class="card-body">
+                        <i class="bi bi-chat-left-text display-1 text-muted"></i>
+                        <h5 class="mt-3">작성한 댓글이 없습니다</h5>
+                        <p class="text-muted">게시글이나 공동구매에 댓글을 작성해보세요!</p>
+                        <div class="mt-3">
+                            <a th:href="@{/community-posts/list}" class="btn btn-primary me-2">
+                                <i class="bi bi-file-text"></i> 커뮤니티 가기
+                            </a>
+                            <a th:href="@{/group-purchases/list}" class="btn btn-success">
+                                <i class="bi bi-shop"></i> 공동구매 가기
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <nav th:if="${comments != null and (comments.hasPrevious() or comments.hasNext())}" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" th:classappend="${!comments.hasPrevious()} ? 'disabled'">
+                            <a class="page-link" th:href="@{/users/me/comments(page=${comments.number - 1})}">
+                                <i class="bi bi-chevron-left"></i> 이전
+                            </a>
+                        </li>
+                        <li class="page-item active">
+                            <span class="page-link">
+                                <span th:text="${comments.number + 1}">1</span> / <span th:text="${comments.totalPages}">1</span>
+                            </span>
+                        </li>
+                        <li class="page-item" th:classappend="${!comments.hasNext()} ? 'disabled'">
+                            <a class="page-link" th:href="@{/users/me/comments(page=${comments.number + 1})}">
+                                다음 <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </main>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

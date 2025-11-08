@@ -90,4 +90,15 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      */
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.post.id = :postId AND c.deletedAt IS NULL")
     long countByPostIdAndNotDeleted(@Param("postId") Long postId);
+
+    /**
+     * 사용자가 작성한 댓글 페이지네이션 조회 (삭제되지 않은 것만)
+     * @param authorId 작성자 ID
+     * @param pageable 페이지 정보
+     * @return 댓글 페이지
+     */
+    @Query("SELECT c FROM Comment c LEFT JOIN FETCH c.groupBuy LEFT JOIN FETCH c.post " +
+           "WHERE c.author.id = :authorId AND c.deletedAt IS NULL " +
+           "ORDER BY c.createdAt DESC")
+    Page<Comment> findByAuthorIdAndNotDeleted(@Param("authorId") Long authorId, Pageable pageable);
 }

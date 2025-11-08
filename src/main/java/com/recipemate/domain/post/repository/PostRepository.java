@@ -41,4 +41,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> searchByCategoryAndKeyword(@Param("category") PostCategory category,
                                           @Param("keyword") String keyword,
                                           Pageable pageable);
+
+    // 사용자가 작성한 게시글 조회 - 삭제되지 않은 게시글만
+    Page<Post> findByAuthorIdAndDeletedAtIsNull(Long authorId, Pageable pageable);
 }

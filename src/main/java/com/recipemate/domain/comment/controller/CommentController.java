@@ -148,6 +148,7 @@ public class CommentController {
             @PathVariable Long commentId,
             @RequestParam EntityType targetType,
             @RequestParam Long targetId,
+            @RequestParam(required = false) String redirectUrl,
             @RequestHeader(value = "HX-Request", required = false) String htmxRequest,
             RedirectAttributes redirectAttributes) {
         
@@ -170,8 +171,13 @@ public class CommentController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
         }
         
-        String redirectUrl = determineRedirectUrl(targetType, targetId);
-        return "redirect:" + redirectUrl;
+        // redirectUrl이 제공되면 해당 URL로, 아니면 원본 페이지로
+        if (redirectUrl != null && !redirectUrl.isEmpty()) {
+            return "redirect:" + redirectUrl;
+        }
+
+        String defaultRedirectUrl = determineRedirectUrl(targetType, targetId);
+        return "redirect:" + defaultRedirectUrl;
     }
 
     // ========== htmx Fragment 엔드포인트 ==========

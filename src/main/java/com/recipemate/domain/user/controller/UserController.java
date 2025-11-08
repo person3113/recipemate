@@ -2,12 +2,16 @@ package com.recipemate.domain.user.controller;
 
 import com.recipemate.domain.badge.dto.BadgeResponse;
 import com.recipemate.domain.badge.service.BadgeService;
+import com.recipemate.domain.comment.entity.Comment;
+import com.recipemate.domain.comment.repository.CommentRepository;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.Participation;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
 import com.recipemate.domain.notification.dto.NotificationResponse;
 import com.recipemate.domain.notification.service.NotificationService;
+import com.recipemate.domain.post.entity.Post;
+import com.recipemate.domain.post.repository.PostRepository;
 import com.recipemate.domain.user.dto.ChangePasswordRequest;
 import com.recipemate.domain.user.dto.PointHistoryResponse;
 import com.recipemate.domain.user.dto.UpdateProfileRequest;
@@ -49,6 +53,8 @@ public class UserController {
     private final PointService pointService;
     private final GroupBuyRepository groupBuyRepository;
     private final ParticipationRepository participationRepository;
+    private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
 
     /**
      * 마이페이지 렌더링
@@ -235,12 +241,48 @@ public class UserController {
         
         Page<Participation> participations = participationRepository.findByUserIdWithGroupBuyAndHost(
                 user.getId(), statuses, pageable);
-        
+
         model.addAttribute("participations", participations);
         model.addAttribute("currentStatuses", statuses);
         return "user/participations";
     }
-    
+
+    /**
+     * 내가 작성한 게시글 목록 페이지 렌더링
+     * GET /users/me/posts
+     */
+    @GetMapping("/me/posts")
+    public String myPostsPage(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Model model) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        Page<Post> posts = postRepository.findByAuthorIdAndDeletedAtIsNull(user.getId(), pageable);
+
+        model.addAttribute("posts", posts);
+        return "user/my-posts";
+    }
+
+    /**
+     * 내가 작성한 댓글 목록 페이지 렌더링
+     * GET /users/me/comments
+     */
+    @GetMapping("/me/comments")
+    public String myCommentsPage(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Model model) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        Page<Comment> comments = commentRepository.findByAuthorIdAndNotDeleted(user.getId(), pageable);
+
+        model.addAttribute("comments", comments);
+        return "user/my-comments";
+    }
+
     // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========
     // TODO: htmx 통합 시 아래 엔드포인트 구현
     // @GetMapping("/me/fragments/profile") - 프로필 정보 HTML 조각

@@ -188,6 +188,7 @@ public class PostController {
     public String deletePost(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long postId,
+            @RequestParam(required = false) String redirectUrl,
             RedirectAttributes redirectAttributes
     ) {
         User user = userRepository.findByEmail(userDetails.getUsername())
@@ -195,6 +196,11 @@ public class PostController {
         
         postService.deletePost(user.getId(), postId);
         redirectAttributes.addFlashAttribute("successMessage", "게시글이 성공적으로 삭제되었습니다.");
+
+        // redirectUrl이 제공되면 해당 URL로, 아니면 목록으로
+        if (redirectUrl != null && !redirectUrl.isEmpty()) {
+            return "redirect:" + redirectUrl;
+        }
         return "redirect:/community-posts/list";
     }
     

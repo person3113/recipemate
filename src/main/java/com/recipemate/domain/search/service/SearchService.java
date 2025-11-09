@@ -4,6 +4,7 @@ import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.GroupBuyImage;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
+import com.recipemate.domain.post.dto.PostWithCountsDto;
 import com.recipemate.domain.post.dto.PostResponse;
 import com.recipemate.domain.post.entity.Post;
 import com.recipemate.domain.post.repository.PostRepository;
@@ -95,10 +96,28 @@ public class SearchService {
      */
     private List<SearchResultResponse> searchPosts(String keyword, Pageable pageable) {
         try {
-            Page<Post> postPage = postRepository.searchByKeyword(keyword, pageable);
+            Page<PostWithCountsDto> postPage = postRepository.searchByKeywordWithCounts(keyword, pageable);
 
             return postPage.getContent().stream()
-                .map(this::convertPostToSearchResult)
+                .map(dto -> {
+                    Post post = dto.getPost();
+                    PostResponse postResponse = PostResponse.builder()
+                        .id(post.getId())
+                        .title(post.getTitle())
+                        .content(post.getContent())
+                        .category(post.getCategory())
+                        .viewCount(post.getViewCount())
+                        .authorId(post.getAuthor().getId())
+                        .authorNickname(post.getAuthor().getNickname())
+                        .authorEmail(post.getAuthor().getEmail())
+                        .createdAt(post.getCreatedAt())
+                        .updatedAt(post.getUpdatedAt())
+                        .likeCount(dto.getLikeCount())
+                        .commentCount(dto.getCommentCount())
+                        .isLiked(false)
+                        .build();
+                    return SearchResultResponse.fromPost(postResponse);
+                })
                 .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("게시글 검색 중 오류 발생", e);

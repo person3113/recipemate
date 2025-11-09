@@ -1,8 +1,10 @@
 package com.recipemate.domain.post.service;
 
+import com.recipemate.domain.comment.repository.CommentRepository;
 import com.recipemate.domain.like.repository.PostLikeRepository;
 import com.recipemate.domain.post.dto.CreatePostRequest;
 import com.recipemate.domain.post.dto.PostResponse;
+import com.recipemate.domain.post.dto.PostWithCountsDto;
 import com.recipemate.domain.post.dto.UpdatePostRequest;
 import com.recipemate.domain.post.entity.Post;
 import com.recipemate.domain.post.repository.PostRepository;
@@ -30,6 +32,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final PostLikeRepository postLikeRepository;
+    private final CommentRepository commentRepository;
 
     @Transactional
     @CacheEvict(value = CacheConfig.VIEW_COUNTS_CACHE, allEntries = true)
@@ -59,7 +62,7 @@ public class PostService {
         }
         
         PostResponse response = PostResponse.from(post);
-        return enrichWithLikeInfo(response, post, null);
+        return enrichWithCountsAndLikeInfo(response, post, null);
     }
 
     public PostResponse getPostDetail(Long postId, Long currentUserId) {
@@ -71,7 +74,7 @@ public class PostService {
         }
         
         PostResponse response = PostResponse.from(post);
-        return enrichWithLikeInfo(response, post, currentUserId);
+        return enrichWithCountsAndLikeInfo(response, post, currentUserId);
     }
 
     /**
@@ -91,8 +94,9 @@ public class PostService {
         post.increaseViewCount();
     }
 
-    private PostResponse enrichWithLikeInfo(PostResponse response, Post post, Long currentUserId) {
+    private PostResponse enrichWithCountsAndLikeInfo(PostResponse response, Post post, Long currentUserId) {
         long likeCount = postLikeRepository.countByPost(post);
+        long commentCount = commentRepository.countByPostId(post.getId());
         boolean isLiked = false;
         
         if (currentUserId != null) {
@@ -114,6 +118,7 @@ public class PostService {
                 .createdAt(response.getCreatedAt())
                 .updatedAt(response.getUpdatedAt())
                 .likeCount(likeCount)
+                .commentCount(commentCount)
                 .isLiked(isLiked)
                 .build();
     }
@@ -169,42 +174,37 @@ public class PostService {
             unless = "#result.isEmpty()"
     )
     public Page<PostResponse> getPostList(PostCategory category, String keyword, Pageable pageable) {
-        Page<Post> posts;
+        Page<PostWithCountsDto> postsWithCounts;
 
         // 조건에 따라 적절한 repository 메서드 호출
         if (category != null && keyword != null && !keyword.trim().isEmpty()) {
-            // 카테고리 + 키워드 검색
-            posts = postRepository.searchByCategoryAndKeyword(category, keyword.trim(), pageable);
+            postsWithCounts = postRepository.searchByCategoryAndKeywordWithCounts(category, keyword.trim(), pageable);
         } else if (category != null) {
-            // 카테고리만 필터링
-            posts = postRepository.findByCategoryAndDeletedAtIsNull(category, pageable);
+            postsWithCounts = postRepository.findByCategoryWithCounts(category, pageable);
         } else if (keyword != null && !keyword.trim().isEmpty()) {
-            // 키워드만 검색
-            posts = postRepository.searchByKeyword(keyword.trim(), pageable);
+            postsWithCounts = postRepository.searchByKeywordWithCounts(keyword.trim(), pageable);
         } else {
-            // 전체 목록 조회
-            posts = postRepository.findAllByDeletedAtIsNull(pageable);
+            postsWithCounts = postRepository.findAllWithCounts(pageable);
         }
 
-        // 좋아요 정보 포함하여 반환
-        return posts.map(post -> {
-            PostResponse response = PostResponse.from(post);
-            long likeCount = postLikeRepository.countByPost(post);
+        // DTO 변환
+        return postsWithCounts.map(dto -> {
+            Post post = dto.getPost();
             return PostResponse.builder()
-                    .id(response.getId())
-                    .title(response.getTitle())
-                    .content(response.getContent())
-                    .category(response.getCategory())
-                    .viewCount(response.getViewCount())
-                    .authorId(response.getAuthorId())
-                    .authorNickname(response.getAuthorNickname())
-                    .authorEmail(response.getAuthorEmail())
-                    .createdAt(response.getCreatedAt())
-                    .updatedAt(response.getUpdatedAt())
-                    .likeCount(likeCount)
-                    .isLiked(false) // 목록에서는 로그인 사용자 정보 없이 전체 개수만 표시
+                    .id(post.getId())
+                    .title(post.getTitle())
+                    .content(post.getContent())
+                    .category(post.getCategory())
+                    .viewCount(post.getViewCount())
+                    .authorId(post.getAuthor().getId())
+                    .authorNickname(post.getAuthor().getNickname())
+                    .authorEmail(post.getAuthor().getEmail())
+                    .createdAt(post.getCreatedAt())
+                    .updatedAt(post.getUpdatedAt())
+                    .likeCount(dto.getLikeCount())
+                    .commentCount(dto.getCommentCount())
+                    .isLiked(false) // 목록에서는 '좋아요' 여부 확인 불가
                     .build();
         });
     }
-
 }

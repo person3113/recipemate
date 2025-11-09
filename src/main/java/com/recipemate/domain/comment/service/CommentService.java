@@ -168,9 +168,9 @@ public class CommentService {
      */
     public long getTotalCommentCount(EntityType targetType, Long targetId) {
         if (targetType == EntityType.GROUP_BUY) {
-            return commentRepository.countByGroupBuyIdAndNotDeleted(targetId);
+            return commentRepository.countByGroupBuyId(targetId);
         } else if (targetType == EntityType.POST) {
-            return commentRepository.countByPostIdAndNotDeleted(targetId);
+            return commentRepository.countByPostId(targetId);
         } else {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }

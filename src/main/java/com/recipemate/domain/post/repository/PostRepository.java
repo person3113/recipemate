@@ -1,5 +1,6 @@
 package com.recipemate.domain.post.repository;
 
+import com.recipemate.domain.post.dto.PostWithCountsDto;
 import com.recipemate.domain.post.entity.Post;
 import com.recipemate.global.common.PostCategory;
 import org.springframework.data.domain.Page;
@@ -15,30 +16,47 @@ import java.util.Optional;
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    Page<Post> findByCategoryOrderByCreatedAtDesc(PostCategory category, Pageable pageable);
-
     List<Post> findByAuthorId(Long authorId);
 
     @Query("SELECT p FROM Post p LEFT JOIN FETCH p.author WHERE p.id = :id")
     Optional<Post> findByIdWithAuthor(@Param("id") Long id);
 
-    // 게시글 목록 조회 - 삭제되지 않은 게시글만
-    Page<Post> findAllByDeletedAtIsNull(Pageable pageable);
+    // N+1 문제를 해결하기 위해 게시글과 함께 좋아요 수, 댓글 수를 함께 조회
+    @Query("SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
+            "p, " +
+            "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
+            "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
+            "FROM Post p " +
+            "WHERE p.deletedAt IS NULL")
+    Page<PostWithCountsDto> findAllWithCounts(Pageable pageable);
 
-    // 카테고리별 조회 - 삭제되지 않은 게시글만
-    Page<Post> findByCategoryAndDeletedAtIsNull(PostCategory category, Pageable pageable);
+    @Query("SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
+            "p, " +
+            "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
+            "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
+            "FROM Post p " +
+            "WHERE p.category = :category AND p.deletedAt IS NULL")
+    Page<PostWithCountsDto> findByCategoryWithCounts(@Param("category") PostCategory category, Pageable pageable);
 
-    // 키워드 검색 (제목 + 내용) - 삭제되지 않은 게시글만
-    @Query("SELECT p FROM Post p WHERE p.deletedAt IS NULL " +
+    @Query("SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
+            "p, " +
+            "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
+            "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
+            "FROM Post p " +
+            "WHERE p.deletedAt IS NULL " +
             "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Post> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+    Page<PostWithCountsDto> searchByKeywordWithCounts(@Param("keyword") String keyword, Pageable pageable);
 
-    // 카테고리 + 키워드 검색 - 삭제되지 않은 게시글만
-    @Query("SELECT p FROM Post p WHERE p.category = :category AND p.deletedAt IS NULL " +
+    @Query("SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
+            "p, " +
+            "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
+            "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
+            "FROM Post p " +
+            "WHERE p.category = :category AND p.deletedAt IS NULL " +
             "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Post> searchByCategoryAndKeyword(@Param("category") PostCategory category,
-                                          @Param("keyword") String keyword,
-                                          Pageable pageable);
+    Page<PostWithCountsDto> searchByCategoryAndKeywordWithCounts(@Param("category") PostCategory category,
+                                                               @Param("keyword") String keyword,
+                                                               Pageable pageable);
 }

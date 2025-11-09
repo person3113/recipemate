@@ -1,6 +1,7 @@
 package com.recipemate.domain.comment.repository;
 
 import com.recipemate.domain.comment.entity.Comment;
+import com.recipemate.domain.post.entity.Post;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -81,7 +82,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * @return 댓글 개수
      */
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.groupBuy.id = :groupBuyId")
-    long countByGroupBuyIdAndNotDeleted(@Param("groupBuyId") Long groupBuyId);
+    long countByGroupBuyId(@Param("groupBuyId") Long groupBuyId);
 
     /**
      * 게시글에 달린 댓글 개수 조회 (삭제된 것 포함 - 소프트 삭제)
@@ -89,5 +90,5 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * @return 댓글 개수
      */
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.post.id = :postId")
-    long countByPostIdAndNotDeleted(@Param("postId") Long postId);
+    long countByPostId(@Param("postId") Long postId);
 }

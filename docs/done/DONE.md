@@ -863,3 +863,8 @@
         - `GroupBuyService`, `ReviewService` 등은 자신의 핵심 로직을 처리한 후 `GroupBuyCreatedEvent`, `ReviewCreatedEvent` 같은 이벤트를 발행합니다.
         - `BadgeService`, `PointService`, `NotificationService`는 각각 이 이벤트를 구독(`@EventListener`)하여 자신의 책임에 맞는 로직을 처리하여 서비스 간 **결합도(Coupling)를 크게 낮췄습니다.**
     2. **- [x] 유틸리티 및 헬퍼 분리**: `ImageUploadUtil`처럼, 도메인과 직접 관련 없는 부가 기능은 이미 별도의 유틸리티 클래스로 잘 분리되어 있으며, 이 원칙을 계속 유지합니다.
+
+- **`PostService.java`의 `getPostList` 메소드**
+    - **문제점**: `getPostList` 내에서 게시글 목록을 `map`으로 순회하며 각 게시물의 `likeCount`를 `postLikeRepository.countByPost(post)`로 조회하고 있습니다. 이는 `default_batch_fetch_size` 설정으로 해결되지 않는 N+1 쿼리 문제를 유발합니다.
+    - **제안**:
+        - [x] 댓글 수 기능 추가 시, '좋아요' 수도 함께 조회하도록 쿼리를 리팩터링해야 합니다. JPQL에서 DTO 프로젝션과 `LEFT JOIN`, `GROUP BY`를 사용하여 게시물 정보, 댓글 수, '좋아요' 수를 한 번의 쿼리로 가져오도록 개선하는 것을 권장합니다.

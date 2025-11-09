@@ -11,6 +11,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "posts", indexes = {
         @Index(name = "idx_post_category_created_at", columnList = "category, created_at"),
@@ -46,6 +49,13 @@ public class Post extends BaseEntity {
     @Column(nullable = false)
     private Integer viewCount = 0;
 
+    // ✅ 좋아요와 댓글 연관관계 추가
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostLike> likes = new ArrayList<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> comments = new ArrayList<>();
+
     //== 비즈니스 로직 ==//
     public void increaseViewCount() {
         this.viewCount++;
@@ -56,4 +66,13 @@ public class Post extends BaseEntity {
         this.content = content;
         this.category = category;
     }
+
+    public int getLikeCount() {
+        return likes.size();
+    }
+
+    public int getCommentCount() {
+        return comments.size();
+    }
 }
+

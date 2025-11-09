@@ -26,6 +26,11 @@ public class PostResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // ✅ 좋아요 & 댓글 수 추가
+    private int likeCount;
+    private int commentCount;
+
+    // ✅ Entity → DTO 변환 메서드
     public static PostResponse from(Post post) {
         return PostResponse.builder()
                 .id(post.getId())
@@ -38,6 +43,9 @@ public class PostResponse {
                 .authorEmail(post.getAuthor().getEmail())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
+                .likeCount(post.getLikes() != null ? post.getLikes().size() : 0)
+                .commentCount(post.getComments() != null ? post.getComments().size() : 0)
                 .build();
     }
 }
+

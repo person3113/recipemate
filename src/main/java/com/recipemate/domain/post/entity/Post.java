@@ -49,7 +49,6 @@ public class Post extends BaseEntity {
     @Column(nullable = false)
     private Integer viewCount = 0;
 
-    // ✅ 좋아요와 댓글 연관관계 추가
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostLike> likes = new ArrayList<>();
 

@@ -440,8 +440,8 @@
             }
         }
         
-        // 대댓글 추가 (/comments/{id}/replies)
-        if (url.includes('/comments/') && url.includes('/replies')) {
+        // 대댓글 추가 (/comments/{id}/replies) - 삭제 요청은 제외
+        if (url.includes('/comments/') && url.includes('/replies') && !url.includes('/delete')) {
             console.log('Updating comment count +1 (reply)');
             updateCommentCount(1);
             // 폼 리셋 및 숨기기

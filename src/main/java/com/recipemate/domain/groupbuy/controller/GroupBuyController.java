@@ -34,6 +34,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Slf4j
 @Controller
 @RequestMapping("/group-purchases")
@@ -185,6 +187,9 @@ public class GroupBuyController {
         formData.setMeetupLocation(groupBuy.getMeetupLocation());
         formData.setParcelFee(groupBuy.getParcelFee());
         formData.setIsParticipantListPublic(groupBuy.getIsParticipantListPublic());
+        
+        // 기존 이미지 URL 목록 추가
+        model.addAttribute("existingImages", groupBuy.getImageUrls());
         
         model.addAttribute("formData", formData);
         model.addAttribute("updateGroupBuyRequest", formData); // POST 핸들러와의 호환성
@@ -354,6 +359,7 @@ public class GroupBuyController {
         @AuthenticationPrincipal UserDetails userDetails,
         @PathVariable Long purchaseId,
         @Valid @ModelAttribute("updateGroupBuyRequest") UpdateGroupBuyRequest request,
+        @RequestParam(required = false) List<String> deletedImages,
         BindingResult bindingResult,
         Model model,
         RedirectAttributes redirectAttributes
@@ -367,6 +373,7 @@ public class GroupBuyController {
             // 기존 공동구매 정보 조회해서 모델에 추가
             GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
             model.addAttribute("groupBuy", groupBuy);
+            model.addAttribute("existingImages", groupBuy.getImageUrls());
             // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
             return "group-purchases/form";
         }
@@ -374,7 +381,7 @@ public class GroupBuyController {
         User user = userRepository.findByEmail(userDetails.getUsername())
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
-        groupBuyService.updateGroupBuy(user.getId(), purchaseId, request);
+        groupBuyService.updateGroupBuy(user.getId(), purchaseId, request, deletedImages);
         redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 수정되었습니다.");
         return "redirect:/group-purchases/" + purchaseId;
     }

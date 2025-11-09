@@ -17,6 +17,7 @@ import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import com.recipemate.global.util.ImageUploadUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -29,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -265,7 +267,7 @@ public class GroupBuyService {
      * 공구 수정
      */
     @Transactional
-    public GroupBuyResponse updateGroupBuy(Long userId, Long groupBuyId, UpdateGroupBuyRequest request) {
+    public GroupBuyResponse updateGroupBuy(Long userId, Long groupBuyId, UpdateGroupBuyRequest request, List<String> deletedImages) {
         // 1. 사용자 조회
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -279,7 +281,67 @@ public class GroupBuyService {
             throw new CustomException(ErrorCode.UNAUTHORIZED_GROUP_BUY_ACCESS);
         }
         
-        // 4. 공구 정보 수정
+        // 4. 이미지 처리
+        // 4-1. 기존 이미지 목록 조회
+        List<GroupBuyImage> currentImages = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy);
+        List<String> currentImageUrls = currentImages.stream()
+            .map(GroupBuyImage::getImageUrl)
+            .toList();
+        
+        // 4-2. 삭제할 이미지 처리
+        if (deletedImages != null && !deletedImages.isEmpty()) {
+            // Cloudinary에서 삭제
+            imageUploadUtil.deleteImages(deletedImages);
+            
+            // DB에서 삭제
+            List<GroupBuyImage> imagesToDelete = currentImages.stream()
+                .filter(img -> deletedImages.contains(img.getImageUrl()))
+                .toList();
+            groupBuyImageRepository.deleteAll(imagesToDelete);
+            groupBuyImageRepository.flush(); // 즉시 DB에 반영
+            
+            log.info("Deleted {} images from group buy {}", deletedImages.size(), groupBuyId);
+        }
+        
+        // 4-3. 남은 기존 이미지들의 display_order 재정렬
+        List<GroupBuyImage> remainingImages = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy);
+        for (int i = 0; i < remainingImages.size(); i++) {
+            GroupBuyImage image = remainingImages.get(i);
+            if (image.getDisplayOrder() != i) {
+                image.updateDisplayOrder(i);
+            }
+        }
+        
+        // 4-4. 새 이미지 업로드
+        List<String> newImageUrls = new ArrayList<>();
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            // 빈 파일이 아닌 것만 필터링
+            List<org.springframework.web.multipart.MultipartFile> validFiles = request.getImages().stream()
+                .filter(file -> !file.isEmpty())
+                .toList();
+            
+            if (!validFiles.isEmpty()) {
+                newImageUrls = imageUploadUtil.uploadImages(validFiles);
+                log.info("Uploaded {} new images for group buy {}", newImageUrls.size(), groupBuyId);
+            }
+        }
+        
+        // 4-5. 새 이미지를 DB에 저장
+        if (!newImageUrls.isEmpty()) {
+            // 재정렬된 기존 이미지 개수를 시작 인덱스로 사용
+            int startOrder = remainingImages.size();
+            
+            for (int i = 0; i < newImageUrls.size(); i++) {
+                GroupBuyImage newImage = GroupBuyImage.builder()
+                    .groupBuy(groupBuy)
+                    .imageUrl(newImageUrls.get(i))
+                    .displayOrder(startOrder + i)
+                    .build();
+                groupBuyImageRepository.save(newImage);
+            }
+        }
+        
+        // 5. 공구 정보 수정
         groupBuy.update(
             request.getTitle(),
             request.getContent(),
@@ -297,14 +359,14 @@ public class GroupBuyService {
         GroupBuyStatus updatedStatus = determineStatus(groupBuy.getDeadline());
         groupBuy.updateStatus(updatedStatus);
         
-        // 5. 이미지 목록 조회
-        List<String> imageUrls = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy)
+        // 6. 최종 이미지 목록 조회
+        List<String> finalImageUrls = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy)
             .stream()
             .map(GroupBuyImage::getImageUrl)
             .toList();
         
-        // 6. 응답 DTO 생성
-        return mapToResponse(groupBuy, imageUrls);
+        // 7. 응답 DTO 생성
+        return mapToResponse(groupBuy, finalImageUrls);
     }
 
     /**

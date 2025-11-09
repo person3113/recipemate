@@ -46,4 +46,11 @@ public class GroupBuyImage extends BaseEntity {
 
     @Column(nullable = false)
     private Integer displayOrder;
+
+    /**
+     * display_order 업데이트
+     */
+    public void updateDisplayOrder(int displayOrder) {
+        this.displayOrder = displayOrder;
+    }
 }

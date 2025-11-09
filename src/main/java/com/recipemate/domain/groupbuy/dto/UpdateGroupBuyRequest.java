@@ -4,8 +4,11 @@ import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyCategory;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -48,4 +51,12 @@ public class UpdateGroupBuyRequest {
     private Integer parcelFee;
 
     private Boolean isParticipantListPublic;
+    
+    // 기존 이미지 URL 목록 (유지할 이미지)
+    @Builder.Default
+    private List<String> existingImageUrls = new ArrayList<>();
+    
+    // 새로 업로드할 이미지 파일
+    @Builder.Default
+    private List<MultipartFile> images = new ArrayList<>();
 }

@@ -101,20 +101,16 @@ public class ImageUploadUtil {
 
     /**
      * 단일 이미지 업로드 (Cloudinary)
+     * 업로드 시에는 원본을 저장하고, 변환은 URL로 동적으로 처리 (CDN 캐시 활용)
      */
     private String uploadSingleImage(MultipartFile file) throws IOException {
         long startTime = System.currentTimeMillis();
         
-        // 1. Cloudinary 업로드 옵션 설정
+        // 1. Cloudinary 업로드 옵션 설정 (변환 없이 원본 저장)
         Map<String, Object> uploadParams = ObjectUtils.asMap(
             "folder", "recipemate/group-purchases",      // 저장 폴더
-            "resource_type", "image",                    // 리소스 타입
-            "transformation", new Transformation()       // 이미지 변환 설정
-                .width(800)                              // 최대 너비
-                .height(600)                             // 최대 높이
-                .crop("limit")                           // 비율 유지하며 크기 제한
-                .quality("auto")                         // 자동 품질 최적화
-                .fetchFormat("auto")                     // 브라우저에 따라 WebP/JPEG 자동 선택
+            "resource_type", "image"                     // 리소스 타입
+            // transformation 제거 - 필요할 때 URL로 동적 변환
         );
         
         // 2. Cloudinary에 업로드
@@ -124,12 +120,14 @@ public class ImageUploadUtil {
             uploadParams
         );
         
-        // 3. HTTPS URL 반환
-        String imageUrl = uploadResult.get("secure_url").toString();
-        long elapsedTime = System.currentTimeMillis() - startTime;
-        log.info("Image uploaded successfully in {}ms: {}", elapsedTime, imageUrl);
+        // 3. 최적화된 이미지 URL 생성 (동적 변환)
+        String baseUrl = uploadResult.get("secure_url").toString();
+        String optimizedUrl = baseUrl.replace("/upload/", "/upload/w_800,h_600,c_limit,q_auto,f_auto/");
         
-        return imageUrl;
+        long elapsedTime = System.currentTimeMillis() - startTime;
+        log.info("Image uploaded successfully in {}ms: {}", elapsedTime, optimizedUrl);
+        
+        return optimizedUrl;
     }
 
     /**
@@ -161,6 +159,84 @@ public class ImageUploadUtil {
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
             throw new IllegalArgumentException("JPG 또는 PNG 형식의 이미지만 업로드 가능합니다");
+        }
+    }
+    
+    /**
+     * Cloudinary에서 이미지 삭제
+     * @param imageUrls 삭제할 이미지 URL 목록
+     */
+    public void deleteImages(List<String> imageUrls) {
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            return;
+        }
+        
+        for (String imageUrl : imageUrls) {
+            try {
+                // URL에서 public_id 추출
+                String publicId = extractPublicIdFromUrl(imageUrl);
+                
+                // Cloudinary에서 삭제
+                Map result = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+                log.info("Image deleted from Cloudinary: {} (result: {})", publicId, result.get("result"));
+            } catch (Exception e) {
+                log.error("Failed to delete image from Cloudinary: {}", imageUrl, e);
+                // 삭제 실패해도 계속 진행 (DB에서는 제거)
+            }
+        }
+    }
+    
+    /**
+     * Cloudinary URL에서 public_id 추출
+     * 예: https://res.cloudinary.com/dt9xgsr2z/image/upload/v1234567890/recipemate/group-purchases/abc123.jpg
+     * -> recipemate/group-purchases/abc123
+     */
+    private String extractPublicIdFromUrl(String imageUrl) {
+        try {
+            // "/upload/" 이후 부분 추출
+            String[] parts = imageUrl.split("/upload/");
+            if (parts.length < 2) {
+                throw new IllegalArgumentException("Invalid Cloudinary URL: " + imageUrl);
+            }
+            
+            String path = parts[1];
+            
+            // 변환 파라미터 제거 (w_800,h_600,c_limit,q_auto,f_auto/)
+            if (path.contains("/")) {
+                // 마지막 '/' 이후만 파일 경로
+                int lastSlash = path.lastIndexOf('/');
+                if (lastSlash > 0) {
+                    // 변환 파라미터가 있는 경우: w_800,h_600.../recipemate/...
+                    // 변환 파라미터 건너뛰기
+                    String[] segments = path.split("/");
+                    StringBuilder pathBuilder = new StringBuilder();
+                    boolean foundFolder = false;
+                    for (String segment : segments) {
+                        if (segment.startsWith("recipemate") || foundFolder) {
+                            if (pathBuilder.length() > 0) {
+                                pathBuilder.append("/");
+                            }
+                            pathBuilder.append(segment);
+                            foundFolder = true;
+                        }
+                    }
+                    path = pathBuilder.toString();
+                }
+            }
+            
+            // 버전 정보(v1234567890) 제거
+            path = path.replaceFirst("v\\d+/", "");
+            
+            // 확장자 제거
+            int lastDot = path.lastIndexOf('.');
+            if (lastDot > 0) {
+                path = path.substring(0, lastDot);
+            }
+            
+            return path;
+        } catch (Exception e) {
+            log.error("Failed to extract public_id from URL: {}", imageUrl, e);
+            throw new IllegalArgumentException("Invalid Cloudinary URL: " + imageUrl, e);
         }
     }
     

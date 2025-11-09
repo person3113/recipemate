@@ -290,14 +290,39 @@
                                 </div>
                             </div>
                             
-                            <!-- Image Upload (only for new posts) -->
-                            <div th:if="${groupBuy == null}" class="mb-4">
+                            <!-- Existing Images (수정 모드인 경우) -->
+                            <div th:if="${groupBuy != null and existingImages != null and !existingImages.isEmpty()}" class="mb-4">
+                                <label class="form-label fw-semibold">
+                                    기존 이미지 <span class="text-muted small">(삭제할 이미지를 선택하세요)</span>
+                                </label>
+                                <div id="existingImagesContainer" class="row g-2">
+                                    <div th:each="imageUrl, stat : ${existingImages}" class="col-md-4">
+                                        <div class="card existing-image-card" th:data-url="${imageUrl}">
+                                            <img th:src="${imageUrl}" class="card-img-top" alt="공구 이미지" style="height: 150px; object-fit: cover;">
+                                            <div class="card-body p-2 text-center">
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-danger delete-existing-image-btn"
+                                                        th:data-url="${imageUrl}"
+                                                        onclick="markImageForDeletion(this, this.dataset.url)">
+                                                    <i class="bi bi-trash"></i> 삭제
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Hidden input for deleted images -->
+                                <input type="hidden" id="deletedImagesInput" name="deletedImages" value="">
+                            </div>
+                            
+                            <!-- Image Upload -->
+                            <div class="mb-4">
                                 <label for="imageFiles" class="form-label fw-semibold">
-                                    이미지 업로드 <span class="text-muted small">(최대 3장, 각 5MB)</span>
+                                    <span th:text="${groupBuy != null ? '새 이미지 추가' : '이미지 업로드'}">이미지 업로드</span>
+                                    <span class="text-muted small">(최대 3장, 각 5MB)</span>
                                 </label>
                                 <input type="file" 
                                        id="imageFiles" 
-                                       name="imageFiles" 
+                                       th:name="${groupBuy != null ? 'images' : 'imageFiles'}"
                                        class="form-control" 
                                        multiple 
                                        accept="image/jpeg,image/png">
@@ -345,6 +370,46 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Existing Image Deletion Script -->
+    <script>
+        // 기존 이미지 삭제 마크 (전역 함수로 선언)
+        let deletedImagesArray = [];
+        
+        function markImageForDeletion(button, imageUrl) {
+            // 삭제할 이미지 URL을 배열에 추가
+            if (!deletedImagesArray.includes(imageUrl)) {
+                deletedImagesArray.push(imageUrl);
+            }
+            
+            // Hidden input에 배열을 다중 값으로 추가
+            const deletedImagesInput = document.getElementById('deletedImagesInput');
+            const form = document.getElementById('groupBuyForm');
+            
+            // 기존 hidden input 제거
+            const existingInputs = form.querySelectorAll('input[name="deletedImages"]');
+            existingInputs.forEach(input => input.remove());
+            
+            // 각 URL을 개별 hidden input으로 추가
+            deletedImagesArray.forEach(url => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'deletedImages';
+                input.value = url;
+                form.appendChild(input);
+            });
+            
+            // UI에서 카드 제거
+            const card = button.closest('.existing-image-card');
+            if (card) {
+                card.style.opacity = '0.5';
+                button.disabled = true;
+                button.innerHTML = '<i class="bi bi-check"></i> 삭제 예정';
+                button.classList.remove('btn-danger');
+                button.classList.add('btn-secondary');
+            }
+        }
+    </script>
     
     <!-- Price Per Person Calculator -->
     <script>
@@ -427,9 +492,60 @@
                 }
             });
             
+            // 이미지 압축 함수
+            async function compressImage(file, maxWidth = 1024, quality = 0.8) {
+                return new Promise((resolve, reject) => {
+                    // 이미 작은 이미지는 압축하지 않음
+                    if (file.size < 500 * 1024) { // 500KB 미만
+                        resolve(file);
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+                            
+                            // 최대 너비 제한
+                            if (width > maxWidth) {
+                                height = (height * maxWidth) / width;
+                                width = maxWidth;
+                            }
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            
+                            // Blob으로 변환 (JPEG, 품질 80%)
+                            canvas.toBlob((blob) => {
+                                if (blob) {
+                                    const compressedFile = new File([blob], file.name, {
+                                        type: 'image/jpeg',
+                                        lastModified: Date.now()
+                                    });
+                                    console.log(`Image compressed: ${file.name} (${(file.size / 1024).toFixed(1)}KB → ${(blob.size / 1024).toFixed(1)}KB)`);
+                                    resolve(compressedFile);
+                                } else {
+                                    reject(new Error('Failed to compress image'));
+                                }
+                            }, 'image/jpeg', quality);
+                        };
+                        img.onerror = () => reject(new Error('Failed to load image'));
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = () => reject(new Error('Failed to read file'));
+                    reader.readAsDataURL(file);
+                });
+            }
+            
             // 이미지 파일 검증 및 미리보기
             if (imageFilesInput && imagePreviewContainer) {
-                imageFilesInput.addEventListener('change', function(e) {
+                imageFilesInput.addEventListener('change', async function(e) {
                     const files = Array.from(e.target.files);
                     
                     // 파일 개수 검증
@@ -458,8 +574,29 @@
                         }
                     }
                     
-                    // 유효한 파일들 저장
-                    selectedFiles = files;
+                    // 이미지 압축 (비동기)
+                    const compressedFiles = [];
+                    for (const file of files) {
+                        if (file.type.startsWith('image/')) {
+                            try {
+                                const compressed = await compressImage(file);
+                                compressedFiles.push(compressed);
+                            } catch (error) {
+                                console.error('Image compression failed:', error);
+                                compressedFiles.push(file); // 압축 실패 시 원본 사용
+                            }
+                        } else {
+                            compressedFiles.push(file);
+                        }
+                    }
+                    
+                    // DataTransfer를 사용해 압축된 파일로 교체
+                    const dataTransfer = new DataTransfer();
+                    compressedFiles.forEach(file => dataTransfer.items.add(file));
+                    e.target.files = dataTransfer.files;
+                    
+                    // 유효한 파일들 저장 (압축된 파일)
+                    selectedFiles = compressedFiles;
                     
                     // 미리보기 생성
                     imagePreviewContainer.innerHTML = '';

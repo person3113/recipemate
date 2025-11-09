@@ -9,6 +9,7 @@ import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.PostCategory;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,9 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * 커뮤니티 게시글 웹 컨트롤러 (Thymeleaf 기반)
@@ -73,13 +77,30 @@ public class PostController {
     
     /**
      * 게시글 상세 페이지 렌더링
+     * HttpSession을 이용하여 중복 조회수 증가 방지
      */
     @GetMapping("/{postId}")
     public String detailPage(
             @PathVariable Long postId, 
             @AuthenticationPrincipal UserDetails userDetails,
+            HttpSession session,
             Model model
     ) {
+        // 세션에서 조회한 게시글 ID 목록 가져오기
+        @SuppressWarnings("unchecked")
+        Set<Long> viewedPostIds = (Set<Long>) session.getAttribute("viewedPostIds");
+        if (viewedPostIds == null) {
+            viewedPostIds = new HashSet<>();
+        }
+
+        // 현재 게시글을 처음 조회하는 경우, 조회수 증가 처리
+        if (!viewedPostIds.contains(postId)) {
+            postService.increasePostViewCount(postId);
+            viewedPostIds.add(postId);
+            session.setAttribute("viewedPostIds", viewedPostIds);
+        }
+
+        // 게시글 데이터 조회
         PostResponse post;
         if (userDetails != null) {
             User user = userRepository.findByEmail(userDetails.getUsername())

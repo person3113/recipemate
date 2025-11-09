@@ -50,7 +50,6 @@ public class PostService {
         return PostResponse.from(savedPost);
     }
 
-    @Transactional
     public PostResponse getPostDetail(Long postId) {
         Post post = postRepository.findByIdWithAuthor(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
@@ -58,14 +57,11 @@ public class PostService {
         if (post.getDeletedAt() != null) {
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
-
-        post.increaseViewCount();
         
         PostResponse response = PostResponse.from(post);
         return enrichWithLikeInfo(response, post, null);
     }
 
-    @Transactional
     public PostResponse getPostDetail(Long postId, Long currentUserId) {
         Post post = postRepository.findByIdWithAuthor(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
@@ -73,11 +69,26 @@ public class PostService {
         if (post.getDeletedAt() != null) {
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
-
-        post.increaseViewCount();
         
         PostResponse response = PostResponse.from(post);
         return enrichWithLikeInfo(response, post, currentUserId);
+    }
+
+    /**
+     * 게시글 조회수 증가
+     * CQS 원칙에 따라 조회(Query)와 상태 변경(Command)을 분리
+     * @param postId 게시글 ID
+     */
+    @Transactional
+    public void increasePostViewCount(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        
+        if (post.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.POST_NOT_FOUND);
+        }
+        
+        post.increaseViewCount();
     }
 
     private PostResponse enrichWithLikeInfo(PostResponse response, Post post, Long currentUserId) {

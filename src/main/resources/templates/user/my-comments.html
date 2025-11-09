@@ -26,6 +26,16 @@
                     <div th:each="comment : ${comments}" class="col-12">
                         <div class="card shadow-sm">
                             <div class="card-body">
+                                <!-- Comment Type Badge -->
+                                <div class="mb-2">
+                                    <span th:if="${comment.parent == null}" class="badge bg-primary">
+                                        <i class="bi bi-chat-left-text"></i> 댓글
+                                    </span>
+                                    <span th:if="${comment.parent != null}" class="badge bg-success">
+                                        <i class="bi bi-reply-fill"></i> 답글
+                                    </span>
+                                </div>
+
                                 <!-- Comment Content -->
                                 <div class="mb-3">
                                     <p class="mb-2" th:text="${comment.content}">댓글 내용</p>
@@ -33,6 +43,22 @@
 
                                 <!-- Target Info -->
                                 <div class="border-top pt-3">
+                                    <!-- 대댓글인 경우 부모 댓글 정보 표시 -->
+                                    <div th:if="${comment.parent != null}" class="mb-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-reply"></i> 답글 대상:
+                                            <span th:if="${comment.parent.deletedAt == null}">
+                                                <span th:text="${#strings.abbreviate(comment.parent.content, 50)}">부모 댓글 내용</span>
+                                            </span>
+                                            <span th:if="${comment.parent.deletedAt != null}" class="text-danger">
+                                                <i class="bi bi-trash"></i>
+                                                삭제된 댓글의 답글
+                                                <span class="badge bg-danger ms-1">삭제됨</span>
+                                            </span>
+                                        </small>
+                                    </div>
+
+                                    <!-- 게시글 정보 -->
                                     <div th:if="${comment.post != null}">
                                         <small class="text-muted">
                                             <i class="bi bi-file-text"></i> 게시글:
@@ -74,9 +100,6 @@
                                     <div class="text-muted small">
                                         <i class="bi bi-calendar"></i>
                                         <span th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</span>
-                                        <span th:if="${comment.parent != null}" class="ms-2">
-                                            <i class="bi bi-reply"></i> 대댓글
-                                        </span>
                                     </div>
                                     <div>
                                         <!-- View Target Button - 삭제되지 않은 경우만 표시 -->

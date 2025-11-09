@@ -3,6 +3,8 @@ package com.recipemate.domain.comment.controller;
 import com.recipemate.domain.comment.dto.CommentResponse;
 import com.recipemate.domain.comment.dto.CreateCommentRequest;
 import com.recipemate.domain.comment.dto.UpdateCommentRequest;
+import com.recipemate.domain.comment.entity.Comment;
+import com.recipemate.domain.comment.repository.CommentRepository;
 import com.recipemate.domain.comment.service.CommentService;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
@@ -37,6 +39,7 @@ public class CommentController {
 
     private final CommentService commentService;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
     private final Validator validator;
 
     // ========== 폼 제출 엔드포인트 ==========
@@ -139,7 +142,7 @@ public class CommentController {
     /**
      * 댓글 삭제 폼 제출
      * POST /comments/{commentId}/delete
-     * htmx 요청인 경우: 빈 응답 반환 (클라이언트에서 DOM 요소 제거)
+     * htmx 요청인 경우: 답글 유무에 따라 다른 fragment 반환
      * 일반 폼 제출인 경우: 리다이렉트
      */
     @PostMapping("/{commentId}/delete")
@@ -150,18 +153,33 @@ public class CommentController {
             @RequestParam Long targetId,
             @RequestParam(required = false) String redirectUrl,
             @RequestHeader(value = "HX-Request", required = false) String htmxRequest,
-            RedirectAttributes redirectAttributes) {
-        
+            RedirectAttributes redirectAttributes,
+            Model model) {
+
         try {
             // 1. 사용자 조회 및 댓글 삭제
             User user = userRepository.findByEmail(userDetails.getUsername())
                     .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
             
+            // 삭제 전에 답글이 있는지 확인
+            List<Comment> replies = commentRepository.findByParentIdOrderByCreatedAtAsc(commentId);
+            boolean hasReplies = !replies.isEmpty();
+
             commentService.deleteComment(user.getId(), commentId);
             
-            // 2. htmx 요청인 경우 빈 fragment 반환 (클라이언트에서 hx-swap="outerHTML"로 요소 제거)
+            // 2. htmx 요청인 경우
             if (htmxRequest != null && htmxRequest.equals("true")) {
-                return "fragments/comments :: empty";
+                if (hasReplies) {
+                    // 답글이 있으면 삭제된 댓글 메시지가 포함된 comment-item fragment 반환
+                    CommentResponse deletedComment = commentService.getCommentById(commentId);
+                    model.addAttribute("comment", deletedComment);
+                    model.addAttribute("targetType", targetType);
+                    model.addAttribute("targetId", targetId);
+                    return "fragments/comments :: comment-item";
+                } else {
+                    // 답글이 없으면 완전히 제거 (empty fragment)
+                    return "fragments/comments :: empty";
+                }
             }
             
             // 3. 일반 폼 제출인 경우 리다이렉트
@@ -237,8 +255,13 @@ public class CommentController {
         
         CommentResponse comment = commentService.createComment(user.getId(), request);
         model.addAttribute("comment", comment);
-        
-        // 4. 단일 댓글 아이템 Fragment 반환
+        model.addAttribute("targetType", targetType);
+        model.addAttribute("targetId", targetId);
+
+        // 4. 대댓글이면 reply-item, 일반 댓글이면 comment-item Fragment 반환
+        if (parentId != null) {
+            return "fragments/comments :: reply-item(comment=${comment}, targetType=${targetType}, targetId=${targetId})";
+        }
         return "fragments/comments :: comment-item";
     }
 

@@ -134,6 +134,19 @@ public class CommentService {
     }
 
     /**
+     * 댓글 단건 조회 (ID로)
+     */
+    public CommentResponse getCommentById(Long commentId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+
+        // 대댓글 목록 조회
+        List<Comment> replies = commentRepository.findByParentIdOrderByCreatedAtAsc(commentId);
+
+        return CommentResponse.fromWithReplies(comment, replies);
+    }
+
+    /**
      * 특정 대상의 댓글 목록 조회 (htmx fragment용)
      */
     public List<CommentResponse> getCommentsByTarget(EntityType targetType, Long targetId) {

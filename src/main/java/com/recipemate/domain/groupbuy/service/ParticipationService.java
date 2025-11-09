@@ -171,23 +171,31 @@ public class ParticipationService {
     }
 
     public List<ParticipantResponse> getParticipants(Long groupBuyId, Long currentUserId) {
-        // 1. 공구 조회
+        // 1. 공구 조회 (주최자 정보 포함)
         GroupBuy groupBuy = groupBuyRepository.findByIdWithHost(groupBuyId)
             .orElseThrow(() -> new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
 
-        // 2. 현재 사용자 조회
-        User currentUser = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        // 3. 접근 권한 검증
-        if (!groupBuy.getParticipantListPublic() && !groupBuy.isHost(currentUser)) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED_PARTICIPANT_LIST_ACCESS);
+        // 2. 비공개 목록인 경우에만 사용자 인증 및 권한 검증
+        if (!groupBuy.getParticipantListPublic()) {
+            // 비로그인 사용자는 비공개 목록 접근 불가
+            if (currentUserId == null) {
+                throw new CustomException(ErrorCode.UNAUTHORIZED_PARTICIPANT_LIST_ACCESS);
+            }
+            
+            // 로그인한 사용자가 주최자가 아니면 비공개 목록 접근 불가
+            User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            
+            if (!groupBuy.isHost(currentUser)) {
+                throw new CustomException(ErrorCode.UNAUTHORIZED_PARTICIPANT_LIST_ACCESS);
+            }
         }
 
-        // 4. 참여자 목록 조회 및 DTO 변환
+        // 3. 참여자 목록 조회 및 DTO 변환 (주최자 ID 전달)
+        Long hostId = groupBuy.getHost().getId();
         List<Participation> participations = participationRepository.findByGroupBuyIdWithUser(groupBuyId);
         return participations.stream()
-            .map(ParticipantResponse::from)
+            .map(p -> ParticipantResponse.from(p, hostId))
             .collect(Collectors.toList());
     }
 }

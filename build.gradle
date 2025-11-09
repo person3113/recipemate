@@ -24,6 +24,12 @@ repositories {
 	mavenCentral()
 }
 
+dependencyManagement {
+    dependencies {
+        dependency 'org.apache.commons:commons-lang3:3.18.0'
+    }
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -41,6 +47,9 @@ dependencies {
 	// Image optimization dependency
 	implementation 'net.coobird:thumbnailator:0.4.19'
 	
+	// Cloudinary for image upload
+    implementation 'com.cloudinary:cloudinary-http5:2.3.0'
+
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'org.postgresql:postgresql'
@@ -68,6 +77,23 @@ tasks.named('test') {
 
 tasks.named('bootRun') {
 	systemProperty 'spring.profiles.active', 'dev'
+	
+	// .env 파일에서 환경 변수 자동 로드
+	def envFile = file('.env')
+	if (envFile.exists()) {
+		envFile.readLines().each { line ->
+			def trimmedLine = line.trim()
+			// 주석(#)과 빈 줄 무시
+			if (!trimmedLine.isEmpty() && !trimmedLine.startsWith('#')) {
+				def parts = trimmedLine.split('=', 2)
+				if (parts.length == 2) {
+					def key = parts[0].trim()
+					def value = parts[1].trim()
+					environment key, value
+				}
+			}
+		}
+	}
 }
 
 sourceSets {

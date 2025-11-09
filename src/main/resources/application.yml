@@ -3,11 +3,13 @@ spring:
     name: RecipeMate
   profiles:
     active: dev
+    # 개발 환경에서 application-dev.local.yml 자동 로드
+    include: dev.local
   servlet:
     multipart:
       enabled: true
-      max-file-size: 10MB
-      max-request-size: 30MB
+      max-file-size: 5MB      # 개별 파일 최대 크기
+      max-request-size: 15MB  # 전체 요청 최대 크기 (3장 × 5MB)
       # 폼 필드 개수 제한 (재료가 많은 레시피 대응)
       file-size-threshold: 0
 
@@ -17,6 +19,10 @@ food:
     api:
       key: ${FOOD_SAFETY_API_KEY:sample}
       base-url: http://openapi.foodsafetykorea.go.kr/api
+
+# Cloudinary 설정
+cloudinary:
+  url: ${CLOUDINARY_URL}
 
 # 레시피 동기화 설정
 recipe:

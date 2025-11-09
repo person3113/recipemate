@@ -97,9 +97,33 @@ public class GroupBuyController {
      * 공구 상세 페이지 렌더링
      */
     @GetMapping("/{purchaseId}")
-    public String detailPage(@PathVariable Long purchaseId, Model model) {
+    public String detailPage(
+        @PathVariable Long purchaseId,
+        @AuthenticationPrincipal UserDetails userDetails,
+        Model model
+    ) {
         GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
         model.addAttribute("groupBuy", groupBuy);
+        
+        // 참여자 목록 공개 여부 확인 후 로드 (비로그인 사용자도 가능)
+        if (groupBuy.getIsParticipantListPublic()) {
+            try {
+                Long currentUserId = null;
+                if (userDetails != null) {
+                    User user = userRepository.findByEmail(userDetails.getUsername())
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+                    currentUserId = user.getId();
+                }
+                
+                java.util.List<com.recipemate.domain.groupbuy.dto.ParticipantResponse> participants = 
+                    participationService.getParticipants(purchaseId, currentUserId);
+                model.addAttribute("participants", participants);
+            } catch (Exception e) {
+                log.warn("Failed to load participants list for group buy {}: {}", purchaseId, e.getMessage());
+                // 참여자 목록 로드 실패해도 페이지는 정상 표시
+            }
+        }
+        
         return "group-purchases/detail";
     }
     
@@ -207,6 +231,7 @@ public class GroupBuyController {
             model.addAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
             model.addAttribute("formData", request); // Thymeleaf th:object를 위해 필수
+            model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
             // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
             return "group-purchases/form";
         }
@@ -235,6 +260,7 @@ public class GroupBuyController {
             model.addAttribute("formData", request);
             model.addAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
+            model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
             // 레시피 정보 다시 조회해서 모델에 추가
             if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
                 try {
@@ -260,6 +286,7 @@ public class GroupBuyController {
                 if (ingredients == null || ingredients.isEmpty()) {
                     model.addAttribute("formData", request);
                     model.addAttribute("errorMessage", "선택된 재료가 없습니다. 최소 1개 이상의 재료를 선택해주세요.");
+                    model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
                     // 레시피 정보 다시 조회해서 모델에 추가
                     if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
                         try {
@@ -281,6 +308,7 @@ public class GroupBuyController {
                 log.error("재료 JSON 파싱 실패: {}", e.getMessage());
                 model.addAttribute("formData", request);
                 model.addAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
+                model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
                 // 레시피 정보 다시 조회해서 모델에 추가
                 if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
                     try {
@@ -296,6 +324,7 @@ public class GroupBuyController {
         } else {
             model.addAttribute("formData", request);
             model.addAttribute("errorMessage", "선택된 재료 정보가 없습니다.");
+            model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
             // 레시피 정보 다시 조회해서 모델에 추가
             if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
                 try {
@@ -334,6 +363,7 @@ public class GroupBuyController {
             model.addAttribute("formData", request);
             model.addAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
+            model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
             // 기존 공동구매 정보 조회해서 모델에 추가
             GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
             model.addAttribute("groupBuy", groupBuy);

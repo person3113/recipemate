@@ -74,4 +74,16 @@ public class CreateGroupBuyRequest {
     
     // JSON 형식의 재료 데이터 (폼 필드 개수 제한 우회)
     private String selectedIngredientsJson;
+    
+    /**
+     * 마감일이 현재로부터 1개월 이내인지 검증
+     */
+    @AssertTrue(message = "마감일은 현재로부터 1개월 이내로 설정해야 합니다")
+    public boolean isDeadlineWithinOneMonth() {
+        if (deadline == null) {
+            return true; // null은 @NotNull에서 검증
+        }
+        LocalDateTime maxDeadline = LocalDateTime.now().plusMonths(1);
+        return !deadline.isAfter(maxDeadline);
+    }
 }

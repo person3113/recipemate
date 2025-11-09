@@ -2,6 +2,7 @@ package com.recipemate.domain.post.repository;
 
 import com.recipemate.domain.post.dto.PostWithCountsDto;
 import com.recipemate.domain.post.entity.Post;
+import com.recipemate.domain.user.entity.User;
 import com.recipemate.global.common.PostCategory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -59,4 +60,29 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<PostWithCountsDto> searchByCategoryAndKeywordWithCounts(@Param("category") PostCategory category,
                                                                @Param("keyword") String keyword,
                                                                Pageable pageable);
+
+    @Query("SELECT new com.recipemate.domain.user.dto.MyPostDto(" +
+            "p.id, p.title, p.createdAt, p.viewCount, " +
+            "(SELECT COUNT(c) FROM Comment c WHERE c.post = p), " +
+            "(SELECT COUNT(pl) FROM PostLike pl WHERE pl.post = p)) " +
+            "FROM Post p " +
+            "WHERE p.author = :user AND p.deletedAt IS NULL")
+    Page<com.recipemate.domain.user.dto.MyPostDto> findPostsByUserWithCounts(@Param("user") User user, Pageable pageable);
+
+    @Query("SELECT new com.recipemate.domain.user.dto.MyPostDto(" +
+            "p.id, p.title, p.createdAt, p.viewCount, " +
+            "(SELECT COUNT(c) FROM Comment c WHERE c.post = p), " +
+            "(SELECT COUNT(pl) FROM PostLike pl WHERE pl.post = p), " +
+            "p.deletedAt) " +
+            "FROM Post p " +
+            "WHERE p.author = :user")
+    Page<com.recipemate.domain.user.dto.MyPostDto> findPostsByUserForMyActivity(@Param("user") User user, Pageable pageable);
+
+    @Query("SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
+            "p, " +
+            "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
+            "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
+            "FROM Post p " +
+            "WHERE p.id IN :postIds AND p.deletedAt IS NULL")
+    List<PostWithCountsDto> findAllWithCountsByIdIn(@Param("postIds") List<Long> postIds);
 }

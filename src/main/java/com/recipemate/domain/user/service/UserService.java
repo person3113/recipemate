@@ -1,5 +1,7 @@
 package com.recipemate.domain.user.service;
 
+import com.recipemate.domain.comment.entity.Comment;
+import com.recipemate.domain.comment.repository.CommentRepository;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.GroupBuyImage;
@@ -7,13 +9,14 @@ import com.recipemate.domain.groupbuy.entity.Participation;
 import com.recipemate.domain.groupbuy.repository.GroupBuyImageRepository;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
+import com.recipemate.domain.like.entity.PostLike;
+import com.recipemate.domain.like.repository.PostLikeRepository;
+import com.recipemate.domain.post.dto.PostWithCountsDto;
+import com.recipemate.domain.post.repository.PostRepository;
 import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
-import com.recipemate.domain.user.dto.ChangePasswordRequest;
-import com.recipemate.domain.user.dto.SignupRequest;
-import com.recipemate.domain.user.dto.UpdateProfileRequest;
-import com.recipemate.domain.user.dto.UserResponse;
+import com.recipemate.domain.user.dto.*;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +42,9 @@ public class UserService {
     private final GroupBuyImageRepository groupBuyImageRepository;
     private final ParticipationRepository participationRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
+    private final PostLikeRepository postLikeRepository;
 
     @Transactional
     public UserResponse signup(SignupRequest request) {
@@ -186,5 +194,65 @@ public class UserService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
         user.updateMannerTemperature(delta);
+    }
+
+    public Page<MyPostDto> findMyPosts(User user, Pageable pageable) {
+        return postRepository.findPostsByUserForMyActivity(user, pageable);
+    }
+
+    public Page<MyCommentDto> findMyComments(User user, Pageable pageable) {
+        Page<Comment> comments = commentRepository.findByAuthorForMyActivity(user, pageable);
+        return comments.map(comment -> new MyCommentDto(
+                comment.getPost().getId(),
+                comment.getPost().getTitle(),
+                comment.getContent(),
+                comment.getCreatedAt(),
+                comment.getDeletedAt(),
+                comment.getPost().getDeletedAt(),
+                comment.getParent() != null
+        ));
+    }
+
+    public Page<MyLikedPostDto> findMyLikedPosts(User user, Pageable pageable) {
+        Page<PostLike> likedPosts = postLikeRepository.findByUserWithPost(user, pageable);
+        
+        if (likedPosts.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        
+        List<Long> postIds = likedPosts.getContent().stream()
+                .map(pl -> pl.getPost().getId())
+                .toList();
+        
+        List<PostWithCountsDto> postsWithCounts = postRepository.findAllWithCountsByIdIn(postIds);
+        
+        Map<Long, PostWithCountsDto> postMap = postsWithCounts.stream()
+                .collect(Collectors.toMap(
+                        dto -> dto.getPost().getId(),
+                        dto -> dto
+                ));
+        
+        return likedPosts.map(postLike -> {
+            PostWithCountsDto dto = postMap.get(postLike.getPost().getId());
+            if (dto != null) {
+                return new MyLikedPostDto(
+                        dto.getPost().getId(),
+                        dto.getPost().getTitle(),
+                        dto.getPost().getCreatedAt(),
+                        dto.getPost().getViewCount(),
+                        dto.getCommentCount(),
+                        dto.getLikeCount()
+                );
+            } else {
+                return new MyLikedPostDto(
+                        postLike.getPost().getId(),
+                        postLike.getPost().getTitle(),
+                        postLike.getPost().getCreatedAt(),
+                        postLike.getPost().getViewCount(),
+                        0L,
+                        0L
+                );
+            }
+        });
     }
 }

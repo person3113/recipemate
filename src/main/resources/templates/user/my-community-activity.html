@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 커뮤니티 활동 - RecipeMate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-5">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <!-- Page Header -->
+                <div class="mb-4">
+                    <h1 class="display-5 fw-bold">
+                        <i class="bi bi-chat-dots text-secondary"></i> 내 커뮤니티 활동
+                    </h1>
+                    <p class="text-muted">작성한 글, 댓글, 좋아요한 게시글을 확인하세요!</p>
+                </div>
+
+                <!-- Tab Navigation -->
+                <ul class="nav nav-tabs mb-4" id="communityTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" 
+                           th:classappend="${currentTab == 'posts' ? 'active' : ''}" 
+                           th:href="@{/users/me/community(tab='posts')}">
+                            <i class="bi bi-file-text"></i> 내가 쓴 글
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" 
+                           th:classappend="${currentTab == 'comments' ? 'active' : ''}" 
+                           th:href="@{/users/me/community(tab='comments')}">
+                            <i class="bi bi-chat-left-text"></i> 내가 쓴 댓글
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" 
+                           th:classappend="${currentTab == 'likes' ? 'active' : ''}" 
+                           th:href="@{/users/me/community(tab='likes')}">
+                            <i class="bi bi-heart-fill text-danger"></i> 좋아요한 글
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="communityTabsContent">
+                    <!-- 내가 쓴 글 -->
+                    <div th:if="${currentTab == 'posts'}" class="tab-pane fade show active">
+                        <div th:if="${posts != null and posts.hasContent()}" class="card shadow-sm">
+                            <div class="list-group list-group-flush">
+                                <a th:each="post : ${posts}" 
+                                   th:href="${post.deletedAt != null} ? '#' : @{/community-posts/{id}(id=${post.id})}"
+                                   th:classappend="${post.deletedAt != null} ? 'disabled' : ''"
+                                   th:style="${post.deletedAt != null} ? 'opacity: 0.6; cursor: not-allowed;' : ''"
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <h6 class="mb-0 fw-semibold" th:text="${post.title}">게시글 제목</h6>
+                                                <span th:if="${post.deletedAt != null}" class="badge bg-secondary">삭제됨</span>
+                                            </div>
+                                            <small class="text-muted">
+                                                <i class="bi bi-calendar3"></i>
+                                                <span th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</span>
+                                            </small>
+                                        </div>
+                                        <div class="d-flex gap-3 text-muted small">
+                                            <span>
+                                                <i class="bi bi-eye"></i>
+                                                <span th:text="${post.viewCount}">0</span>
+                                            </span>
+                                            <span>
+                                                <i class="bi bi-chat"></i>
+                                                <span th:text="${post.commentCount}">0</span>
+                                            </span>
+                                            <span>
+                                                <i class="bi bi-heart-fill text-danger"></i>
+                                                <span th:text="${post.likeCount}">0</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Empty State -->
+                        <div th:if="${posts == null or !posts.hasContent()}" class="text-center py-5">
+                            <i class="bi bi-file-earmark-text text-muted" style="font-size: 4rem;"></i>
+                            <p class="text-muted mt-3">작성한 글이 없습니다.</p>
+                            <a th:href="@{/community-posts/new}" class="btn btn-primary">
+                                <i class="bi bi-pencil-square"></i> 글쓰기
+                            </a>
+                        </div>
+
+                        <!-- Pagination -->
+                        <nav th:if="${posts != null and posts.totalPages > 1}" class="mt-4" aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item" th:classappend="${posts.first} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/users/me/community(tab='posts', page=${posts.number - 1})}">이전</a>
+                                </li>
+                                <li class="page-item" 
+                                    th:each="i : ${#numbers.sequence(0, posts.totalPages - 1)}" 
+                                    th:classappend="${i == posts.number} ? 'active'">
+                                    <a class="page-link" th:href="@{/users/me/community(tab='posts', page=${i})}" th:text="${i + 1}">1</a>
+                                </li>
+                                <li class="page-item" th:classappend="${posts.last} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/users/me/community(tab='posts', page=${posts.number + 1})}">다음</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+
+                    <!-- 내가 쓴 댓글 -->
+                    <div th:if="${currentTab == 'comments'}" class="tab-pane fade show active">
+                        <div th:if="${comments != null and comments.hasContent()}" class="card shadow-sm">
+                            <div class="list-group list-group-flush">
+                                <a th:each="comment : ${comments}" 
+                                   th:href="${comment.postDeletedAt != null} ? '#' : @{/community-posts/{id}(id=${comment.postId})}"
+                                   th:classappend="${comment.deletedAt != null or comment.postDeletedAt != null} ? 'disabled' : ''"
+                                   th:style="${comment.deletedAt != null or comment.postDeletedAt != null} ? 'opacity: 0.6; cursor: not-allowed;' : ''"
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <!-- Reply indent indicator -->
+                                            <div th:if="${comment.isReply}" class="ms-3">
+                                                <i class="bi bi-arrow-return-right text-muted"></i>
+                                            </div>
+                                            
+                                            <!-- Post title or deleted post message -->
+                                            <p class="mb-1 text-muted small" th:classappend="${comment.isReply} ? 'ms-4' : ''">
+                                                <i class="bi bi-file-text"></i>
+                                                <span th:if="${comment.postDeletedAt == null}" th:text="${comment.postTitle}">게시글 제목</span>
+                                                <span th:if="${comment.postDeletedAt != null}" class="text-muted fst-italic">삭제된 게시글의 댓글</span>
+                                            </p>
+                                            
+                                            <!-- Comment content with deleted badge -->
+                                            <div class="d-flex align-items-center gap-2 mb-2" th:classappend="${comment.isReply} ? 'ms-4' : ''">
+                                                <p class="mb-0" th:text="${comment.content}">댓글 내용</p>
+                                                <span th:if="${comment.deletedAt != null}" class="badge bg-secondary">삭제됨</span>
+                                            </div>
+                                            
+                                            <small class="text-muted" th:classappend="${comment.isReply} ? 'ms-4' : ''">
+                                                <i class="bi bi-calendar3"></i>
+                                                <span th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</span>
+                                            </small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Empty State -->
+                        <div th:if="${comments == null or !comments.hasContent()}" class="text-center py-5">
+                            <i class="bi bi-chat-left-text text-muted" style="font-size: 4rem;"></i>
+                            <p class="text-muted mt-3">작성한 댓글이 없습니다.</p>
+                        </div>
+
+                        <!-- Pagination -->
+                        <nav th:if="${comments != null and comments.totalPages > 1}" class="mt-4" aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item" th:classappend="${comments.first} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/users/me/community(tab='comments', page=${comments.number - 1})}">이전</a>
+                                </li>
+                                <li class="page-item" 
+                                    th:each="i : ${#numbers.sequence(0, comments.totalPages - 1)}" 
+                                    th:classappend="${i == comments.number} ? 'active'">
+                                    <a class="page-link" th:href="@{/users/me/community(tab='comments', page=${i})}" th:text="${i + 1}">1</a>
+                                </li>
+                                <li class="page-item" th:classappend="${comments.last} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/users/me/community(tab='comments', page=${comments.number + 1})}">다음</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+
+                    <!-- 좋아요한 글 -->
+                    <div th:if="${currentTab == 'likes'}" class="tab-pane fade show active">
+                        <div th:if="${likedPosts != null and likedPosts.hasContent()}" class="card shadow-sm">
+                            <div class="list-group list-group-flush">
+                                <a th:each="post : ${likedPosts}" 
+                                   th:href="@{/community-posts/{id}(id=${post.id})}"
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 fw-semibold" th:text="${post.title}">게시글 제목</h6>
+                                            <small class="text-muted">
+                                                <i class="bi bi-calendar3"></i>
+                                                <span th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</span>
+                                            </small>
+                                        </div>
+                                        <div class="d-flex gap-3 text-muted small">
+                                            <span>
+                                                <i class="bi bi-eye"></i>
+                                                <span th:text="${post.viewCount}">0</span>
+                                            </span>
+                                            <span>
+                                                <i class="bi bi-chat"></i>
+                                                <span th:text="${post.commentCount}">0</span>
+                                            </span>
+                                            <span>
+                                                <i class="bi bi-heart-fill text-danger"></i>
+                                                <span th:text="${post.likeCount}">0</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Empty State -->
+                        <div th:if="${likedPosts == null or !likedPosts.hasContent()}" class="text-center py-5">
+                            <i class="bi bi-heart text-muted" style="font-size: 4rem;"></i>
+                            <p class="text-muted mt-3">좋아요한 글이 없습니다.</p>
+                        </div>
+
+                        <!-- Pagination -->
+                        <nav th:if="${likedPosts != null and likedPosts.totalPages > 1}" class="mt-4" aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item" th:classappend="${likedPosts.first} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/users/me/community(tab='likes', page=${likedPosts.number - 1})}">이전</a>
+                                </li>
+                                <li class="page-item" 
+                                    th:each="i : ${#numbers.sequence(0, likedPosts.totalPages - 1)}" 
+                                    th:classappend="${i == likedPosts.number} ? 'active'">
+                                    <a class="page-link" th:href="@{/users/me/community(tab='likes', page=${i})}" th:text="${i + 1}">1</a>
+                                </li>
+                                <li class="page-item" th:classappend="${likedPosts.last} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/users/me/community(tab='likes', page=${likedPosts.number + 1})}">다음</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

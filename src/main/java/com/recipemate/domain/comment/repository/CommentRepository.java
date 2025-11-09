@@ -2,6 +2,7 @@ package com.recipemate.domain.comment.repository;
 
 import com.recipemate.domain.comment.entity.Comment;
 import com.recipemate.domain.post.entity.Post;
+import com.recipemate.domain.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -91,4 +92,22 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      */
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.post.id = :postId")
     long countByPostId(@Param("postId") Long postId);
+
+    /**
+     * 작성자가 작성한 댓글 페이징 조회 (게시글 댓글만, 삭제되지 않은 것)
+     * @param author 작성자
+     * @param pageable 페이지 정보
+     * @return 댓글 페이지
+     */
+    @Query("SELECT c FROM Comment c JOIN FETCH c.post p WHERE c.author = :author AND c.post IS NOT NULL AND c.deletedAt IS NULL ORDER BY c.createdAt DESC")
+    Page<Comment> findByAuthorAndPostIsNotNull(@Param("author") User author, Pageable pageable);
+
+    /**
+     * 작성자가 작성한 댓글 페이징 조회 (게시글 댓글만, 삭제된 것 포함) - '내 커뮤니티 활동' 전용
+     * @param author 작성자
+     * @param pageable 페이지 정보
+     * @return 댓글 페이지
+     */
+    @Query("SELECT c FROM Comment c JOIN FETCH c.post p WHERE c.author = :author AND c.post IS NOT NULL ORDER BY c.createdAt DESC")
+    Page<Comment> findByAuthorForMyActivity(@Param("author") User author, Pageable pageable);
 }

@@ -76,10 +76,10 @@ public class Comment extends BaseEntity {
     }
 
     /**
-     * 댓글을 소프트 삭제하고 내용을 "삭제된 댓글입니다"로 변경합니다.
+     * 댓글을 소프트 삭제합니다.
+     * 원본 내용은 보존되며, '내 커뮤니티 활동' 페이지에서는 원본 내용을 볼 수 있습니다.
      */
     public void markAsDeleted() {
-        this.content = "삭제된 댓글입니다";
         this.delete();  // BaseEntity의 delete() 메서드 호출
     }
 }

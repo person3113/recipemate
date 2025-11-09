@@ -9,6 +9,9 @@ import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
 import com.recipemate.domain.notification.dto.NotificationResponse;
 import com.recipemate.domain.notification.service.NotificationService;
 import com.recipemate.domain.user.dto.ChangePasswordRequest;
+import com.recipemate.domain.user.dto.MyCommentDto;
+import com.recipemate.domain.user.dto.MyLikedPostDto;
+import com.recipemate.domain.user.dto.MyPostDto;
 import com.recipemate.domain.user.dto.PointHistoryResponse;
 import com.recipemate.domain.user.dto.UpdateProfileRequest;
 import com.recipemate.domain.user.dto.UserResponse;
@@ -235,6 +238,34 @@ public class UserController {
         model.addAttribute("participations", participations);
         model.addAttribute("currentStatus", status);
         return "user/participations";
+    }
+
+    /**
+     * 내 커뮤니티 활동 페이지 렌더링
+     * GET /users/me/community
+     */
+    @GetMapping("/me/community")
+    public String myCommunityActivityPage(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "posts") String tab,
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
+            Model model) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        if ("posts".equals(tab)) {
+            Page<MyPostDto> posts = userService.findMyPosts(user, pageable);
+            model.addAttribute("posts", posts);
+        } else if ("comments".equals(tab)) {
+            Page<MyCommentDto> comments = userService.findMyComments(user, pageable);
+            model.addAttribute("comments", comments);
+        } else if ("likes".equals(tab)) {
+            Page<MyLikedPostDto> likedPosts = userService.findMyLikedPosts(user, pageable);
+            model.addAttribute("likedPosts", likedPosts);
+        }
+        
+        model.addAttribute("currentTab", tab);
+        return "user/my-community-activity";
     }
     
     // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========

@@ -111,7 +111,7 @@
                                             <span class="fw-bold" th:text="${participant.quantity} + '개'">1개</span>
                                         </td>
                                         <td>
-                                            <div class="btn-group" role="group">
+                                            <div class="btn-group" role="group" th:if="${participant.userId != currentUserId}">
                                                 <!-- TODO: 1:1 쪽지 보내기 기능 (향후 구현) -->
                                                 <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="1:1 쪽지 기능은 추후 구현 예정입니다">
                                                     <i class="bi bi-envelope"></i> 쪽지
@@ -128,6 +128,9 @@
                                                     <i class="bi bi-person-x"></i> 탈퇴
                                                 </button>
                                             </div>
+                                            <span th:if="${participant.userId == currentUserId}" class="text-muted small">
+                                                <i class="bi bi-person-check"></i> 본인
+                                            </span>
                                         </td>
                                     </tr>
                                 </tbody>

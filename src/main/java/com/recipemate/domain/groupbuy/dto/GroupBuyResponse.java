@@ -43,6 +43,11 @@ public class GroupBuyResponse {
     // 이미지 목록
     private List<String> imageUrls;
     
+    // 사용자 상태 정보
+    private boolean isHost;
+    private boolean isParticipant;
+    private boolean isCancellable;
+    
     // 타임스탬프
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -71,6 +76,42 @@ public class GroupBuyResponse {
                 .recipeName(groupBuy.getRecipeName())
                 .recipeImageUrl(groupBuy.getRecipeImageUrl())
                 .imageUrls(imageUrls)
+                .isHost(false)
+                .isParticipant(false)
+                .isCancellable(false)
+                .createdAt(groupBuy.getCreatedAt())
+                .updatedAt(groupBuy.getUpdatedAt())
+                .build();
+    }
+    
+    // 사용자 상태 정보를 포함한 팩토리 메서드
+    public static GroupBuyResponse from(GroupBuy groupBuy, List<String> imageUrls, 
+                                        boolean isHost, boolean isParticipant, boolean isCancellable) {
+        return GroupBuyResponse.builder()
+                .id(groupBuy.getId())
+                .title(groupBuy.getTitle())
+                .content(groupBuy.getContent())
+                .ingredients(groupBuy.getIngredients())
+                .category(groupBuy.getCategory())
+                .totalPrice(groupBuy.getTotalPrice())
+                .targetHeadcount(groupBuy.getTargetHeadcount())
+                .currentHeadcount(groupBuy.getCurrentHeadcount())
+                .deadline(groupBuy.getDeadline())
+                .deliveryMethod(groupBuy.getDeliveryMethod())
+                .meetupLocation(groupBuy.getMeetupLocation())
+                .parcelFee(groupBuy.getParcelFee())
+                .isParticipantListPublic(groupBuy.getParticipantListPublic())
+                .status(groupBuy.getStatus())
+                .hostId(groupBuy.getHost().getId())
+                .hostNickname(groupBuy.getHost().getNickname())
+                .hostMannerTemperature(groupBuy.getHost().getMannerTemperature())
+                .recipeApiId(groupBuy.getRecipeApiId())
+                .recipeName(groupBuy.getRecipeName())
+                .recipeImageUrl(groupBuy.getRecipeImageUrl())
+                .imageUrls(imageUrls)
+                .isHost(isHost)
+                .isParticipant(isParticipant)
+                .isCancellable(isCancellable)
                 .createdAt(groupBuy.getCreatedAt())
                 .updatedAt(groupBuy.getUpdatedAt())
                 .build();

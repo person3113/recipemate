@@ -104,19 +104,23 @@ public class GroupBuyController {
         @AuthenticationPrincipal UserDetails userDetails,
         Model model
     ) {
-        GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
+        // 로그인한 사용자의 ID 조회
+        Long currentUserId = null;
+        if (userDetails != null) {
+            User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            currentUserId = user.getId();
+        }
+        
+        // 사용자 상태 정보를 포함한 공구 상세 조회
+        GroupBuyResponse groupBuy = currentUserId != null 
+            ? groupBuyService.getGroupBuyDetail(purchaseId, currentUserId)
+            : groupBuyService.getGroupBuyDetail(purchaseId);
         model.addAttribute("groupBuy", groupBuy);
         
         // 참여자 목록 공개 여부 확인 후 로드 (비로그인 사용자도 가능)
         if (groupBuy.getIsParticipantListPublic()) {
             try {
-                Long currentUserId = null;
-                if (userDetails != null) {
-                    User user = userRepository.findByEmail(userDetails.getUsername())
-                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-                    currentUserId = user.getId();
-                }
-                
                 java.util.List<com.recipemate.domain.groupbuy.dto.ParticipantResponse> participants = 
                     participationService.getParticipants(purchaseId, currentUserId);
                 model.addAttribute("participants", participants);
@@ -215,6 +219,7 @@ public class GroupBuyController {
         
         model.addAttribute("groupBuy", groupBuy);
         model.addAttribute("participants", participants);
+        model.addAttribute("currentUserId", user.getId());
         return "group-purchases/participants";
     }
 

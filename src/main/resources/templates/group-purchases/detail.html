@@ -217,7 +217,7 @@
             <!-- Sidebar -->
             <div class="col-lg-4">
                 <!-- Purchase Info Card -->
-                <div class="card shadow-sm mb-4 sticky-top floating-buttons">
+                <div class="card shadow-sm mb-4 floating-buttons">
                     <div class="card-header bg-white">
                         <h5 class="mb-0 fw-bold">구매 정보</h5>
                     </div>
@@ -257,7 +257,7 @@
                         <div class="mb-3">
                             <div class="d-flex justify-content-between mb-2">
                                 <span class="text-muted"><i class="bi bi-truck"></i> 배송 방법</span>
-                                <span class="fw-semibold" th:text="${groupBuy.deliveryMethod == 'DIRECT' ? '직거래' : '택배'}">직거래</span>
+                                <span class="fw-semibold" th:text="${groupBuy.deliveryMethod.displayName}">택배/직거래</span>
                             </div>
                             <div th:if="${groupBuy.deliveryMethod == 'DIRECT' and groupBuy.meetupLocation}" class="d-flex justify-content-between mb-2">
                                 <span class="text-muted"><i class="bi bi-geo-alt"></i> 만남 장소</span>
@@ -271,15 +271,35 @@
                         
                         <!-- Action Buttons -->
                         <div sec:authorize="isAuthenticated()">
-                            <div th:if="${groupBuy.status.name() == 'RECRUITING'}" class="d-grid gap-2 mb-2">
+                            <!-- 참여하기 버튼: 모집중이고, 참여자가 아닐 때만 표시 -->
+                            <div th:if="${groupBuy.status.name() == 'RECRUITING' and groupBuy.isParticipant != null and !groupBuy.isParticipant}" class="d-grid gap-2 mb-2">
                                 <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#participateModal">
                                     <i class="bi bi-basket3"></i> 참여하기
                                 </button>
                             </div>
-                            <div class="d-grid gap-2">
+                            <!-- 참여 취소 버튼: 참여자이고, 취소 가능할 때만 표시 -->
+                            <div th:if="${groupBuy.isParticipant != null and groupBuy.isParticipant and groupBuy.isCancellable != null and groupBuy.isCancellable}" class="d-grid gap-2 mb-2">
                                 <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
                                     <i class="bi bi-x-circle"></i> 참여 취소
                                 </button>
+                            </div>
+                            
+                            <!-- 주최자 전용 기능 버튼 -->
+                            <div th:if="${groupBuy.isHost != null and groupBuy.isHost}" class="border-top pt-3 mt-3">
+                                <h6 class="text-muted fw-bold mb-3">
+                                    <i class="bi bi-gear"></i> 주최자 메뉴
+                                </h6>
+                                <div class="d-grid gap-2">
+                                    <a th:href="@{/group-purchases/{id}/participants(id=${groupBuy.id})}" class="btn btn-outline-primary">
+                                        <i class="bi bi-people"></i> 참여자 관리
+                                    </a>
+                                    <a th:href="@{/group-purchases/{id}/edit(id=${groupBuy.id})}" class="btn btn-outline-secondary">
+                                        <i class="bi bi-pencil-square"></i> 공구 수정
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                        <i class="bi bi-trash"></i> 공구 삭제
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
@@ -342,6 +362,33 @@
                     <form method="post" th:action="@{/group-purchases/{id}/participate/cancel(id=${groupBuy.id})}" class="d-inline">
                         <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <button type="submit" class="btn btn-danger">취소하기</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Modal -->
+    <div sec:authorize="isAuthenticated()" class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">공구 삭제</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>경고:</strong> 이 작업은 되돌릴 수 없습니다.
+                    </div>
+                    <p>정말로 이 공동구매를 삭제하시겠습니까?</p>
+                    <p class="text-muted small">참여자가 있는 경우 삭제할 수 없습니다.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                    <form method="post" th:action="@{/group-purchases/{id}/delete(id=${groupBuy.id})}" class="d-inline">
+                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit" class="btn btn-danger">삭제하기</button>
                     </form>
                 </div>
             </div>

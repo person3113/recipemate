@@ -212,12 +212,8 @@ public class GroupBuy extends BaseEntity {
         if (this.status != GroupBuyStatus.RECRUITING) {
             throw new CustomException(ErrorCode.GROUP_BUY_CLOSED);
         }
-        // 3. 주최자 본인 참여 불가 검증
-        if (isHost(participant)) {
-            throw new CustomException(ErrorCode.HOST_CANNOT_PARTICIPATE);
-        }
 
-        // 4. Participation 엔티티 생성
+        // 3. Participation 엔티티 생성
         Participation newParticipation = Participation.create(
             participant,
             this,
@@ -225,7 +221,7 @@ public class GroupBuy extends BaseEntity {
             selectedDeliveryMethod
         );
 
-        // 5. 참여자 추가 및 상태 변경
+        // 4. 참여자 추가 및 상태 변경
         this.participations.add(newParticipation);
         increaseParticipant();
         if (isTargetReached()) {

@@ -42,6 +42,7 @@ public class GroupBuyService {
     private final ImageUploadUtil imageUploadUtil;
     private final com.recipemate.domain.recipe.service.RecipeService recipeService;
     private final ApplicationEventPublisher eventPublisher;
+    private final com.recipemate.domain.groupbuy.repository.ParticipationRepository participationRepository;
 
     /**
      * 일반 공구 생성
@@ -259,6 +260,37 @@ public class GroupBuyService {
             .stream()
             .map(GroupBuyImage::getImageUrl)
             .toList();
+        
+        return mapToResponse(groupBuy, imageUrls);
+    }
+
+    /**
+     * 공구 상세 조회 (사용자 상태 정보 포함)
+     * @param purchaseId 공구 ID
+     * @param userId 사용자 ID (로그인한 경우)
+     */
+    public GroupBuyResponse getGroupBuyDetail(Long purchaseId, Long userId) {
+        // GroupBuy와 Host를 Fetch Join으로 조회
+        GroupBuy groupBuy = groupBuyRepository.findByIdWithHost(purchaseId)
+            .orElseThrow(() -> new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
+        
+        // 이미지 목록을 별도 쿼리로 조회 (displayOrder로 정렬)
+        List<String> imageUrls = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy)
+            .stream()
+            .map(GroupBuyImage::getImageUrl)
+            .toList();
+        
+        // 사용자가 로그인한 경우에만 상태 정보 계산
+        if (userId != null) {
+            User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            
+            boolean isHost = groupBuy.isHost(user);
+            boolean isParticipant = participationRepository.existsByUserIdAndGroupBuyId(userId, purchaseId);
+            boolean isCancellable = LocalDateTime.now().isBefore(groupBuy.getDeadline().minusDays(1));
+            
+            return mapToResponseWithUserStatus(groupBuy, imageUrls, isHost, isParticipant, isCancellable);
+        }
         
         return mapToResponse(groupBuy, imageUrls);
     }
@@ -505,6 +537,41 @@ public class GroupBuyService {
             .imageUrls(imageUrls)
             .createdAt(groupBuy.getCreatedAt())
             .updatedAt(groupBuy.getUpdatedAt())
+            .build();
+    }
+
+    /**
+     * Entity를 Response DTO로 변환 (사용자 상태 정보 포함)
+     */
+    private GroupBuyResponse mapToResponseWithUserStatus(GroupBuy groupBuy, List<String> imageUrls, 
+                                                          boolean isHost, boolean isParticipant, boolean isCancellable) {
+        return GroupBuyResponse.builder()
+            .id(groupBuy.getId())
+            .title(groupBuy.getTitle())
+            .content(groupBuy.getContent())
+            .ingredients(groupBuy.getIngredients())
+            .category(groupBuy.getCategory())
+            .totalPrice(groupBuy.getTotalPrice())
+            .targetHeadcount(groupBuy.getTargetHeadcount())
+            .currentHeadcount(groupBuy.getCurrentHeadcount())
+            .deadline(groupBuy.getDeadline())
+            .deliveryMethod(groupBuy.getDeliveryMethod())
+            .meetupLocation(groupBuy.getMeetupLocation())
+            .parcelFee(groupBuy.getParcelFee())
+            .isParticipantListPublic(groupBuy.getParticipantListPublic())
+            .status(groupBuy.getStatus())
+            .hostId(groupBuy.getHost().getId())
+            .hostNickname(groupBuy.getHost().getNickname())
+            .hostMannerTemperature(groupBuy.getHost().getMannerTemperature())
+            .recipeApiId(groupBuy.getRecipeApiId())
+            .recipeName(groupBuy.getRecipeName())
+            .recipeImageUrl(groupBuy.getRecipeImageUrl())
+            .imageUrls(imageUrls)
+            .createdAt(groupBuy.getCreatedAt())
+            .updatedAt(groupBuy.getUpdatedAt())
+            .isHost(isHost)
+            .isParticipant(isParticipant)
+            .isCancellable(isCancellable)
             .build();
     }
 

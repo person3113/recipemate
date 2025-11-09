@@ -7,6 +7,7 @@ import com.recipemate.domain.comment.entity.Comment;
 import com.recipemate.domain.comment.repository.CommentRepository;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
+import com.recipemate.domain.like.repository.CommentLikeRepository;
 import com.recipemate.domain.post.entity.Post;
 import com.recipemate.domain.post.repository.PostRepository;
 import com.recipemate.domain.user.entity.User;
@@ -34,6 +35,7 @@ public class CommentService {
     private final UserRepository userRepository;
     private final GroupBuyRepository groupBuyRepository;
     private final PostRepository postRepository;
+    private final CommentLikeRepository commentLikeRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
@@ -113,7 +115,9 @@ public class CommentService {
         // updatedAt 필드가 즉시 갱신되도록 명시적으로 flush
         Comment updatedComment = commentRepository.saveAndFlush(comment);
         
-        return CommentResponse.from(updatedComment);
+        // 대댓글도 함께 조회하여 반환
+        List<Comment> replies = commentRepository.findByParentIdOrderByCreatedAtAsc(updatedComment.getId());
+        return CommentResponse.fromWithReplies(updatedComment, replies);
     }
 
     /**
@@ -150,44 +154,14 @@ public class CommentService {
     }
 
     /**
-     * 특정 대상의 댓글 목록 조회 (htmx fragment용)
+     * 댓글 단건 조회 with 좋아요 정보 (삭제된 댓글 포함)
      */
-    public List<CommentResponse> getCommentsByTarget(EntityType targetType, Long targetId) {
-        List<Comment> comments;
-
-        if (targetType == EntityType.GROUP_BUY) {
-            comments = commentRepository.findByGroupBuyIdAndParentIsNullOrderByCreatedAtAsc(targetId);
-        } else if (targetType == EntityType.POST) {
-            comments = commentRepository.findByPostIdAndParentIsNullOrderByCreatedAtAsc(targetId);
-        } else {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
-        }
-
-        return comments.stream()
-                .map(CommentResponse::from)
-                .collect(Collectors.toList());
+    public CommentResponse getCommentByIdWithLikes(Long commentId, Long currentUserId) {
+        CommentResponse response = getCommentById(commentId);
+        return enrichWithLikeInfo(response, currentUserId);
     }
 
-    /**
-     * 특정 대상의 댓글 목록 페이지네이션 조회 (htmx fragment용)
-     */
-    public Page<CommentResponse> getCommentsByTargetPageable(EntityType targetType, Long targetId, Pageable pageable) {
-        Page<Comment> commentsPage;
 
-        if (targetType == EntityType.GROUP_BUY) {
-            commentsPage = commentRepository.findByGroupBuyIdAndParentIsNullPageable(targetId, pageable);
-        } else if (targetType == EntityType.POST) {
-            commentsPage = commentRepository.findByPostIdAndParentIsNullPageable(targetId, pageable);
-        } else {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
-        }
-
-        // 각 댓글에 대한 대댓글 조회 및 설정
-        return commentsPage.map(comment -> {
-            List<Comment> replies = commentRepository.findByParentIdOrderByCreatedAtAsc(comment.getId());
-            return CommentResponse.fromWithReplies(comment, replies);
-        });
-    }
     
     /**
      * 특정 대상의 전체 댓글 개수 조회 (부모 댓글 + 대댓글, 삭제되지 않은 것만)
@@ -200,5 +174,86 @@ public class CommentService {
         } else {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
+    }
+
+    /**
+     * 댓글에 좋아요 정보 추가 (현재 사용자 기준)
+     */
+    private CommentResponse enrichWithLikeInfo(CommentResponse response, Long currentUserId) {
+        // 댓글 엔티티 조회
+        Comment comment = commentRepository.findById(response.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+        
+        // 좋아요 개수 조회
+        long likeCount = commentLikeRepository.countByComment(comment);
+        
+        // 현재 사용자의 좋아요 여부 조회
+        boolean isLiked = false;
+        if (currentUserId != null) {
+            User user = userRepository.findById(currentUserId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            isLiked = commentLikeRepository.existsByUserAndComment(user, comment);
+        }
+        
+        // Builder를 사용하여 좋아요 정보가 포함된 새 응답 생성
+        return CommentResponse.builder()
+                .id(response.getId())
+                .authorId(response.getAuthorId())
+                .authorNickname(response.getAuthorNickname())
+                .authorEmail(response.getAuthorEmail())
+                .content(response.getContent())
+                .type(response.getType())
+                .parentId(response.getParentId())
+                .createdAt(response.getCreatedAt())
+                .updatedAt(response.getUpdatedAt())
+                .isDeleted(response.isDeleted())
+                .likeCount(likeCount)
+                .isLiked(isLiked)
+                .replies(response.getReplies().stream()
+                        .map(reply -> enrichWithLikeInfo(reply, currentUserId))
+                        .collect(Collectors.toList()))
+                .build();
+    }
+
+    /**
+     * 특정 대상의 댓글 목록 조회 with 좋아요 정보 (htmx fragment용)
+     */
+    public List<CommentResponse> getCommentsByTarget(EntityType targetType, Long targetId, Long currentUserId) {
+        List<Comment> comments;
+
+        if (targetType == EntityType.GROUP_BUY) {
+            comments = commentRepository.findByGroupBuyIdAndParentIsNullOrderByCreatedAtAsc(targetId);
+        } else if (targetType == EntityType.POST) {
+            comments = commentRepository.findByPostIdAndParentIsNullOrderByCreatedAtAsc(targetId);
+        } else {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        return comments.stream()
+                .map(CommentResponse::from)
+                .map(response -> enrichWithLikeInfo(response, currentUserId))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 특정 대상의 댓글 목록 페이지네이션 조회 with 좋아요 정보 (htmx fragment용)
+     */
+    public Page<CommentResponse> getCommentsByTargetPageable(EntityType targetType, Long targetId, Long currentUserId, Pageable pageable) {
+        Page<Comment> commentsPage;
+
+        if (targetType == EntityType.GROUP_BUY) {
+            commentsPage = commentRepository.findByGroupBuyIdAndParentIsNullPageable(targetId, pageable);
+        } else if (targetType == EntityType.POST) {
+            commentsPage = commentRepository.findByPostIdAndParentIsNullPageable(targetId, pageable);
+        } else {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        // 각 댓글에 대한 대댓글 조회 및 좋아요 정보 설정
+        return commentsPage.map(comment -> {
+            List<Comment> replies = commentRepository.findByParentIdOrderByCreatedAtAsc(comment.getId());
+            CommentResponse response = CommentResponse.fromWithReplies(comment, replies);
+            return enrichWithLikeInfo(response, currentUserId);
+        });
     }
 }

@@ -92,6 +92,8 @@
                             <span th:text="${post.authorNickname ?: '알 수 없음'}">작성자</span>
                         </div>
                         <div class="text-muted small">
+                            <i class="bi bi-heart-fill text-danger"></i> <span th:text="${post.likeCount ?: 0}">0</span>
+                            <span class="mx-2">·</span>
                             <i class="bi bi-eye"></i> <span th:text="${post.viewCount ?: 0}">0</span>
                         </div>
                     </div>

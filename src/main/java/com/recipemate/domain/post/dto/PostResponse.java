@@ -25,6 +25,8 @@ public class PostResponse {
     private String authorEmail;  // 작성자 권한 체크용
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private long likeCount;
+    private boolean isLiked;
 
     public static PostResponse from(Post post) {
         return PostResponse.builder()
@@ -38,6 +40,8 @@ public class PostResponse {
                 .authorEmail(post.getAuthor().getEmail())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
+                .likeCount(0)
+                .isLiked(false)
                 .build();
     }
 }

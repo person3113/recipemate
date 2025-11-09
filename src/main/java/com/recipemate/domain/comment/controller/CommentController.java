@@ -189,12 +189,23 @@ public class CommentController {
      */
     @GetMapping("/fragments")
     public String getCommentsFragment(
+            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam EntityType targetType,
             @RequestParam Long targetId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable,
             Model model) {
         
-        Page<CommentResponse> comments = commentService.getCommentsByTargetPageable(targetType, targetId, pageable);
+        // 현재 로그인한 사용자 ID 조회 (비로그인 시 null)
+        Long currentUserId = null;
+        if (userDetails != null) {
+            User user = userRepository.findByEmail(userDetails.getUsername())
+                    .orElse(null);
+            if (user != null) {
+                currentUserId = user.getId();
+            }
+        }
+        
+        Page<CommentResponse> comments = commentService.getCommentsByTargetPageable(targetType, targetId, currentUserId, pageable);
         long totalCommentCount = commentService.getTotalCommentCount(targetType, targetId);
         
         model.addAttribute("comments", comments);
@@ -278,6 +289,10 @@ public class CommentController {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
         CommentResponse comment = commentService.updateComment(user.getId(), commentId, request);
+        
+        // 좋아요 정보 추가를 위해 getCommentById 재호출 (비효율적이지만 일관성 유지)
+        comment = commentService.getCommentByIdWithLikes(commentId, user.getId());
+        
         model.addAttribute("comment", comment);
         model.addAttribute("targetType", targetType);
         model.addAttribute("targetId", targetId);

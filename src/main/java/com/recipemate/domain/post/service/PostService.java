@@ -1,5 +1,6 @@
 package com.recipemate.domain.post.service;
 
+import com.recipemate.domain.like.repository.PostLikeRepository;
 import com.recipemate.domain.post.dto.CreatePostRequest;
 import com.recipemate.domain.post.dto.PostResponse;
 import com.recipemate.domain.post.dto.UpdatePostRequest;
@@ -28,6 +29,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final PostLikeRepository postLikeRepository;
 
     @Transactional
     @CacheEvict(value = CacheConfig.VIEW_COUNTS_CACHE, allEntries = true)
@@ -57,10 +59,52 @@ public class PostService {
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
 
-        // 조회수 증가 (즉시 DB에 반영하지 않고 나중에 배치로 처리)
         post.increaseViewCount();
         
-        return PostResponse.from(post);
+        PostResponse response = PostResponse.from(post);
+        return enrichWithLikeInfo(response, post, null);
+    }
+
+    @Transactional
+    public PostResponse getPostDetail(Long postId, Long currentUserId) {
+        Post post = postRepository.findByIdWithAuthor(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        if (post.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.POST_NOT_FOUND);
+        }
+
+        post.increaseViewCount();
+        
+        PostResponse response = PostResponse.from(post);
+        return enrichWithLikeInfo(response, post, currentUserId);
+    }
+
+    private PostResponse enrichWithLikeInfo(PostResponse response, Post post, Long currentUserId) {
+        long likeCount = postLikeRepository.countByPost(post);
+        boolean isLiked = false;
+        
+        if (currentUserId != null) {
+            User user = userRepository.findById(currentUserId).orElse(null);
+            if (user != null) {
+                isLiked = postLikeRepository.existsByUserAndPost(user, post);
+            }
+        }
+        
+        return PostResponse.builder()
+                .id(response.getId())
+                .title(response.getTitle())
+                .content(response.getContent())
+                .category(response.getCategory())
+                .viewCount(response.getViewCount())
+                .authorId(response.getAuthorId())
+                .authorNickname(response.getAuthorNickname())
+                .authorEmail(response.getAuthorEmail())
+                .createdAt(response.getCreatedAt())
+                .updatedAt(response.getUpdatedAt())
+                .likeCount(likeCount)
+                .isLiked(isLiked)
+                .build();
     }
 
     @Transactional
@@ -131,7 +175,25 @@ public class PostService {
             posts = postRepository.findAllByDeletedAtIsNull(pageable);
         }
 
-        return posts.map(PostResponse::from);
+        // 좋아요 정보 포함하여 반환
+        return posts.map(post -> {
+            PostResponse response = PostResponse.from(post);
+            long likeCount = postLikeRepository.countByPost(post);
+            return PostResponse.builder()
+                    .id(response.getId())
+                    .title(response.getTitle())
+                    .content(response.getContent())
+                    .category(response.getCategory())
+                    .viewCount(response.getViewCount())
+                    .authorId(response.getAuthorId())
+                    .authorNickname(response.getAuthorNickname())
+                    .authorEmail(response.getAuthorEmail())
+                    .createdAt(response.getCreatedAt())
+                    .updatedAt(response.getUpdatedAt())
+                    .likeCount(likeCount)
+                    .isLiked(false) // 목록에서는 로그인 사용자 정보 없이 전체 개수만 표시
+                    .build();
+        });
     }
 
 }

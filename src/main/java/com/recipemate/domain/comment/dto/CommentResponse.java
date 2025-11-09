@@ -28,6 +28,8 @@ public class CommentResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isDeleted;
+    private long likeCount;
+    private boolean isLiked;
     
     @Builder.Default
     private List<CommentResponse> replies = new ArrayList<>();
@@ -44,6 +46,8 @@ public class CommentResponse {
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .isDeleted(comment.getDeletedAt() != null)
+                .likeCount(0)
+                .isLiked(false)
                 .replies(new ArrayList<>())
                 .build();
     }

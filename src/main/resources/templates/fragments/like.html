@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<!-- 좋아요 버튼 컨테이너 -->
+<div th:fragment="like-button(isLiked, likeCount, targetType, targetId)"
+     th:id="|${targetType}-like-${targetId}|"
+     class="like-container d-flex align-items-center gap-2">
+
+    <!-- 로그인한 사용자만 버튼 활성화 -->
+    <button sec:authorize="isAuthenticated()"
+            type="button"
+            class="btn btn-sm like-button"
+            th:classappend="${isLiked} ? 'btn-danger' : 'btn-outline-danger'"
+            th:hx-post="@{'/likes/' + ${targetType} + '/' + ${targetId}}"
+            th:attr="hx-headers=|{&quot;${_csrf.headerName}&quot;: &quot;${_csrf.token}&quot;}|"
+            th:hx-target="|#${targetType}-like-${targetId}|"
+            hx-swap="outerHTML">
+        <i class="bi" th:classappend="${isLiked} ? 'bi-heart-fill' : 'bi-heart'"></i>
+        <span th:text="${isLiked} ? '좋아요 취소' : '좋아요'">좋아요</span>
+    </button>
+
+    <!-- 로그인하지 않은 사용자는 로그인 페이지로 이동하는 링크 -->
+    <a sec:authorize="!isAuthenticated()"
+       th:href="@{/auth/login}"
+       class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-heart"></i>
+        <span>좋아요</span>
+    </a>
+
+    <span class="like-count fw-bold" th:text="${likeCount}">0</span>
+</div>
+
+<!-- 헤더 통계 표시용 fragment (OOB 업데이트용) -->
+<div th:fragment="header-stats(likeCount, viewCount, targetType, targetId)"
+     th:id="|${targetType}-header-stats-${targetId}|"
+     class="text-muted">
+    <i class="bi bi-heart-fill text-danger"></i> <span th:text="${likeCount}">0</span>
+    <span class="mx-2">·</span>
+    <i class="bi bi-eye"></i> <span th:text="${viewCount}">0</span>
+</div>
+
+</html>

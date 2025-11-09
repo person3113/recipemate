@@ -75,8 +75,19 @@ public class PostController {
      * 게시글 상세 페이지 렌더링
      */
     @GetMapping("/{postId}")
-    public String detailPage(@PathVariable Long postId, Model model) {
-        PostResponse post = postService.getPostDetail(postId);
+    public String detailPage(
+            @PathVariable Long postId, 
+            @AuthenticationPrincipal UserDetails userDetails,
+            Model model
+    ) {
+        PostResponse post;
+        if (userDetails != null) {
+            User user = userRepository.findByEmail(userDetails.getUsername())
+                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            post = postService.getPostDetail(postId, user.getId());
+        } else {
+            post = postService.getPostDetail(postId);
+        }
         model.addAttribute("post", post);
         return "community-posts/detail";
     }

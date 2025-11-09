@@ -46,10 +46,9 @@
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div>
                                 <span th:if="${groupBuy.category}" class="badge bg-primary me-2" th:text="${groupBuy.category}">카테고리</span>
-                                <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge progress-bar-info">모집중</span>
-                                <span th:if="${groupBuy.status.name() == 'CLOSED'}" class="badge bg-secondary">마감</span>
-                                <span th:if="${groupBuy.status.name() == 'COMPLETED'}" class="badge bg-success">완료</span>
-                                <span th:if="${groupBuy.status.name() == 'CANCELLED'}" class="badge bg-danger">취소됨</span>
+                                <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge bg-success" th:text="${groupBuy.status.displayName}">모집중</span>
+                                <span th:if="${groupBuy.status.name() == 'IMMINENT'}" class="badge bg-warning" th:text="${groupBuy.status.displayName}">마감 임박</span>
+                                <span th:if="${groupBuy.status.name() == 'CLOSED'}" class="badge bg-secondary" th:text="${groupBuy.status.displayName}">마감</span>
                             </div>
                         </div>
                         
@@ -293,7 +292,9 @@
                                     <a th:href="@{/group-purchases/{id}/participants(id=${groupBuy.id})}" class="btn btn-outline-primary">
                                         <i class="bi bi-people"></i> 참여자 관리
                                     </a>
-                                    <a th:href="@{/group-purchases/{id}/edit(id=${groupBuy.id})}" class="btn btn-outline-secondary">
+                                    <a th:if="${groupBuy.status.name() == 'RECRUITING'}" 
+                                       th:href="@{/group-purchases/{id}/edit(id=${groupBuy.id})}" 
+                                       class="btn btn-outline-secondary">
                                         <i class="bi bi-pencil-square"></i> 공구 수정
                                     </a>
                                     <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">

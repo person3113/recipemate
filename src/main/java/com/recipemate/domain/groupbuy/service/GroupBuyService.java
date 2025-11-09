@@ -313,6 +313,11 @@ public class GroupBuyService {
             throw new CustomException(ErrorCode.UNAUTHORIZED_GROUP_BUY_ACCESS);
         }
         
+        // 3-1. 상태 검증 (마감 또는 마감 임박 시 수정 불가)
+        if (groupBuy.getStatus() == GroupBuyStatus.CLOSED || groupBuy.getStatus() == GroupBuyStatus.IMMINENT) {
+            throw new CustomException(ErrorCode.CANNOT_MODIFY_GROUP_BUY);
+        }
+        
         // 4. 이미지 처리
         // 4-1. 기존 이미지 목록 조회
         List<GroupBuyImage> currentImages = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy);

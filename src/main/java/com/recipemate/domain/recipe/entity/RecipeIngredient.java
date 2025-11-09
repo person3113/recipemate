@@ -11,8 +11,8 @@ import lombok.experimental.SuperBuilder;
  */
 @Entity
 @Table(name = "recipe_ingredients", indexes = {
-        @Index(name = "idx_recipe_id", columnList = "recipe_id"),
-        @Index(name = "idx_name", columnList = "name")
+        @Index(name = "idx_recipe_ingredient_recipe_id", columnList = "recipe_id"),
+        @Index(name = "idx_recipe_ingredient_name", columnList = "name")
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

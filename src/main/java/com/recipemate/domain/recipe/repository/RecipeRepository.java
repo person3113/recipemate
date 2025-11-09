@@ -73,9 +73,17 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long>, JpaSpecif
 
     /**
      * ID로 재료와 조리단계와 함께 조회
+     * MultipleBagFetchException 방지를 위해 ingredients만 fetch
+     * steps는 별도 쿼리로 lazy load
      */
-    @Query("SELECT DISTINCT r FROM Recipe r LEFT JOIN FETCH r.ingredients LEFT JOIN FETCH r.steps WHERE r.id = :id")
+    @Query("SELECT DISTINCT r FROM Recipe r LEFT JOIN FETCH r.ingredients WHERE r.id = :id")
     Optional<Recipe> findByIdWithIngredientsAndSteps(@Param("id") Long id);
+    
+    /**
+     * ID로 조리단계와 함께 조회 (ingredients 이후 호출용)
+     */
+    @Query("SELECT DISTINCT r FROM Recipe r LEFT JOIN FETCH r.steps WHERE r.id = :id")
+    Optional<Recipe> findByIdWithSteps(@Param("id") Long id);
 
     /**
      * 소스 API ID로 재료와 함께 조회

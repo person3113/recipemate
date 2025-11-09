@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf?.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf?.headerName}"/>
     <title th:text="${groupBuy.title} + ' - RecipeMate'">공동구매 - RecipeMate</title>
     
     <!-- Bootstrap CSS -->
@@ -270,8 +272,16 @@
                         
                         <!-- Action Buttons -->
                         <div sec:authorize="isAuthenticated()">
-                            <!-- 참여하기 버튼: 모집중이고, 참여자가 아닐 때만 표시 -->
-                            <div th:if="${groupBuy.status.name() == 'RECRUITING' and groupBuy.isParticipant != null and !groupBuy.isParticipant}" class="d-grid gap-2 mb-2">
+                            <!-- 찜하기 버튼 -->
+                            <div class="d-grid gap-2 mb-2">
+                                <button type="button" id="wishlistBtn" class="btn btn-outline-danger" onclick="toggleWishlist()">
+                                    <i id="wishlistIcon" class="bi bi-heart"></i>
+                                    <span id="wishlistText">찜 추가</span>
+                                </button>
+                            </div>
+                            
+                            <!-- 참여하기 버튼: 모집중 또는 마감임박이고, 참여자가 아닐 때만 표시 -->
+                            <div th:if="${(groupBuy.status.name() == 'RECRUITING' or groupBuy.status.name() == 'IMMINENT') and groupBuy.isParticipant != null and !groupBuy.isParticipant}" class="d-grid gap-2 mb-2">
                                 <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#participateModal">
                                     <i class="bi bi-basket3"></i> 참여하기
                                 </button>
@@ -401,6 +411,145 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Wishlist JavaScript -->
+    <script sec:authorize="isAuthenticated()" th:inline="javascript">
+        /*<![CDATA[*/
+        const groupBuyId = /*[[${groupBuy.id}]]*/ 0;
+        
+        // CSRF 토큰을 meta 태그에서 읽기
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+        
+        let isWishlisted = false;
+        
+        // 페이지 로드 시 찜 상태 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            checkWishlistStatus();
+        });
+        
+        // 찜 상태 확인
+        async function checkWishlistStatus() {
+            // 찜 버튼이 없으면 (비로그인 사용자) 실행하지 않음
+            if (!document.getElementById('wishlistBtn')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/group-purchases/${groupBuyId}/bookmarks/status`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    isWishlisted = result.data;
+                    updateWishlistUI();
+                }
+            } catch (error) {
+                console.error('찜 상태 확인 실패:', error);
+            }
+        }
+        
+        // 찜 토글
+        async function toggleWishlist() {
+            try {
+                const method = 'POST';
+                const url = isWishlisted 
+                    ? `/group-purchases/${groupBuyId}/bookmarks/cancel`
+                    : `/group-purchases/${groupBuyId}/bookmarks`;
+                
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                // CSRF 토큰 추가
+                if (csrfToken && csrfHeader) {
+                    headers[csrfHeader] = csrfToken;
+                }
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: headers
+                });
+                
+                if (response.ok) {
+                    isWishlisted = !isWishlisted;
+                    updateWishlistUI();
+                    
+                    // 성공 메시지 표시
+                    const message = isWishlisted ? '찜 목록에 추가되었습니다.' : '찜 목록에서 제거되었습니다.';
+                    showToast(message);
+                } else if (response.status === 401) {
+                    alert('로그인이 필요합니다.');
+                    window.location.href = '/auth/login';
+                } else if (response.status === 403) {
+                    alert('인증에 실패했습니다. 페이지를 새로고침해주세요.');
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '찜 처리에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('찜 처리 실패:', error);
+                alert('찜 처리 중 오류가 발생했습니다.');
+            }
+        }
+        
+        // 찜 UI 업데이트
+        function updateWishlistUI() {
+            const icon = document.getElementById('wishlistIcon');
+            const text = document.getElementById('wishlistText');
+            const btn = document.getElementById('wishlistBtn');
+            
+            // 요소가 없으면 (비로그인 사용자) 실행하지 않음
+            if (!icon || !text || !btn) {
+                return;
+            }
+            
+            if (isWishlisted) {
+                icon.className = 'bi bi-heart-fill';
+                text.textContent = '찜 취소';
+                btn.className = 'btn btn-danger';
+            } else {
+                icon.className = 'bi bi-heart';
+                text.textContent = '찜 추가';
+                btn.className = 'btn btn-outline-danger';
+            }
+        }
+        
+        // 토스트 메시지 표시
+        function showToast(message) {
+            // Bootstrap Toast 사용
+            const toastHtml = `
+                <div class="toast-container position-fixed bottom-0 end-0 p-3">
+                    <div class="toast show" role="alert">
+                        <div class="toast-header">
+                            <strong class="me-auto">알림</strong>
+                            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                        </div>
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = toastHtml;
+            document.body.appendChild(tempDiv.firstElementChild);
+            
+            // 3초 후 자동 제거
+            setTimeout(() => {
+                const toastElement = document.querySelector('.toast-container');
+                if (toastElement) {
+                    toastElement.remove();
+                }
+            }, 3000);
+        }
+        /*]]>*/
+    </script>
     
     <!-- Comment Scripts -->
     <div th:replace="~{fragments/comments :: comment-scripts}"></div>

@@ -488,37 +488,65 @@ public class GroupBuyController {
     }
     
     /**
-     * 공구 찜하기 폼 제출
+     * 공구 찜하기 (AJAX용)
      */
     @PostMapping("/{purchaseId}/bookmarks")
-    public String addWishlist(
+    @ResponseBody
+    public ApiResponse<Void> addWishlist(
         @AuthenticationPrincipal UserDetails userDetails,
-        @PathVariable Long purchaseId,
-        RedirectAttributes redirectAttributes
+        @PathVariable Long purchaseId
     ) {
+        if (userDetails == null) {
+            return ApiResponse.error(ErrorCode.UNAUTHORIZED.getCode(), ErrorCode.UNAUTHORIZED.getMessage());
+        }
+        
         User user = userRepository.findByEmail(userDetails.getUsername())
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
         wishlistService.addWishlist(user.getId(), purchaseId);
-        redirectAttributes.addFlashAttribute("successMessage", "찜 목록에 추가되었습니다.");
-        return "redirect:/group-purchases/{purchaseId}";
+        return ApiResponse.success(null);
     }
     
     /**
-     * 공구 찜 취소 폼 제출
+     * 공구 찜 취소 (AJAX용)
      */
     @PostMapping("/{purchaseId}/bookmarks/cancel")
-    public String removeWishlist(
+    @ResponseBody
+    public ApiResponse<Void> removeWishlist(
         @AuthenticationPrincipal UserDetails userDetails,
-        @PathVariable Long purchaseId,
-        RedirectAttributes redirectAttributes
+        @PathVariable Long purchaseId
     ) {
+        if (userDetails == null) {
+            return ApiResponse.error(ErrorCode.UNAUTHORIZED.getCode(), ErrorCode.UNAUTHORIZED.getMessage());
+        }
+        
         User user = userRepository.findByEmail(userDetails.getUsername())
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
         wishlistService.removeWishlist(user.getId(), purchaseId);
-        redirectAttributes.addFlashAttribute("successMessage", "찜 목록에서 제거되었습니다.");
-        return "redirect:/group-purchases/{purchaseId}";
+        return ApiResponse.success(null);
+    }
+    
+    /**
+     * 공구 찜 상태 확인
+     * GET /group-purchases/{purchaseId}/bookmarks/status
+     */
+    @GetMapping("/{purchaseId}/bookmarks/status")
+    @ResponseBody
+    public ApiResponse<Boolean> checkWishlistStatus(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @PathVariable Long purchaseId
+    ) {
+        if (userDetails == null) {
+            return ApiResponse.success(false);
+        }
+        
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        boolean isWishlisted = wishlistService.isWishlisted(user.getId(), purchaseId);
+        
+        return ApiResponse.success(isWishlisted);
     }
     
     // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========

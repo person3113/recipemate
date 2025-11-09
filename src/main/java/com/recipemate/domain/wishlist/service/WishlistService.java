@@ -52,6 +52,10 @@ public class WishlistService {
         wishlistRepository.delete(wishlist);
     }
 
+    public boolean isWishlisted(Long userId, Long purchaseId) {
+        return wishlistRepository.existsByUserIdAndGroupBuyId(userId, purchaseId);
+    }
+
     public Page<WishlistResponse> getMyWishlist(Long userId, Pageable pageable) {
         // 사용자 존재 여부 확인
         userRepository.findById(userId)

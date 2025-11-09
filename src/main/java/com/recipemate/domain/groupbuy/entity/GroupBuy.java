@@ -208,8 +208,8 @@ public class GroupBuy extends BaseEntity {
         if (isTargetReached()) {
             throw new CustomException(ErrorCode.MAX_PARTICIPANTS_EXCEEDED);
         }
-        // 2. 참여 가능 상태인지 검증
-        if (this.status != GroupBuyStatus.RECRUITING) {
+        // 2. 참여 가능 상태인지 검증 (RECRUITING 또는 IMMINENT 상태만 허용)
+        if (this.status != GroupBuyStatus.RECRUITING && this.status != GroupBuyStatus.IMMINENT) {
             throw new CustomException(ErrorCode.GROUP_BUY_CLOSED);
         }
 
@@ -300,7 +300,7 @@ public class GroupBuy extends BaseEntity {
     }
 
     public boolean canParticipate() {
-        return this.status == GroupBuyStatus.RECRUITING && !isTargetReached();
+        return (this.status == GroupBuyStatus.RECRUITING || this.status == GroupBuyStatus.IMMINENT) && !isTargetReached();
     }
 
     public boolean isRecipeBased() {

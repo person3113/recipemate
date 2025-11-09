@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf?.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf?.headerName}"/>
     <title>내 찜 목록 - RecipeMate</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -21,8 +23,26 @@
                     <h1 class="display-6 fw-bold">
                         <i class="bi bi-heart-fill text-danger"></i> 내 찜 목록
                     </h1>
-                    <p class="text-muted">관심있는 공동구매를 모아보세요!</p>
+                    <p class="text-muted">관심있는 공동구매와 레시피를 모아보세요!</p>
                 </div>
+
+                <!-- Tab Navigation -->
+                <ul class="nav nav-tabs mb-4" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" 
+                           th:classappend="${currentTab == null or currentTab == 'groupbuy'} ? 'active' : ''"
+                           th:href="@{/users/me/bookmarks(tab=groupbuy)}">
+                            <i class="bi bi-cart"></i> 공동구매 찜
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" 
+                           th:classappend="${currentTab == 'recipe'} ? 'active' : ''"
+                           th:href="@{/users/me/bookmarks(tab=recipe)}">
+                            <i class="bi bi-book"></i> 레시피 찜
+                        </a>
+                    </li>
+                </ul>
 
                 <!-- Messages -->
                 <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
@@ -38,7 +58,7 @@
                 </div>
 
                 <!-- Wishlist Items -->
-                <div th:if="${wishlists != null and wishlists.hasContent()}" class="row g-4">
+                <div th:if="${(currentTab == null or currentTab == 'groupbuy') and wishlists != null and wishlists.hasContent()}" class="row g-4">
                     <div th:each="wishlist : ${wishlists.content}" class="col-12">
                         <div class="card shadow-sm card-hover">
                             <div class="card-body">
@@ -81,7 +101,7 @@
                                                 <small class="text-muted">
                                                     <i class="bi bi-calendar"></i> 마감일
                                                 </small>
-                                                <div class="fw-semibold" th:text="${#temporals.format(wishlist.deadline, 'yyyy-MM-dd')}">
+                                                 <div class="fw-semibold" th:text="${#temporals.format(wishlist.deadline, 'yyyy-MM-dd')}">
                                                     2024-12-31
                                                 </div>
                                             </div>
@@ -130,11 +150,75 @@
                     </div>
                 </div>
 
-                <!-- Pagination -->
-                <nav th:if="${wishlists != null and wishlists.totalPages > 1}" class="mt-4">
+                <!-- Recipe Wishlist Items -->
+                <div th:if="${currentTab == 'recipe' and recipeWishlists != null and recipeWishlists.hasContent()}" class="row g-4">
+                    <div th:each="recipeWishlist : ${recipeWishlists.content}" class="col-md-6 col-lg-4">
+                        <div class="card shadow-sm card-hover h-100">
+                            <img th:if="${recipeWishlist.thumbnailImageUrl}" 
+                                 th:src="${recipeWishlist.thumbnailImageUrl}" 
+                                 class="card-img-top" 
+                                 th:alt="${recipeWishlist.title}"
+                                 style="height: 200px; object-fit: cover;">
+                            <div class="card-body d-flex flex-column">
+                                <!-- Title -->
+                                <h5 class="card-title mb-2">
+                                    <a th:href="@{/recipes/{id}(id=${recipeWishlist.recipeId})}" 
+                                       class="text-decoration-none text-dark" 
+                                       th:text="${recipeWishlist.title}">레시피 제목</a>
+                                </h5>
+                                
+                                <!-- Category & Area -->
+                                <div class="mb-3">
+                                    <span th:if="${recipeWishlist.category}" 
+                                          class="badge bg-primary me-2"
+                                          th:text="${recipeWishlist.category}">카테고리</span>
+                                    <span th:if="${recipeWishlist.area}" 
+                                          class="badge bg-secondary"
+                                          th:text="${recipeWishlist.area}">지역</span>
+                                </div>
+                                
+                                <!-- Nutrition Info -->
+                                <div th:if="${recipeWishlist.calories != null}" class="mb-3">
+                                    <small class="text-muted">
+                                        <i class="bi bi-fire"></i> <span th:text="${recipeWishlist.calories}">0</span> kcal
+                                        <span th:if="${recipeWishlist.protein != null}">
+                                            | <i class="bi bi-lightning"></i> 단백질 <span th:text="${recipeWishlist.protein}">0</span>g
+                                        </span>
+                                    </small>
+                                </div>
+                                
+                                <!-- Wished Date -->
+                                <div class="mb-3">
+                                    <small class="text-muted">
+                                        <i class="bi bi-heart"></i>
+                                        찜한 날짜: <span th:text="${#temporals.format(recipeWishlist.wishedAt, 'yyyy-MM-dd')}">2024-01-01</span>
+                                    </small>
+                                </div>
+                                
+                                <!-- Action Buttons -->
+                                <div class="mt-auto d-grid gap-2">
+                                    <a th:href="@{/recipes/{id}(id=${recipeWishlist.recipeId})}" 
+                                       class="btn btn-primary">
+                                        <i class="bi bi-eye"></i> 상세보기
+                                    </a>
+                                    
+                                    <button type="button" 
+                                            class="btn btn-outline-danger recipe-bookmark-cancel-btn"
+                                            th:data-recipe-id="${recipeWishlist.recipeId}"
+                                            onclick="cancelRecipeBookmark(this)">
+                                        <i class="bi bi-heart-fill"></i> 찜 취소
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination for Group-buy -->
+                <nav th:if="${(currentTab == null or currentTab == 'groupbuy') and wishlists != null and wishlists.totalPages > 1}" class="mt-4">
                     <ul class="pagination justify-content-center">
                         <li class="page-item" th:classappend="${!wishlists.hasPrevious()} ? 'disabled'">
-                            <a class="page-link" th:href="@{/users/me/bookmarks(page=${wishlists.number - 1})}">
+                            <a class="page-link" th:href="@{/users/me/bookmarks(tab=groupbuy,page=${wishlists.number - 1})}">
                                 <i class="bi bi-chevron-left"></i> 이전
                             </a>
                         </li>
@@ -145,15 +229,52 @@
                             </span>
                         </li>
                         <li class="page-item" th:classappend="${!wishlists.hasNext()} ? 'disabled'">
-                            <a class="page-link" th:href="@{/users/me/bookmarks(page=${wishlists.number + 1})}">
+                            <a class="page-link" th:href="@{/users/me/bookmarks(tab=groupbuy,page=${wishlists.number + 1})}">
                                 다음 <i class="bi bi-chevron-right"></i>
                             </a>
                         </li>
                     </ul>
                 </nav>
 
-                <!-- Empty State -->
-                <div th:if="${wishlists == null or !wishlists.hasContent()}" class="card text-center py-5 shadow-sm">
+                <!-- Pagination for Recipe -->
+                <nav th:if="${currentTab == 'recipe' and recipeWishlists != null and recipeWishlists.totalPages > 1}" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" th:classappend="${!recipeWishlists.hasPrevious()} ? 'disabled'">
+                            <a class="page-link" th:href="@{/users/me/bookmarks(tab=recipe,page=${recipeWishlists.number - 1})}">
+                                <i class="bi bi-chevron-left"></i> 이전
+                            </a>
+                        </li>
+                        <li class="page-item active">
+                            <span class="page-link">
+                                <span th:text="${recipeWishlists.number + 1}">1</span> / 
+                                <span th:text="${recipeWishlists.totalPages}">1</span>
+                            </span>
+                        </li>
+                        <li class="page-item" th:classappend="${!recipeWishlists.hasNext()} ? 'disabled'">
+                            <a class="page-link" th:href="@{/users/me/bookmarks(tab=recipe,page=${recipeWishlists.number + 1})}">
+                                다음 <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- Empty State for Recipe -->
+                <div th:if="${currentTab == 'recipe' and (recipeWishlists == null or !recipeWishlists.hasContent())}" class="card text-center py-5 shadow-sm">
+                    <div class="card-body">
+                        <i class="bi bi-book display-1 text-muted"></i>
+                        <h3 class="mt-4 mb-3">찜한 레시피가 없습니다</h3>
+                        <p class="text-muted mb-4">
+                            관심있는 레시피를 찜하고<br>
+                            나중에 쉽게 찾아보세요!
+                        </p>
+                        <a href="/recipes" class="btn btn-primary">
+                            <i class="bi bi-book"></i> 레시피 둘러보기
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Empty State for Group-buy -->
+                <div th:if="${(currentTab == null or currentTab == 'groupbuy') and (wishlists == null or !wishlists.hasContent())}" class="card text-center py-5 shadow-sm">
                     <div class="card-body">
                         <i class="bi bi-heart display-1 text-muted"></i>
                         <h3 class="mt-4 mb-3">찜한 공구가 없습니다</h3>
@@ -161,7 +282,7 @@
                             관심있는 공동구매를 찜하고<br>
                             나중에 쉽게 찾아보세요!
                         </p>
-                        <a href="/group-purchases" class="btn btn-primary">
+                        <a href="/group-purchases/list" class="btn btn-primary">
                             <i class="bi bi-cart"></i> 공동구매 둘러보기
                         </a>
                     </div>
@@ -181,5 +302,39 @@
     <div th:replace="~{fragments/footer :: footer}"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Recipe bookmark cancel function
+        async function cancelRecipeBookmark(button) {
+            if (!confirm('찜을 취소하시겠습니까?')) {
+                return;
+            }
+            
+            const recipeId = button.dataset.recipeId;
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+            
+            try {
+                const response = await fetch(`/recipes/${recipeId}/bookmarks/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(csrfToken && csrfHeader ? { [csrfHeader]: csrfToken } : {})
+                    }
+                });
+                
+                if (response.ok) {
+                    // Reload page to refresh the list
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '찜 취소에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Error canceling bookmark:', error);
+                alert('찜 취소 중 오류가 발생했습니다.');
+            }
+        }
+    </script>
 </body>
 </html>

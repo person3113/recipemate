@@ -57,14 +57,27 @@ public class SecurityConfig {
                         .requestMatchers(
                             "/",                                  // Home page
                             "/recipes",                           // Recipe search page
-                            "/recipes/**",                        // All recipe pages
+                            "/recipes/list",                      // Recipe list page
+                            "/recipes/random",                    // Random recipe page
+                            "/recipes/{recipeId}",                // Recipe detail pages (e.g., /recipes/123, /recipes/meal-52772)
+                            "/recipes/{recipeId}/group-purchases", // Recipe related group-buys
                             "/group-purchases/list",              // Group purchase list
                             "/group-purchases/{id:[0-9]+}",       // Group purchase detail
                             "/community-posts/list",              // Community post list
                             "/community-posts/{id:[0-9]+}",       // Community post detail
                             "/search/**",                         // Search pages
-                            "/comments/fragments"                 // Comment list fragments (HTMX)
+                            "/comments/fragments",                // Comment list fragments (HTMX)
+                            "/recipes/*/bookmarks/status",        // Recipe bookmark status check (returns false for non-auth)
+                            "/group-purchases/*/bookmarks/status" // Group-buy bookmark status check (returns false for non-auth)
                         ).permitAll()
+                        
+                        // API endpoints that require authentication
+                        .requestMatchers(
+                            "/recipes/*/bookmarks",               // Recipe bookmark add
+                            "/recipes/*/bookmarks/cancel",        // Recipe bookmark cancel
+                            "/group-purchases/*/bookmarks",       // Group-buy bookmark add
+                            "/group-purchases/*/bookmarks/cancel" // Group-buy bookmark cancel
+                        ).authenticated()
                         
                         // All other requests require authentication
                         .anyRequest().authenticated()

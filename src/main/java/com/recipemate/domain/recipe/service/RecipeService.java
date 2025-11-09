@@ -537,15 +537,20 @@ public class RecipeService {
     }
 
     /**
-     * 레시피 상세 조회 (DB 기반)
+     * DB ID로 레시피 상세 조회
      * DB에 있으면 DB에서 조회, 없으면 외부 API 호출 후 저장
      * 
      * @param recipeId 레시피 DB ID
      * @return 레시피 상세 정보
      */
     public RecipeDetailResponse getRecipeDetailById(Long recipeId) {
+        // MultipleBagFetchException 방지: ingredients와 steps를 두 단계로 조회
         Recipe recipe = recipeRepository.findByIdWithIngredientsAndSteps(recipeId)
                 .orElseThrow(() -> new CustomException(ErrorCode.RECIPE_NOT_FOUND));
+        
+        // steps를 명시적으로 초기화 (lazy load)
+        // 이미 영속성 컨텍스트에 있으므로 steps 접근 시 자동 로드됨
+        recipe.getSteps().size(); // lazy initialization trigger
         
         return convertRecipeEntityToDetailResponse(recipe);
     }

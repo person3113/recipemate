@@ -19,6 +19,8 @@ import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.domain.user.service.PointService;
 import com.recipemate.domain.user.service.UserService;
+import com.recipemate.domain.recipewishlist.dto.RecipeWishlistResponse;
+import com.recipemate.domain.recipewishlist.service.RecipeWishlistService;
 import com.recipemate.domain.wishlist.dto.WishlistResponse;
 import com.recipemate.domain.wishlist.service.WishlistService;
 import com.recipemate.global.common.GroupBuyStatus;
@@ -46,6 +48,7 @@ public class UserController {
 
     private final UserService userService;
     private final WishlistService wishlistService;
+    private final RecipeWishlistService recipeWishlistService;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
     private final BadgeService badgeService;
@@ -102,13 +105,21 @@ public class UserController {
     @GetMapping("/me/bookmarks")
     public String myWishlistPage(
             @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "groupbuy") String tab,
             @PageableDefault(size = 20, sort = "wishedAt", direction = Sort.Direction.DESC) Pageable pageable,
             Model model) {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
-        Page<WishlistResponse> wishlists = wishlistService.getMyWishlist(user.getId(), pageable);
-        model.addAttribute("wishlists", wishlists);
+        if ("groupbuy".equals(tab)) {
+            Page<WishlistResponse> wishlists = wishlistService.getMyWishlist(user.getId(), pageable);
+            model.addAttribute("wishlists", wishlists);
+        } else if ("recipe".equals(tab)) {
+            Page<RecipeWishlistResponse> recipeWishlists = recipeWishlistService.getMyWishlist(user.getId(), pageable);
+            model.addAttribute("recipeWishlists", recipeWishlists);
+        }
+        
+        model.addAttribute("currentTab", tab);
         return "user/bookmarks";
     }
 

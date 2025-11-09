@@ -548,7 +548,20 @@
                 imageFilesInput.addEventListener('change', async function(e) {
                     const files = Array.from(e.target.files);
                     
-                    // 파일 개수 검증
+                    // 기존 이미지 개수 계산 (삭제 표시되지 않은 것만)
+                    const existingImageCards = document.querySelectorAll('.existing-image-card');
+                    const existingCount = Array.from(existingImageCards).filter(card => {
+                        return card.style.opacity !== '0.5';
+                    }).length;
+                    
+                    // 총 이미지 개수 검증 (기존 + 새 이미지 <= 3)
+                    if (existingCount + files.length > MAX_IMAGE_COUNT) {
+                        alert(`총 이미지는 최대 ${MAX_IMAGE_COUNT}장까지 가능합니다. (현재 ${existingCount}개 존재, ${files.length}개 추가 시도)`);
+                        e.target.value = '';
+                        return;
+                    }
+                    
+                    // 파일 개수 검증 (새 이미지만)
                     if (files.length > MAX_IMAGE_COUNT) {
                         alert(`이미지는 최대 ${MAX_IMAGE_COUNT}장까지 업로드할 수 있습니다.`);
                         e.target.value = '';

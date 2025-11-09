@@ -312,13 +312,19 @@ public class GroupBuyService {
             }
         }
         
-        // 4-4. 새 이미지 업로드
+        // 4-4. 새 이미지 업로드 전 총 개수 검증
         List<String> newImageUrls = new ArrayList<>();
         if (request.getImages() != null && !request.getImages().isEmpty()) {
             // 빈 파일이 아닌 것만 필터링
             List<org.springframework.web.multipart.MultipartFile> validFiles = request.getImages().stream()
                 .filter(file -> !file.isEmpty())
                 .toList();
+            
+            // 총 이미지 개수 검증 (기존 남은 이미지 + 새 이미지 <= 3)
+            int remainingImageCount = remainingImages.size();
+            if (remainingImageCount + validFiles.size() > 3) {
+                throw new CustomException(ErrorCode.IMAGE_COUNT_EXCEEDED);
+            }
             
             if (!validFiles.isEmpty()) {
                 newImageUrls = imageUploadUtil.uploadImages(validFiles);
@@ -392,8 +398,24 @@ public class GroupBuyService {
             throw new CustomException(ErrorCode.HAS_PARTICIPANTS);
         }
         
-        // 5. 소프트 삭제
+        // 5. 연관된 이미지 처리
+        List<GroupBuyImage> images = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy);
+        if (!images.isEmpty()) {
+            // 5-1. Cloudinary에서 이미지 삭제
+            List<String> imageUrls = images.stream()
+                .map(GroupBuyImage::getImageUrl)
+                .toList();
+            imageUploadUtil.deleteImages(imageUrls);
+            log.info("Deleted {} images from Cloudinary for group buy {}", imageUrls.size(), groupBuyId);
+            
+            // 5-2. DB에서 이미지 소프트 삭제
+            images.forEach(GroupBuyImage::delete);
+            log.info("Soft deleted {} images in DB for group buy {}", images.size(), groupBuyId);
+        }
+        
+        // 6. 공구 소프트 삭제
         groupBuy.delete();
+        log.info("Soft deleted group buy {}", groupBuyId);
     }
 
     /**

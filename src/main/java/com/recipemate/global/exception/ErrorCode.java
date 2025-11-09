@@ -34,6 +34,7 @@ public enum ErrorCode {
     INVALID_SELECTED_DELIVERY_METHOD(HttpStatus.BAD_REQUEST, "GROUP-021", "선택한 수령 방법은 DIRECT 또는 PARCEL이어야 합니다."),
     DELIVERY_METHOD_INCOMPATIBLE(HttpStatus.BAD_REQUEST, "GROUP-022", "선택한 수령 방법이 공구의 수령 방법과 호환되지 않습니다."),
     NO_PARTICIPANTS(HttpStatus.BAD_REQUEST, "GROUP-023", "참여 인원이 0명입니다."),
+    IMAGE_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "GROUP-024", "이미지는 최대 3장까지만 업로드할 수 있습니다."),
     
     RECIPE_NOT_FOUND(HttpStatus.NOT_FOUND, "RECIPE-001", "레시피를 찾을 수 없습니다."),
     

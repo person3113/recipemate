@@ -87,8 +87,14 @@
                                                                th:data-name="${ingredient.name}"
                                                                th:data-measure="${ingredient.measure}"
                                                                checked>
-                                                        <label class="form-check-label fw-semibold" th:for="'ingredient-' + ${stat.index}">
-                                                            <span th:text="${ingredient.name}">재료명</span>
+                                                        <label class="form-check-label fw-semibold d-flex align-items-center gap-2" th:for="'ingredient-' + ${stat.index}">
+                                                            <input type="text" 
+                                                                   class="form-control form-control-sm ingredient-name-input" 
+                                                                   th:id="'name-' + ${stat.index}"
+                                                                   th:value="${ingredient.name}"
+                                                                   th:placeholder="${ingredient.name}"
+                                                                   onclick="event.stopPropagation()"
+                                                                   style="flex: 1; min-width: 100px;">
                                                         </label>
                                                     </div>
                                                     <input type="text" 
@@ -704,14 +710,21 @@
                 
                 checkboxes.forEach((checkbox, index) => {
                     if (checkbox.checked) {
+                        const nameInput = document.getElementById('name-' + index) || 
+                                       checkbox.closest('.ingredient-item').querySelector('.ingredient-name-input');
                         const measureInput = document.getElementById('measure-' + index) || 
                                            checkbox.closest('.ingredient-item').querySelector('.ingredient-measure');
                         
-                        selectedIngredients.push({
-                            name: checkbox.dataset.name || '',
-                            measure: measureInput ? measureInput.value : '',
-                            selected: true
-                        });
+                        const ingredientName = nameInput ? nameInput.value.trim() : checkbox.dataset.name || '';
+                        const ingredientMeasure = measureInput ? measureInput.value.trim() : '';
+                        
+                        if (ingredientName) {
+                            selectedIngredients.push({
+                                name: ingredientName,
+                                measure: ingredientMeasure,
+                                selected: true
+                            });
+                        }
                     }
                 });
                 

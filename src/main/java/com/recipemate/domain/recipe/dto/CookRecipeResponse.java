@@ -193,7 +193,7 @@ public class CookRecipeResponse {
 
     /**
      * 재료 정보를 파싱하여 리스트로 반환
-     * RCP_PARTS_DTLS는 쉼표로 구분된 문자열
+     * RCP_PARTS_DTLS는 쉼표 또는 개행 문자로 구분된 문자열
      */
     public List<String> getIngredients() {
         List<String> ingredients = new ArrayList<>();
@@ -202,7 +202,8 @@ public class CookRecipeResponse {
             return ingredients;
         }
 
-        String[] parts = rcpPartsDtls.split(",");
+        // 쉼표(,) 또는 개행(\n)을 기준으로 분리. 구분자가 여러 개 연속되어도 처리.
+        String[] parts = rcpPartsDtls.split("[,\\n]+");
         for (String part : parts) {
             String trimmed = part.trim();
             if (!trimmed.isEmpty()) {

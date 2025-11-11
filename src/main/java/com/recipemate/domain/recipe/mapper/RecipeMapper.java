@@ -158,8 +158,15 @@ public class RecipeMapper {
     }
 
     /**
-     * 식품안전나라의 RCP_PARTS_DTLS 파싱
-     * 형식: "재료명(계량), 재료명(계량), ..." 또는 "재료명 계량, 재료명 계량, ..."
+     * 식품안전나라의 RCP_PARTS_DTLS 파싱 (v2 개선 버전)
+     * - 쉼표(,)와 개행(\n)을 모두 구분자로 처리
+     * - 재료명과 계량 정보를 더 정확하게 분리
+     * - 헤더/라벨 정보 필터링 (●, [1인분] 등)
+     * 
+     * 예시 변환:
+     * "연두부 75g(3/4모)" → NAME: "연두부", MEASURE: "75g(3/4모)"
+     * "배추(20g)" → NAME: "배추", MEASURE: "20g"
+     * "칵테일새우 20g(5마리)" → NAME: "칵테일새우", MEASURE: "20g(5마리)"
      */
     private List<IngredientWithMeasure> parseIngredients(String rcpPartsDtls) {
         List<IngredientWithMeasure> ingredients = new ArrayList<>();
@@ -168,16 +175,13 @@ public class RecipeMapper {
             return ingredients;
         }
 
-        // 쉼표로 분리
-        String[] parts = rcpPartsDtls.split(",");
-
-        // 패턴 1: "재료명(계량)" 형식
-        Pattern pattern1 = Pattern.compile("^([^(]+)\\(([^)]+)\\)$");
-        // 패턴 2: "재료명 계량" 형식 (공백으로 구분)
-        Pattern pattern2 = Pattern.compile("^(.+?)\\s+(\\d+.*)$");
+        // v2 개선: 쉼표(,) 또는 개행(\n)을 기준으로 분리
+        String[] parts = rcpPartsDtls.split("[,\\n]+");
 
         for (String part : parts) {
             String trimmed = part.trim();
+            
+            // 빈 문자열 건너뛰기
             if (trimmed.isEmpty()) {
                 continue;
             }
@@ -185,20 +189,33 @@ public class RecipeMapper {
             String name;
             String measure;
 
-            // 패턴 1 시도: "재료명(계량)"
-            Matcher matcher1 = pattern1.matcher(trimmed);
-            if (matcher1.matches()) {
-                name = matcher1.group(1).trim();
-                measure = matcher1.group(2).trim();
-            }
-            // 패턴 2 시도: "재료명 계량"
-            else {
-                Matcher matcher2 = pattern2.matcher(trimmed);
-                if (matcher2.matches()) {
-                    name = matcher2.group(1).trim();
-                    measure = matcher2.group(2).trim();
+            // 패턴 1 (우선순위 높음): "재료명 숫자..." 형식 처리
+            // 예: "연두부 75g(3/4모)", "칵테일새우 20g(5마리)"
+            Pattern spacePattern = Pattern.compile("^(.+?)\\s+(\\d+.*)$");
+            Matcher spaceMatcher = spacePattern.matcher(trimmed);
+            
+            if (spaceMatcher.matches()) {
+                // 공백으로 구분된 형식
+                name = spaceMatcher.group(1).trim();
+                measure = spaceMatcher.group(2).trim();
+                
+                // 재료명이 비어있지 않은지 확인
+                if (name.isEmpty()) {
+                    name = trimmed;
+                    measure = "적당량";
+                }
+            } else {
+                // 패턴 2: "재료명(계량)" 형식 처리
+                // 예: "배추(20g)", "무(10g)"
+                Pattern bracketPattern = Pattern.compile("^([^(]+)\\(([^)]+)\\)$");
+                Matcher bracketMatcher = bracketPattern.matcher(trimmed);
+                
+                if (bracketMatcher.matches()) {
+                    // 괄호 형식: "재료명(계량)"
+                    name = bracketMatcher.group(1).trim();
+                    measure = bracketMatcher.group(2).trim();
                 } else {
-                    // 계량 정보가 없는 경우
+                    // 계량 정보가 없는 경우 (헤더나 라벨일 가능성)
                     name = trimmed;
                     measure = "적당량";
                 }

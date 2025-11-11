@@ -87,8 +87,13 @@
                                                                th:data-name="${ingredient.name}"
                                                                th:data-measure="${ingredient.measure}"
                                                                checked>
-                                                        <label class="form-check-label fw-semibold" th:for="'ingredient-' + ${stat.index}">
-                                                            <span th:text="${ingredient.name}">재료명</span>
+                                                        <label class="form-check-label fw-semibold w-100" th:for="'ingredient-' + ${stat.index}">
+                                                            <input type="text" 
+                                                                   class="form-control form-control-sm d-inline-block ingredient-name-input" 
+                                                                   th:id="'name-' + ${stat.index}"
+                                                                   th:value="${ingredient.name}"
+                                                                   placeholder="재료명"
+                                                                   style="width: 100%;">
                                                         </label>
                                                     </div>
                                                     <input type="text" 
@@ -96,6 +101,9 @@
                                                            th:id="'measure-' + ${stat.index}"
                                                            th:value="${ingredient.measure}"
                                                            placeholder="분량 (예: 200g, 2개)">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger mt-2 remove-ingredient">
+                                                        <i class="bi bi-trash"></i> 제거
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -697,18 +705,40 @@
                 return;
             }
             
+            // 기존 재료 항목들에 대한 이벤트 리스너 등록
+            document.querySelectorAll('.ingredient-name-input').forEach((nameInput) => {
+                const ingredientItem = nameInput.closest('.ingredient-item');
+                const checkbox = ingredientItem.querySelector('.ingredient-checkbox');
+                
+                // 재료명 변경 시 data-name 속성 업데이트
+                nameInput.addEventListener('input', function() {
+                    checkbox.dataset.name = this.value;
+                });
+            });
+            
+            // 기존 재료 항목들의 제거 버튼에 이벤트 리스너 등록
+            document.querySelectorAll('.remove-ingredient').forEach((removeBtn) => {
+                removeBtn.addEventListener('click', function() {
+                    const ingredientCol = this.closest('.col-md-6');
+                    if (ingredientCol) {
+                        ingredientCol.remove();
+                    }
+                });
+            });
+            
             // 폼 제출 시 선택된 재료를 JSON으로 변환
             form.addEventListener('submit', function(e) {
-                const checkboxes = document.querySelectorAll('.ingredient-checkbox');
+                const ingredientItems = document.querySelectorAll('.ingredient-item');
                 const selectedIngredients = [];
                 
-                checkboxes.forEach((checkbox, index) => {
-                    if (checkbox.checked) {
-                        const measureInput = document.getElementById('measure-' + index) || 
-                                           checkbox.closest('.ingredient-item').querySelector('.ingredient-measure');
+                ingredientItems.forEach((item) => {
+                    const checkbox = item.querySelector('.ingredient-checkbox');
+                    if (checkbox && checkbox.checked) {
+                        const nameInput = item.querySelector('.ingredient-name-input');
+                        const measureInput = item.querySelector('.ingredient-measure');
                         
                         selectedIngredients.push({
-                            name: checkbox.dataset.name || '',
+                            name: nameInput ? nameInput.value : (checkbox.dataset.name || ''),
                             measure: measureInput ? measureInput.value : '',
                             selected: true
                         });
@@ -745,12 +775,12 @@
                                    id="ingredient-${ingredientIndex}"
                                    data-name=""
                                    checked>
-                            <label class="form-check-label" for="ingredient-${ingredientIndex}">
+                            <label class="form-check-label w-100" for="ingredient-${ingredientIndex}">
                                 <input type="text" 
                                        class="form-control form-control-sm d-inline-block ingredient-name-input" 
                                        placeholder="재료명"
                                        required
-                                       style="width: auto;">
+                                       style="width: 100%;">
                             </label>
                         </div>
                         <input type="text" 

@@ -18,6 +18,8 @@ public class ReviewResponse {
     // 작성자 정보
     private Long reviewerId;
     private String reviewerNickname;
+    private String authorNickname; // Template alias for reviewerNickname
+    private String authorEmail; // 작성자 이메일 (권한 체크용)
 
     // 공구 정보
     private Long groupBuyId;
@@ -35,6 +37,8 @@ public class ReviewResponse {
                 .content(review.getContent())
                 .reviewerId(review.getReviewer().getId())
                 .reviewerNickname(review.getReviewer().getNickname())
+                .authorNickname(review.getReviewer().getNickname()) // Template alias
+                .authorEmail(review.getReviewer().getEmail()) // 권한 체크용
                 .groupBuyId(review.getGroupBuy().getId())
                 .groupBuyTitle(review.getGroupBuy().getTitle())
                 .createdAt(review.getCreatedAt())

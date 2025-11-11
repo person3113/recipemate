@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<!-- 빈 프래그먼트 (htmx 삭제용) -->
+<div th:fragment="empty"></div>
+
+<!-- 후기 목록 프래그먼트 -->
+<div th:fragment="review-list" class="reviews-section">
+    <!-- 평점 요약 (groupBuyId가 있고 후기가 있을 때만 표시) -->
+    <div th:if="${groupBuyId != null and !reviews.empty}" class="mb-4 p-4 bg-light rounded">
+        <div class="row align-items-center">
+            <div class="col-md-4 text-center">
+                <div class="display-4 fw-bold text-warning">
+                    <span th:text="${#numbers.formatDecimal(averageRating ?: 0.0, 1, 1)}">0.0</span>
+                </div>
+                <div class="mb-2">
+                    <span th:each="star : ${#numbers.sequence(1, 5)}" 
+                          th:class="${star <= (averageRating ?: 0.0)} ? 'text-warning' : 'text-muted'">
+                        <i th:class="${star <= (averageRating ?: 0.0)} ? 'bi bi-star-fill' : 'bi bi-star'"></i>
+                    </span>
+                </div>
+                <div class="text-muted">
+                    <span th:text="${reviews.totalElements}">0</span>개의 후기
+                </div>
+            </div>
+            <div class="col-md-8">
+                <!-- 평점 분포 차트 -->
+                <div th:each="rating : ${#numbers.sequence(5, 1, -1)}" class="mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="me-2" style="width: 50px;">
+                            <span th:text="${rating}">5</span>
+                            <i class="bi bi-star-fill text-warning small"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-warning" 
+                                     th:with="count=${ratingDistribution.get(rating) ?: 0}"
+                                     th:style="'width: ' + ${reviews.totalElements > 0 ? (count * 100.0 / reviews.totalElements) : 0} + '%'"
+                                     th:text="${count}">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="mb-0">
+            <i class="bi bi-star me-2"></i>
+            후기 <span class="badge bg-primary rounded-pill" th:text="${reviews.totalElements}">0</span>
+        </h5>
+        
+        <!-- 후기 작성 버튼 (로그인한 사용자, groupBuyId가 있을 때만 표시) -->
+        <div sec:authorize="isAuthenticated()" th:if="${groupBuyId != null}">
+            <a th:href="@{/group-purchases/{id}/reviews/new(id=${groupBuyId})}" 
+               class="btn btn-primary">
+                <i class="bi bi-pencil-square me-1"></i>
+                후기 작성하기
+            </a>
+        </div>
+    </div>
+
+    <!-- 로그인 안한 경우 안내 메시지 -->
+    <div sec:authorize="!isAuthenticated()" class="alert alert-info mb-4">
+        <i class="bi bi-info-circle me-2"></i>
+        후기를 작성하려면 <a href="/auth/login" class="alert-link">로그인</a>이 필요합니다.
+    </div>
+
+    <!-- 후기 목록 -->
+    <div id="reviews-container" class="reviews-container">
+        <div th:if="${reviews.empty}" class="text-center text-muted py-5">
+            <i class="bi bi-star" style="font-size: 3rem;"></i>
+            <p class="mt-3 mb-0">아직 후기가 없습니다. 첫 후기를 작성해보세요!</p>
+        </div>
+
+        <div th:unless="${reviews.empty}">
+            <div th:each="review : ${reviews.content}" class="mb-3">
+                <div th:replace="~{fragments/reviews :: review-item(${review})}"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 페이지네이션 -->
+    <nav th:if="${reviews.totalPages > 1}" aria-label="후기 페이지네이션" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item" th:classappend="${reviews.first} ? 'disabled'">
+                <a class="page-link" 
+                   th:href="@{''(page=${reviews.number - 1})}"
+                   hx-get th:hx-get="@{/reviews/fragments(groupBuyId=${groupBuyId}, page=${reviews.number - 1})}"
+                   hx-target=".reviews-section"
+                   hx-swap="outerHTML">
+                    이전
+                </a>
+            </li>
+            
+            <li th:each="pageNum : ${#numbers.sequence(0, reviews.totalPages - 1)}"
+                class="page-item"
+                th:classappend="${pageNum == reviews.number} ? 'active'">
+                <a class="page-link" 
+                   th:href="@{''(page=${pageNum})}"
+                   th:text="${pageNum + 1}"
+                   hx-get th:hx-get="@{/reviews/fragments(groupBuyId=${groupBuyId}, page=${pageNum})}"
+                   hx-target=".reviews-section"
+                   hx-swap="outerHTML">1</a>
+            </li>
+            
+            <li class="page-item" th:classappend="${reviews.last} ? 'disabled'">
+                <a class="page-link" 
+                   th:href="@{''(page=${reviews.number + 1})}"
+                   hx-get th:hx-get="@{/reviews/fragments(groupBuyId=${groupBuyId}, page=${reviews.number + 1})}"
+                   hx-target=".reviews-section"
+                   hx-swap="outerHTML">
+                    다음
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+<!-- 단일 후기 아이템 프래그먼트 -->
+<div th:fragment="review-item(review)" 
+     th:id="'review-' + ${review.id}"
+     class="review-item">
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="d-flex align-items-center">
+                    <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2"
+                         style="width: 40px; height: 40px;">
+                        <span th:text="${#strings.substring(review.authorNickname, 0, 1)}">A</span>
+                    </div>
+                    <div>
+                        <div class="fw-bold" th:text="${review.authorNickname}">작성자</div>
+                        <div class="text-muted small">
+                            <span th:text="${#temporals.format(review.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</span>
+                            <span th:if="${review.updatedAt != null and review.updatedAt.isAfter(review.createdAt)}" class="badge bg-secondary ms-1">수정됨</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 후기 작성자만 보이는 액션 버튼 -->
+                <div sec:authorize="isAuthenticated()" 
+                     th:if="${#authentication.principal.username == review.authorEmail}">
+                    <div class="btn-group btn-group-sm">
+                        <a th:href="@{/group-purchases/{purchaseId}/reviews/{reviewId}/edit(purchaseId=${review.groupBuyId}, reviewId=${review.id})}" 
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <button type="button" 
+                                class="btn btn-outline-danger"
+                                data-bs-toggle="modal" 
+                                th:attr="data-bs-target='#deleteReviewModal-' + ${review.id}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 평점 표시 -->
+            <div class="mb-2">
+                <span th:each="star : ${#numbers.sequence(1, 5)}" 
+                      th:class="${star <= review.rating} ? 'text-warning' : 'text-muted'">
+                    <i th:class="${star <= review.rating} ? 'bi bi-star-fill' : 'bi bi-star'"></i>
+                </span>
+                <span class="ms-2 text-muted small">
+                    <span th:text="${review.rating}">5</span>/5
+                </span>
+            </div>
+
+            <!-- 후기 내용 -->
+            <div class="review-content">
+                <p class="mb-0" th:text="${review.content}">후기 내용</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 삭제 확인 모달 -->
+    <div sec:authorize="isAuthenticated()" 
+         th:if="${#authentication.principal.username == review.authorEmail}"
+         class="modal fade" 
+         th:id="'deleteReviewModal-' + ${review.id}" 
+         tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">후기 삭제</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>정말로 이 후기를 삭제하시겠습니까?</p>
+                    <p class="text-muted small">삭제된 후기는 복구할 수 없습니다.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <form th:action="@{/group-purchases/{purchaseId}/reviews/{reviewId}/delete(purchaseId=${review.groupBuyId}, reviewId=${review.id})}" 
+                          method="post"
+                          hx-delete th:hx-delete="@{/group-purchases/{purchaseId}/reviews/{reviewId}(purchaseId=${review.groupBuyId}, reviewId=${review.id})}"
+                          th:hx-target="'#review-' + ${review.id}"
+                          hx-swap="outerHTML">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit" class="btn btn-danger">삭제하기</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</html>

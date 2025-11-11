@@ -1,5 +1,6 @@
 package com.recipemate.domain.recipe.dto;
 
+import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,6 +28,7 @@ public class RecipeDetailResponse {
     private List<ManualStep> manualSteps;
     private NutritionInfo nutritionInfo;
     private String source; // API 출처
+    private List<GroupBuyResponse> relatedGroupBuys; // 관련 공동구매 목록
 
     @Getter
     @NoArgsConstructor

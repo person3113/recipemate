@@ -65,6 +65,8 @@ public class SecurityConfig {
                             "/group-purchases/{id:[0-9]+}",       // Group purchase detail
                             "/community-posts/list",              // Community post list
                             "/community-posts/{id:[0-9]+}",       // Community post detail
+                            "/reviews",                           // Review list page
+                            "/reviews/fragments",                 // Review list fragments (HTMX)
                             "/search/**",                         // Search pages
                             "/comments/fragments",                // Comment list fragments (HTMX)
                             "/recipes/*/bookmarks/status",        // Recipe bookmark status check (returns false for non-auth)

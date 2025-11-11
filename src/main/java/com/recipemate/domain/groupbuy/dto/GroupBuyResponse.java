@@ -48,6 +48,10 @@ public class GroupBuyResponse {
     private boolean isParticipant;
     private boolean isCancellable;
     
+    // 후기 정보
+    private Double averageRating;
+    private Integer reviewCount;
+    
     // 타임스탬프
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -79,6 +83,8 @@ public class GroupBuyResponse {
                 .isHost(false)
                 .isParticipant(false)
                 .isCancellable(false)
+                .averageRating(null)
+                .reviewCount(0)
                 .createdAt(groupBuy.getCreatedAt())
                 .updatedAt(groupBuy.getUpdatedAt())
                 .build();
@@ -112,6 +118,8 @@ public class GroupBuyResponse {
                 .isHost(isHost)
                 .isParticipant(isParticipant)
                 .isCancellable(isCancellable)
+                .averageRating(null)
+                .reviewCount(0)
                 .createdAt(groupBuy.getCreatedAt())
                 .updatedAt(groupBuy.getUpdatedAt())
                 .build();

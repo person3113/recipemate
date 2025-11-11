@@ -120,6 +120,8 @@ public class PostController {
     public String createPage(Model model) {
         // 빈 폼 객체 추가 (Thymeleaf th:object를 위해 필수)
         model.addAttribute("formData", new CreatePostRequest());
+        // PostCategory enum 값들을 모델에 추가
+        model.addAttribute("categories", PostCategory.values());
         return "community-posts/form";
     }
     
@@ -138,6 +140,8 @@ public class PostController {
         formData.setCategory(post.getCategory());
 
         model.addAttribute("formData", formData);
+        // PostCategory enum 값들을 모델에 추가
+        model.addAttribute("categories", PostCategory.values());
         return "community-posts/form";
     }
 
@@ -159,6 +163,8 @@ public class PostController {
             model.addAttribute("formData", request);
             model.addAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
+            // PostCategory enum 값들을 모델에 추가
+            model.addAttribute("categories", PostCategory.values());
             // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
             return "community-posts/form";
         }
@@ -191,6 +197,8 @@ public class PostController {
             // 기존 게시글 정보 조회해서 모델에 추가
             PostResponse post = postService.getPostDetail(postId);
             model.addAttribute("post", post);
+            // PostCategory enum 값들을 모델에 추가
+            model.addAttribute("categories", PostCategory.values());
             // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
             return "community-posts/form";
         }

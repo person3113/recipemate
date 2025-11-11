@@ -134,7 +134,8 @@ public class Participation extends BaseEntity {
     }
 
     public boolean getHasReview() {
-        // TODO: 리뷰 기능 구현 시 실제 리뷰 존재 여부 확인 로직 추가
+        // 템플릿 호환성을 위해 유지되는 메서드
+        // 실제 후기 존재 여부는 컨트롤러에서 reviewExistsMap으로 확인
         return false;
     }
 }

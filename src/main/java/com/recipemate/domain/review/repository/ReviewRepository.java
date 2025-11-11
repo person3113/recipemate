@@ -1,6 +1,8 @@
 package com.recipemate.domain.review.repository;
 
 import com.recipemate.domain.review.entity.Review;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +16,19 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
      * idx_review_group_buy_id 인덱스 활용
      */
     List<Review> findByGroupBuyIdOrderByCreatedAtDesc(Long groupBuyId);
+
+    /**
+     * 특정 공구의 후기 목록을 페이징하여 조회 (최신순)
+     * idx_review_group_buy_id 인덱스 활용
+     */
+    @Query("SELECT r FROM Review r JOIN FETCH r.reviewer JOIN FETCH r.groupBuy WHERE r.groupBuy.id = :groupBuyId ORDER BY r.createdAt DESC")
+    Page<Review> findByGroupBuyIdWithDetails(@Param("groupBuyId") Long groupBuyId, Pageable pageable);
+
+    /**
+     * 전체 후기 목록을 페이징하여 조회 (최신순)
+     */
+    @Query("SELECT r FROM Review r JOIN FETCH r.reviewer JOIN FETCH r.groupBuy ORDER BY r.createdAt DESC")
+    Page<Review> findAllWithDetails(Pageable pageable);
 
     /**
      * 특정 사용자가 특정 공구에 후기를 작성했는지 확인
@@ -48,4 +63,11 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
      */
     @Query("SELECT r FROM Review r WHERE r.groupBuy.host.id = :hostId ORDER BY r.createdAt DESC")
     List<Review> findByGroupBuyHostId(@Param("hostId") Long hostId);
+
+    /**
+     * 특정 공구의 평점별 후기 개수 조회
+     */
+    @Query("SELECT r.rating, COUNT(r) FROM Review r WHERE r.groupBuy.id = :groupBuyId GROUP BY r.rating")
+    List<Object[]> countByRatingForGroupBuy(@Param("groupBuyId") Long groupBuyId);
 }
+

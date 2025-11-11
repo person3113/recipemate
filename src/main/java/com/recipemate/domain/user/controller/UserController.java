@@ -55,6 +55,7 @@ public class UserController {
     private final PointService pointService;
     private final GroupBuyRepository groupBuyRepository;
     private final ParticipationRepository participationRepository;
+    private final com.recipemate.domain.review.repository.ReviewRepository reviewRepository;
 
     /**
      * 마이페이지 렌더링
@@ -246,7 +247,19 @@ public class UserController {
         Page<Participation> participations = participationRepository.findByUserIdWithGroupBuyAndHost(
                 user.getId(), statusFilter, pageable);
         
+        // 각 참여에 대한 후기 존재 여부를 한 번에 조회
+        List<Long> groupBuyIds = participations.getContent().stream()
+                .map(p -> p.getGroupBuy().getId())
+                .toList();
+        
+        java.util.Map<Long, Boolean> reviewExistsMap = new java.util.HashMap<>();
+        for (Long groupBuyId : groupBuyIds) {
+            boolean hasReview = reviewRepository.existsByReviewerIdAndGroupBuyId(user.getId(), groupBuyId);
+            reviewExistsMap.put(groupBuyId, hasReview);
+        }
+        
         model.addAttribute("participations", participations);
+        model.addAttribute("reviewExistsMap", reviewExistsMap);
         model.addAttribute("currentStatus", status);
         return "user/participations";
     }

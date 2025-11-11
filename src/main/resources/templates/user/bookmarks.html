@@ -134,14 +134,12 @@
                                                 <i class="bi bi-eye"></i> 상세보기
                                             </a>
                                             
-                                            <form th:action="@{/group-purchases/{id}/bookmarks/cancel(id=${wishlist.groupBuyId})}" 
-                                                  method="post">
-                                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                                                <button type="submit" class="btn btn-outline-danger w-100" 
-                                                        onclick="return confirm('찜을 취소하시겠습니까?')">
-                                                    <i class="bi bi-heart-fill"></i> 찜 취소
-                                                </button>
-                                            </form>
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger w-100 groupbuy-bookmark-cancel-btn"
+                                                    th:data-groupbuy-id="${wishlist.groupBuyId}"
+                                                    onclick="cancelGroupBuyBookmark(this)">
+                                                <i class="bi bi-heart-fill"></i> 찜 취소
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -316,6 +314,38 @@
             
             try {
                 const response = await fetch(`/recipes/${recipeId}/bookmarks/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(csrfToken && csrfHeader ? { [csrfHeader]: csrfToken } : {})
+                    }
+                });
+                
+                if (response.ok) {
+                    // Reload page to refresh the list
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '찜 취소에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Error canceling bookmark:', error);
+                alert('찜 취소 중 오류가 발생했습니다.');
+            }
+        }
+        
+        // Group-buy bookmark cancel function
+        async function cancelGroupBuyBookmark(button) {
+            if (!confirm('찜을 취소하시겠습니까?')) {
+                return;
+            }
+            
+            const groupBuyId = button.dataset.groupbuyId;
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+            
+            try {
+                const response = await fetch(`/group-purchases/${groupBuyId}/bookmarks/cancel`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

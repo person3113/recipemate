@@ -59,8 +59,8 @@
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <h5 class="card-title mb-0" th:text="${participation.groupBuyTitle}">공구 제목</h5>
                                     <span class="badge" 
-                                          th:classappend="${participation.groupBuyStatus == 'RECRUITING'} ? 'bg-info' : (${participation.groupBuyStatus == 'CLOSED'} ? 'bg-secondary' : 'bg-success')"
-                                          th:text="${participation.groupBuyStatus == 'RECRUITING'} ? '모집중' : (${participation.groupBuyStatus == 'CLOSED'} ? '마감' : '완료')">
+                                          th:classappend="${participation.groupBuyStatus == 'RECRUITING'} ? 'bg-info' : (${participation.groupBuyStatus == 'CLOSED'} ? 'bg-secondary' : 'bg-warning')"
+                                          th:text="${participation.groupBuyStatus == 'RECRUITING'} ? '모집중' : (${participation.groupBuyStatus == 'CLOSED'} ? '마감' : '임박')">
                                         상태
                                     </span>
                                 </div>
@@ -107,13 +107,13 @@
                                         </button>
                                     </form>
                                     
-                                    <!-- Review Button (Only for COMPLETED status without review) -->
-                                    <a th:if="${participation.groupBuyStatus == 'COMPLETED' and !participation.hasReview}" 
+                                    <!-- Review Button (Only for CLOSED status without review) -->
+                                    <a th:if="${participation.groupBuyStatus == 'CLOSED' and !reviewExistsMap[participation.groupBuyId]}" 
                                        th:href="@{/group-purchases/{id}/reviews/new(id=${participation.groupBuyId})}" 
                                        class="btn btn-warning btn-sm">
                                         <i class="bi bi-star"></i> 후기 작성
                                     </a>
-                                    <span th:if="${participation.groupBuyStatus == 'COMPLETED' and participation.hasReview}" 
+                                    <span th:if="${participation.groupBuyStatus == 'CLOSED' and reviewExistsMap[participation.groupBuyId]}" 
                                           class="badge bg-success w-100 py-2">
                                         <i class="bi bi-check-circle"></i> 후기 작성 완료
                                     </span>

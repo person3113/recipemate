@@ -51,6 +51,7 @@ public class RecipeService {
     private final RecipeRepository recipeRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
     private final JPAQueryFactory queryFactory;
+    private final com.recipemate.domain.review.repository.ReviewRepository reviewRepository;
 
     private static final String MEAL_PREFIX = "meal-";
     private static final String FOOD_PREFIX = "food-";
@@ -239,9 +240,9 @@ public class RecipeService {
 
     /**
      * 레시피 관련 공동구매 조회
-     * 특정 레시피 ID와 연결된 활성 공동구매 목록 반환
+     * 특정 레시피 ID와 연결된 모든 공동구매 목록 반환 (평점 정보 포함)
      * @param recipeApiId 레시피 API ID (meal-{id} 또는 food-{id} 형식)
-     * @return 활성 상태의 공동구매 목록 (삭제되지 않은 것만)
+     * @return 모든 상태의 공동구매 목록 (삭제되지 않은 것만, 평점 정보 포함)
      */
     public List<GroupBuyResponse> getRelatedGroupBuys(String recipeApiId) {
         validateRecipeApiId(recipeApiId);
@@ -249,16 +250,45 @@ public class RecipeService {
         // 레시피 ID로 삭제되지 않은 공동구매 조회
         List<GroupBuy> groupBuys = groupBuyRepository.findByRecipeApiIdAndNotDeleted(recipeApiId);
 
-        // 활성 상태 (RECRUITING, IMMINENT)인 공동구매만 필터링하여 변환
+        // 모든 상태의 공동구매를 변환 (마감된 공구의 평점도 표시)
         return groupBuys.stream()
-                .filter(gb -> gb.getStatus() == GroupBuyStatus.RECRUITING || 
-                              gb.getStatus() == GroupBuyStatus.IMMINENT)
                 .map(gb -> {
                     // 이미지 URL 목록 수집
                     List<String> imageUrls = gb.getImages().stream()
                             .map(img -> img.getImageUrl())
                             .collect(Collectors.toList());
-                    return GroupBuyResponse.from(gb, imageUrls);
+                    
+                    // 후기 정보 조회
+                    Double averageRating = reviewRepository.findAverageRatingByGroupBuyId(gb.getId());
+                    long reviewCount = reviewRepository.countByGroupBuyId(gb.getId());
+                    
+                    return GroupBuyResponse.builder()
+                            .id(gb.getId())
+                            .title(gb.getTitle())
+                            .content(gb.getContent())
+                            .ingredients(gb.getIngredients())
+                            .category(gb.getCategory())
+                            .totalPrice(gb.getTotalPrice())
+                            .targetHeadcount(gb.getTargetHeadcount())
+                            .currentHeadcount(gb.getCurrentHeadcount())
+                            .deadline(gb.getDeadline())
+                            .deliveryMethod(gb.getDeliveryMethod())
+                            .meetupLocation(gb.getMeetupLocation())
+                            .parcelFee(gb.getParcelFee())
+                            .isParticipantListPublic(gb.getParticipantListPublic())
+                            .status(gb.getStatus())
+                            .hostId(gb.getHost().getId())
+                            .hostNickname(gb.getHost().getNickname())
+                            .hostMannerTemperature(gb.getHost().getMannerTemperature())
+                            .recipeApiId(gb.getRecipeApiId())
+                            .recipeName(gb.getRecipeName())
+                            .recipeImageUrl(gb.getRecipeImageUrl())
+                            .imageUrls(imageUrls)
+                            .averageRating(averageRating)
+                            .reviewCount((int) reviewCount)
+                            .createdAt(gb.getCreatedAt())
+                            .updatedAt(gb.getUpdatedAt())
+                            .build();
                 })
                 .collect(Collectors.toList());
     }
@@ -651,6 +681,9 @@ public class RecipeService {
                     .build();
         }
         
+        // 관련 공동구매 목록 조회 (평점 정보 포함)
+        List<GroupBuyResponse> relatedGroupBuys = getRelatedGroupBuys(apiId);
+        
         return RecipeDetailResponse.builder()
                 .id(apiId)
                 .name(recipe.getTitle())
@@ -664,6 +697,7 @@ public class RecipeService {
                 .manualSteps(manualSteps.isEmpty() ? null : manualSteps)
                 .nutritionInfo(nutritionInfo)
                 .source(recipe.getSourceApi().name().toLowerCase())
+                .relatedGroupBuys(relatedGroupBuys)
                 .build();
     }
 

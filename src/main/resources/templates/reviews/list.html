@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공구 후기 - RecipeMate</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body class="bg-light">
+    <!-- Header Fragment -->
+    <div th:replace="~{fragments/header :: header}"></div>
+    
+    <main class="container my-5">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="fw-bold mb-2"><i class="bi bi-star"></i> 공구 후기</h1>
+                <p class="text-muted">다른 사람들의 공동구매 후기를 확인해보세요</p>
+            </div>
+        </div>
+        
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <!-- Category Tabs (same as community-posts/list.html) -->
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link" 
+                   th:href="@{/community-posts/list}">
+                    전체
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" 
+                   th:href="@{/community-posts/list(category='TIPS')}">
+                    팁
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" 
+                   th:href="@{/community-posts/list(category='FREE')}">
+                    자유
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" 
+                   th:href="@{/reviews}">
+                    후기
+                </a>
+            </li>
+        </ul>
+        
+        <!-- Review Statistics (if available) -->
+        <div th:if="${reviews != null and !reviews.isEmpty()}" class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-12">
+                        <h3 class="mb-0">
+                            <i class="bi bi-star-fill text-warning"></i>
+                            총 <span class="text-primary fw-bold" th:text="${reviews.totalElements}">0</span>개의 후기
+                        </h3>
+                        <p class="text-muted small mb-0">모든 공동구매의 후기를 한눈에 확인하세요</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Review List -->
+        <div th:if="${reviews != null and !reviews.isEmpty()}">
+            <div th:each="review : ${reviews.content}" class="mb-3">
+                <div class="card shadow-sm card-hover">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2"
+                                     style="width: 40px; height: 40px;">
+                                    <span th:text="${#strings.substring(review.authorNickname, 0, 1)}">A</span>
+                                </div>
+                                <div>
+                                    <div class="fw-bold" th:text="${review.authorNickname}">작성자</div>
+                                    <div class="text-muted small">
+                                        <span th:text="${#temporals.format(review.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 평점 표시 -->
+                            <div>
+                                <span th:each="star : ${#numbers.sequence(1, 5)}" 
+                                      th:class="${star <= review.rating} ? 'text-warning' : 'text-muted'">
+                                    <i th:class="${star <= review.rating} ? 'bi bi-star-fill' : 'bi bi-star'"></i>
+                                </span>
+                                <span class="ms-2 text-muted small">
+                                    <span th:text="${review.rating}">5</span>/5
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 공구 정보 -->
+                        <div class="mb-2">
+                            <a th:href="@{/group-purchases/{id}(id=${review.groupBuyId})}" 
+                               class="text-decoration-none">
+                                <span class="badge bg-info text-dark">
+                                    <i class="bi bi-box"></i> <span th:text="${review.groupBuyTitle}">공구 제목</span>
+                                </span>
+                            </a>
+                        </div>
+
+                        <!-- 후기 내용 -->
+                        <div class="review-content">
+                            <p class="mb-0" th:text="${review.content}">후기 내용</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Empty State -->
+        <div th:if="${reviews == null or reviews.isEmpty()}" class="text-center py-5">
+            <i class="bi bi-star display-1 text-muted"></i>
+            <h4 class="mt-3 text-muted">아직 후기가 없습니다</h4>
+            <p class="text-muted">공동구매에 참여하고 첫 후기를 작성해보세요!</p>
+            <a th:href="@{/group-purchases/list}" class="btn btn-primary mt-3">
+                <i class="bi bi-box"></i> 공구 둘러보기
+            </a>
+        </div>
+        
+        <!-- Pagination -->
+        <nav th:if="${reviews != null and !reviews.isEmpty() and reviews.totalPages > 1}" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item" th:classappend="${reviews.first} ? 'disabled'">
+                    <a class="page-link" th:href="@{/reviews(page=${reviews.number - 1})}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                
+                <li th:each="i : ${#numbers.sequence(0, reviews.totalPages - 1)}" 
+                    class="page-item" 
+                    th:classappend="${i == reviews.number} ? 'active'">
+                    <a class="page-link" th:href="@{/reviews(page=${i})}" th:text="${i + 1}">1</a>
+                </li>
+                
+                <li class="page-item" th:classappend="${reviews.last} ? 'disabled'">
+                    <a class="page-link" th:href="@{/reviews(page=${reviews.number + 1})}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </main>
+    
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

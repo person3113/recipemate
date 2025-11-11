@@ -43,6 +43,7 @@ public class GroupBuyService {
     private final com.recipemate.domain.recipe.service.RecipeService recipeService;
     private final ApplicationEventPublisher eventPublisher;
     private final com.recipemate.domain.groupbuy.repository.ParticipationRepository participationRepository;
+    private final com.recipemate.domain.review.repository.ReviewRepository reviewRepository;
 
     /**
      * 일반 공구 생성
@@ -518,6 +519,10 @@ public class GroupBuyService {
      * Entity를 Response DTO로 변환
      */
     private GroupBuyResponse mapToResponse(GroupBuy groupBuy, List<String> imageUrls) {
+        // 후기 정보 조회
+        Double averageRating = reviewRepository.findAverageRatingByGroupBuyId(groupBuy.getId());
+        long reviewCount = reviewRepository.countByGroupBuyId(groupBuy.getId());
+        
         return GroupBuyResponse.builder()
             .id(groupBuy.getId())
             .title(groupBuy.getTitle())
@@ -540,6 +545,8 @@ public class GroupBuyService {
             .recipeName(groupBuy.getRecipeName())
             .recipeImageUrl(groupBuy.getRecipeImageUrl())
             .imageUrls(imageUrls)
+            .averageRating(averageRating)
+            .reviewCount((int) reviewCount)
             .createdAt(groupBuy.getCreatedAt())
             .updatedAt(groupBuy.getUpdatedAt())
             .build();
@@ -550,6 +557,10 @@ public class GroupBuyService {
      */
     private GroupBuyResponse mapToResponseWithUserStatus(GroupBuy groupBuy, List<String> imageUrls, 
                                                           boolean isHost, boolean isParticipant, boolean isCancellable) {
+        // 후기 정보 조회
+        Double averageRating = reviewRepository.findAverageRatingByGroupBuyId(groupBuy.getId());
+        long reviewCount = reviewRepository.countByGroupBuyId(groupBuy.getId());
+        
         return GroupBuyResponse.builder()
             .id(groupBuy.getId())
             .title(groupBuy.getTitle())
@@ -577,6 +588,8 @@ public class GroupBuyService {
             .isHost(isHost)
             .isParticipant(isParticipant)
             .isCancellable(isCancellable)
+            .averageRating(averageRating)
+            .reviewCount((int) reviewCount)
             .build();
     }
 

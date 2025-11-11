@@ -57,9 +57,9 @@
                                         th:classappend="${#fields.hasErrors('category')} ? 'is-invalid'"
                                         required>
                                     <option value="">카테고리를 선택하세요</option>
-                                    <option value="TIPS">팁 공유</option>
-                                    <option value="FREE">자유</option>
-                                    <option value="REVIEW">후기</option>
+                                    <option th:each="cat : ${categories}" 
+                                            th:value="${cat}" 
+                                            th:text="${cat.displayName}">카테고리</option>
                                 </select>
                                 <div class="invalid-feedback" th:if="${#fields.hasErrors('category')}" th:errors="*{category}"></div>
                             </div>

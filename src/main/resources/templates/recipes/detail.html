@@ -249,8 +249,16 @@
                                     <span th:text="${groupBuy.currentHeadcount}"></span> / <span th:text="${groupBuy.targetHeadcount}"></span>
                                 </span>
                             </div>
-                            <div class="mt-2 text-muted small">
-                                <i class="bi bi-person"></i> <span th:text="${groupBuy.hostNickname}"></span>
+                            <div class="mt-2 d-flex justify-content-between align-items-center">
+                                <div class="text-muted small">
+                                    <i class="bi bi-person"></i> <span th:text="${groupBuy.hostNickname}"></span>
+                                </div>
+                                <!-- 평점 표시 -->
+                                <div th:if="${groupBuy.reviewCount != null and groupBuy.reviewCount > 0}" class="text-warning small">
+                                    <i class="bi bi-star-fill"></i>
+                                    <span class="fw-semibold" th:text="${#numbers.formatDecimal(groupBuy.averageRating, 1, 1)}">0.0</span>
+                                    <span class="text-muted">(<span th:text="${groupBuy.reviewCount}">0</span>)</span>
+                                </div>
                             </div>
                         </div>
                     </div>

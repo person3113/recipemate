@@ -200,17 +200,62 @@
                     </div>
                 </div>
                 
-                <!-- Comments Section (Q&A) -->
-                <div id="comments-section" 
-                     hx-get th:hx-get="@{/comments/fragments(targetType='GROUP_BUY', targetId=${groupBuy.id})}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML">
-                    <!-- 댓글 로딩 중 표시 -->
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">로딩 중...</span>
+                <!-- Q&A and Reviews Section with Tabs -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <!-- Tab Navigation -->
+                        <ul class="nav nav-tabs card-header-tabs" id="detailTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="qna-tab" data-bs-toggle="tab" data-bs-target="#qna-content" 
+                                        type="button" role="tab" aria-controls="qna-content" aria-selected="true">
+                                    <i class="bi bi-chat-dots"></i> Q&A
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews-content" 
+                                        type="button" role="tab" aria-controls="reviews-content" aria-selected="false">
+                                    <i class="bi bi-star"></i> 후기
+                                    <span th:if="${reviewCount != null and reviewCount > 0}" 
+                                          class="badge bg-primary ms-1" th:text="${reviewCount}">0</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <!-- Tab Content -->
+                        <div class="tab-content" id="detailTabsContent">
+                            <!-- Q&A Tab Pane -->
+                            <div class="tab-pane fade show active" id="qna-content" role="tabpanel" aria-labelledby="qna-tab">
+                                <div id="comments-section" 
+                                     hx-get th:hx-get="@{/comments/fragments(targetType='GROUP_BUY', targetId=${groupBuy.id})}"
+                                     hx-trigger="load"
+                                     hx-swap="innerHTML">
+                                    <!-- 댓글 로딩 중 표시 -->
+                                    <div class="text-center py-5">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">로딩 중...</span>
+                                        </div>
+                                        <p class="mt-2 text-muted">Q&A를 불러오는 중...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Reviews Tab Pane -->
+                            <div class="tab-pane fade" id="reviews-content" role="tabpanel" aria-labelledby="reviews-tab">
+                                <div id="reviews-section" 
+                                     hx-get th:hx-get="@{/reviews/fragments(groupBuyId=${groupBuy.id})}"
+                                     hx-trigger="intersect once"
+                                     hx-swap="innerHTML">
+                                    <!-- 후기 로딩 중 표시 -->
+                                    <div class="text-center py-5">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">로딩 중...</span>
+                                        </div>
+                                        <p class="mt-2 text-muted">후기를 불러오는 중...</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <p class="mt-2 text-muted">Q&A를 불러오는 중...</p>
                     </div>
                 </div>
             </div>

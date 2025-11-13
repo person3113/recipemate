@@ -1,9 +1,11 @@
 package com.recipemate.domain.search.service;
 
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
+import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.GroupBuyImage;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
+import com.recipemate.domain.groupbuy.service.GroupBuyService;
 import com.recipemate.domain.post.dto.PostWithCountsDto;
 import com.recipemate.domain.post.dto.PostResponse;
 import com.recipemate.domain.post.entity.Post;
@@ -41,6 +43,7 @@ import java.util.stream.Collectors;
 public class SearchService {
 
     private final GroupBuyRepository groupBuyRepository;
+    private final GroupBuyService groupBuyService;
     private final PostRepository postRepository;
     private final RecipeService recipeService;
     private final SearchKeywordRepository searchKeywordRepository;
@@ -130,17 +133,20 @@ public class SearchService {
 
     /**
      * 공동구매 검색 (List 반환 - 전체 탭용)
+     * QueryDSL 기반 검색으로 제목 + 내용 검색 및 모든 상태 포함
      */
     private List<SearchResultResponse> searchGroupBuys(String keyword, Pageable pageable) {
         try {
-            Page<GroupBuy> groupBuyPage = groupBuyRepository.searchByKeyword(
-                keyword, 
-                GroupBuyStatus.RECRUITING, 
-                pageable
-            );
+            // GroupBuySearchCondition 생성 (status는 null로 두어 모든 상태 검색)
+            GroupBuySearchCondition condition = GroupBuySearchCondition.builder()
+                .keyword(keyword)
+                .build();
+            
+            // GroupBuyService의 QueryDSL 메소드 사용
+            Page<GroupBuyResponse> groupBuyPage = groupBuyService.getGroupBuyList(condition, pageable);
 
             return groupBuyPage.getContent().stream()
-                .map(groupBuy -> convertGroupBuyToSearchResult(groupBuy, keyword))
+                .map(groupBuyResponse -> convertGroupBuyResponseToSearchResult(groupBuyResponse, keyword))
                 .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("공동구매 검색 중 오류 발생", e);
@@ -150,14 +156,18 @@ public class SearchService {
 
     /**
      * 공동구매 검색 (Page 반환 - 개별 탭용)
+     * QueryDSL 기반 검색으로 제목 + 내용 검색 및 모든 상태 포함
      */
     public Page<SearchResultResponse> searchGroupBuysPage(String keyword, Pageable pageable) {
-        Page<GroupBuy> groupBuyPage = groupBuyRepository.searchByKeyword(
-            keyword, 
-            GroupBuyStatus.RECRUITING, 
-            pageable
-        );
-        return groupBuyPage.map(groupBuy -> convertGroupBuyToSearchResult(groupBuy, keyword));
+        // GroupBuySearchCondition 생성 (status는 null로 두어 모든 상태 검색)
+        GroupBuySearchCondition condition = GroupBuySearchCondition.builder()
+            .keyword(keyword)
+            .build();
+        
+        // GroupBuyService의 QueryDSL 메소드 사용
+        Page<GroupBuyResponse> groupBuyPage = groupBuyService.getGroupBuyList(condition, pageable);
+        
+        return groupBuyPage.map(groupBuyResponse -> convertGroupBuyResponseToSearchResult(groupBuyResponse, keyword));
     }
 
     /**
@@ -258,7 +268,49 @@ public class SearchService {
     }
 
     /**
+     * GroupBuyResponse DTO를 SearchResultResponse로 변환
+     * (QueryDSL 검색 결과용)
+     */
+    private SearchResultResponse convertGroupBuyResponseToSearchResult(GroupBuyResponse groupBuyResponse, String keyword) {
+        // 이미지 URL 추출 (첫 번째 이미지)
+        String imageUrl = null;
+        if (groupBuyResponse.getImageUrls() != null && !groupBuyResponse.getImageUrls().isEmpty()) {
+            imageUrl = groupBuyResponse.getImageUrls().get(0);
+        }
+        
+        // 참가율 계산
+        double participationRate = 0.0;
+        if (groupBuyResponse.getTargetHeadcount() > 0) {
+            participationRate = (double) groupBuyResponse.getCurrentHeadcount() / groupBuyResponse.getTargetHeadcount() * 100;
+        }
+        
+        // 1인당 가격 계산
+        int pricePerPerson = 0;
+        if (groupBuyResponse.getTargetHeadcount() > 0) {
+            pricePerPerson = groupBuyResponse.getTotalPrice() / groupBuyResponse.getTargetHeadcount();
+        }
+        
+        return SearchResultResponse.builder()
+            .entityType(com.recipemate.global.common.EntityType.GROUP_BUY)
+            .id(groupBuyResponse.getId())
+            .title(groupBuyResponse.getTitle())
+            .highlightedTitle(highlightKeyword(groupBuyResponse.getTitle(), keyword))
+            .content(groupBuyResponse.getContent())
+            .imageUrl(imageUrl)
+            .authorOrHost(groupBuyResponse.getHostNickname())
+            .createdAt(groupBuyResponse.getCreatedAt())
+            .status(groupBuyResponse.getStatus())
+            .currentParticipants(groupBuyResponse.getCurrentHeadcount())
+            .maxParticipants(groupBuyResponse.getTargetHeadcount())
+            .participationRate(participationRate)
+            .pricePerPerson(pricePerPerson)
+            .deadline(groupBuyResponse.getDeadline())
+            .build();
+    }
+
+    /**
      * GroupBuy 엔티티를 SearchResultResponse로 변환
+     * (레거시 메소드 - 필요시 제거 가능)
      */
     private SearchResultResponse convertGroupBuyToSearchResult(GroupBuy groupBuy, String keyword) {
         // 이미지 URL 추출
@@ -431,13 +483,19 @@ public class SearchService {
     
     /**
      * 공동구매 검색 결과 개수 조회
+     * QueryDSL 기반 검색으로 제목 + 내용 검색 및 모든 상태 포함
      */
     private Long countGroupBuys(String keyword) {
         try {
-            Page<GroupBuy> groupBuyPage = groupBuyRepository.searchByKeyword(
-                keyword,
-                GroupBuyStatus.RECRUITING,
-                PageRequest.of(0, 1)
+            // GroupBuySearchCondition 생성 (status는 null로 두어 모든 상태 검색)
+            GroupBuySearchCondition condition = GroupBuySearchCondition.builder()
+                .keyword(keyword)
+                .build();
+            
+            // GroupBuyService의 QueryDSL 메소드 사용하여 전체 개수 조회
+            Page<GroupBuyResponse> groupBuyPage = groupBuyService.getGroupBuyList(
+                condition, 
+                PageRequest.of(0, 1) // 개수만 필요하므로 1개만 조회
             );
             return groupBuyPage.getTotalElements();
         } catch (Exception e) {

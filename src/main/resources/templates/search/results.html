@@ -133,8 +133,9 @@
                            class="text-decoration-none text-dark">
                             <div class="card h-100 border-success border-opacity-25 hover-shadow">
                                 <img th:if="${recipe.imageUrl}" 
-                                     th:src="${recipe.imageUrl}" 
-                                     class="card-img-top recipe-card-img"
+                                     th:data-src="${recipe.imageUrl}" 
+                                     class="card-img-top recipe-card-img lazy-load"
+                                     src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'%3E%3Crect width='400' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%23999'%3ELoading...%3C/text%3E%3C/svg%3E"
                                      th:alt="${recipe.name}"/>
                                 <div th:unless="${recipe.imageUrl}" 
                                      class="card-img-top bg-light d-flex align-items-center justify-content-center recipe-card-placeholder">
@@ -179,8 +180,9 @@
                            class="text-decoration-none text-dark">
                             <div class="card h-100 border-info border-opacity-25 hover-shadow">
                                 <img th:if="${groupbuy.imageUrl}" 
-                                     th:src="${groupbuy.imageUrl}" 
-                                     class="card-img-top recipe-card-img"
+                                     th:data-src="${groupbuy.imageUrl}" 
+                                     class="card-img-top recipe-card-img lazy-load"
+                                     src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'%3E%3Crect width='400' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%23999'%3ELoading...%3C/text%3E%3C/svg%3E"
                                      th:alt="${groupbuy.title}"/>
                                 <div th:unless="${groupbuy.imageUrl}" 
                                      class="card-img-top bg-light d-flex align-items-center justify-content-center recipe-card-placeholder">
@@ -291,14 +293,25 @@
                 <p class="text-muted">다른 키워드로 검색해보세요.</p>
             </div>
             <div th:unless="${recipes.empty}">
+                <div class="alert alert-light d-flex align-items-center justify-content-between mb-3">
+                    <span class="small text-muted">
+                        <i class="bi bi-funnel me-1"></i>
+                        더 다양한 필터와 정렬 옵션이 필요하신가요?
+                    </span>
+                    <a th:href="@{/recipes(keyword=${keyword})}" 
+                       class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-search me-1"></i>레시피 상세 검색으로 이동
+                    </a>
+                </div>
                 <div class="row g-3">
                     <div th:each="recipe : ${recipes}" class="col-md-6 col-lg-4">
                         <a th:href="@{/recipes/{id}(id=${recipe.apiId})}" 
                            class="text-decoration-none text-dark">
                             <div class="card h-100 border-success border-opacity-25 hover-shadow">
                                 <img th:if="${recipe.imageUrl}" 
-                                     th:src="${recipe.imageUrl}" 
-                                     class="card-img-top recipe-card-img"
+                                     th:data-src="${recipe.imageUrl}" 
+                                     class="card-img-top recipe-card-img lazy-load"
+                                     src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'%3E%3Crect width='400' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%23999'%3ELoading...%3C/text%3E%3C/svg%3E"
                                      th:alt="${recipe.name}"/>
                                 <div th:unless="${recipe.imageUrl}" 
                                      class="card-img-top bg-light d-flex align-items-center justify-content-center recipe-card-placeholder">
@@ -369,14 +382,25 @@
                 <p class="text-muted">다른 키워드로 검색해보세요.</p>
             </div>
             <div th:unless="${groupbuys.empty}">
+                <div class="alert alert-light d-flex align-items-center justify-content-between mb-3">
+                    <span class="small text-muted">
+                        <i class="bi bi-funnel me-1"></i>
+                        더 다양한 필터와 정렬 옵션이 필요하신가요?
+                    </span>
+                    <a th:href="@{/group-purchases/list(keyword=${keyword})}" 
+                       class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-search me-1"></i>공동구매 상세 검색으로 이동
+                    </a>
+                </div>
                 <div class="row g-3">
                     <div th:each="groupbuy : ${groupbuys}" class="col-md-6 col-lg-4">
                         <a th:href="@{/group-purchases/{id}(id=${groupbuy.id})}" 
                            class="text-decoration-none text-dark">
                             <div class="card h-100 border-info border-opacity-25 hover-shadow">
                                 <img th:if="${groupbuy.imageUrl}" 
-                                     th:src="${groupbuy.imageUrl}" 
-                                     class="card-img-top recipe-card-img"
+                                     th:data-src="${groupbuy.imageUrl}" 
+                                     class="card-img-top recipe-card-img lazy-load"
+                                     src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'%3E%3Crect width='400' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%23999'%3ELoading...%3C/text%3E%3C/svg%3E"
                                      th:alt="${groupbuy.title}"/>
                                 <div th:unless="${groupbuy.imageUrl}" 
                                      class="card-img-top bg-light d-flex align-items-center justify-content-center recipe-card-placeholder">

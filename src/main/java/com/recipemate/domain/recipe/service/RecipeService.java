@@ -476,6 +476,36 @@ public class RecipeService {
                 .build();
     }
 
+    /**
+     * 레시피 개수만 조회 (COUNT 쿼리만 실행)
+     * 통합 검색에서 배지 표시용으로 사용
+     * 
+     * @param keyword 검색어 (제목 검색)
+     * @return 검색된 레시피 개수
+     */
+    public long countRecipes(String keyword) {
+        log.info("레시피 개수 조회: keyword={}", keyword);
+
+        // QueryDSL을 사용한 동적 쿼리 생성
+        com.recipemate.domain.recipe.entity.QRecipe recipe = 
+            com.recipemate.domain.recipe.entity.QRecipe.recipe;
+        
+        BooleanBuilder builder = new BooleanBuilder();
+        
+        // 키워드 검색 (제목에 포함)
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            builder.and(recipe.title.toLowerCase().contains(keyword.toLowerCase()));
+        }
+        
+        // COUNT 쿼리만 실행
+        Long count = queryFactory
+                .select(recipe.count())
+                .from(recipe)
+                .where(builder)
+                .fetchOne();
+        
+        return (count != null) ? count : 0L;
+    }
 
     /**
      * 영양 정보 기반 레시피 검색 (DB 기반)

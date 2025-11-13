@@ -218,6 +218,7 @@ public class GroupBuyService {
 
     /**
      * 공구 목록 조회 (검색 및 필터링 지원 - QueryDSL 기반)
+     * 리뷰 통계를 함께 조회하여 N+1 문제 해결
      */
     public Page<GroupBuyResponse> getGroupBuyList(GroupBuySearchCondition condition, Pageable pageable) {
         // condition이 null인 경우 빈 조건으로 초기화
@@ -225,12 +226,13 @@ public class GroupBuyService {
             ? condition 
             : GroupBuySearchCondition.builder().build();
         
-        // QueryDSL 기반 동적 검색 사용
-        Page<GroupBuy> groupBuys = groupBuyRepository.searchGroupBuys(searchCondition, pageable);
+        // QueryDSL 기반 동적 검색 사용 (리뷰 통계 포함)
+        Page<com.recipemate.domain.groupbuy.dto.GroupBuyWithReviewStatsDto> groupBuysWithStats = 
+            groupBuyRepository.searchGroupBuysWithReviewStats(searchCondition, pageable);
         
         // N+1 문제 해결: 모든 공구의 이미지를 한 번에 조회
-        List<Long> groupBuyIds = groupBuys.getContent().stream()
-                .map(GroupBuy::getId)
+        List<Long> groupBuyIds = groupBuysWithStats.getContent().stream()
+                .map(dto -> dto.getGroupBuy().getId())
                 .toList();
         
         List<GroupBuyImage> allImages = groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(groupBuyIds);
@@ -242,9 +244,9 @@ public class GroupBuyService {
                     java.util.stream.Collectors.mapping(GroupBuyImage::getImageUrl, java.util.stream.Collectors.toList())
                 ));
         
-        return groupBuys.map(groupBuy -> {
-            List<String> imageUrls = imageMap.getOrDefault(groupBuy.getId(), List.of());
-            return mapToResponse(groupBuy, imageUrls);
+        return groupBuysWithStats.map(dto -> {
+            List<String> imageUrls = imageMap.getOrDefault(dto.getGroupBuy().getId(), List.of());
+            return mapToResponseWithStats(dto.getGroupBuy(), imageUrls, dto.getAverageRating(), dto.getReviewCountAsInt());
         });
     }
 
@@ -513,6 +515,39 @@ public class GroupBuyService {
             images.add(image);
         }
         groupBuyImageRepository.saveAll(images);
+    }
+
+    /**
+     * Entity를 Response DTO로 변환 (리뷰 통계 포함)
+     */
+    private GroupBuyResponse mapToResponseWithStats(GroupBuy groupBuy, List<String> imageUrls, Double averageRating, int reviewCount) {
+        return GroupBuyResponse.builder()
+            .id(groupBuy.getId())
+            .title(groupBuy.getTitle())
+            .content(groupBuy.getContent())
+            .ingredients(groupBuy.getIngredients())
+            .category(groupBuy.getCategory())
+            .totalPrice(groupBuy.getTotalPrice())
+            .targetHeadcount(groupBuy.getTargetHeadcount())
+            .currentHeadcount(groupBuy.getCurrentHeadcount())
+            .deadline(groupBuy.getDeadline())
+            .deliveryMethod(groupBuy.getDeliveryMethod())
+            .meetupLocation(groupBuy.getMeetupLocation())
+            .parcelFee(groupBuy.getParcelFee())
+            .isParticipantListPublic(groupBuy.getParticipantListPublic())
+            .status(groupBuy.getStatus())
+            .hostId(groupBuy.getHost().getId())
+            .hostNickname(groupBuy.getHost().getNickname())
+            .hostMannerTemperature(groupBuy.getHost().getMannerTemperature())
+            .recipeApiId(groupBuy.getRecipeApiId())
+            .recipeName(groupBuy.getRecipeName())
+            .recipeImageUrl(groupBuy.getRecipeImageUrl())
+            .imageUrls(imageUrls)
+            .averageRating(averageRating)
+            .reviewCount(reviewCount)
+            .createdAt(groupBuy.getCreatedAt())
+            .updatedAt(groupBuy.getUpdatedAt())
+            .build();
     }
 
     /**

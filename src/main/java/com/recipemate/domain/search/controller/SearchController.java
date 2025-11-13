@@ -73,39 +73,52 @@ public class SearchController {
             model.addAttribute("groupbuyCount", searchResults.getTotalGroupBuyCount());
             model.addAttribute("postCount", searchResults.getTotalPostCount());
         } else {
-            // 개별 탭: 먼저 전체 탭의 개수 정보를 조회 (배지 표시용)
-            UnifiedSearchResponse allResults = searchService.unifiedSearch(keyword, "ALL", pageable);
-            long totalCount = allResults.getTotalRecipeCount() 
-                            + allResults.getTotalGroupBuyCount() 
-                            + allResults.getTotalPostCount();
-            
+            // 개별 탭: 현재 탭의 데이터를 조회하고, 배지 표시를 위해 다른 탭의 개수만 별도 조회
             if ("RECIPE".equalsIgnoreCase(type)) {
-                // 레시피 탭: 레시피 페이지 객체 제공
+                // 레시피 탭: 레시피 페이지 조회 (COUNT 포함)
                 Page<SearchResultResponse> recipePage = searchService.searchRecipesPage(keyword, pageable);
+                
+                // 나머지 탭의 COUNT만 조회
+                long groupBuyCount = searchService.countGroupBuys(keyword);
+                long postCount = searchService.countPosts(keyword);
+                long recipeCount = recipePage.getTotalElements();  // 이미 조회된 COUNT 재사용
+                
                 model.addAttribute("recipes", recipePage.getContent());
                 model.addAttribute("recipePage", recipePage);
-                model.addAttribute("recipeCount", allResults.getTotalRecipeCount());
-                model.addAttribute("groupbuyCount", allResults.getTotalGroupBuyCount());
-                model.addAttribute("postCount", allResults.getTotalPostCount());
-                model.addAttribute("totalResults", totalCount);  // 전체 결과 개수의 합
+                model.addAttribute("recipeCount", recipeCount);
+                model.addAttribute("groupbuyCount", groupBuyCount);
+                model.addAttribute("postCount", postCount);
+                model.addAttribute("totalResults", recipeCount + groupBuyCount + postCount);
             } else if ("GROUP_BUY".equalsIgnoreCase(type)) {
-                // 공동구매 탭: 공동구매 페이지 객체 제공
+                // 공동구매 탭: 공동구매 페이지 조회 (COUNT 포함)
                 Page<SearchResultResponse> groupBuyPage = searchService.searchGroupBuysPage(keyword, pageable);
+                
+                // 나머지 탭의 COUNT만 조회
+                long groupBuyCount = groupBuyPage.getTotalElements();  // 이미 조회된 COUNT 재사용
+                long postCount = searchService.countPosts(keyword);
+                long recipeCount = searchService.countRecipes(keyword);
+                
                 model.addAttribute("groupbuys", groupBuyPage.getContent());
                 model.addAttribute("groupBuyPage", groupBuyPage);
-                model.addAttribute("recipeCount", allResults.getTotalRecipeCount());
-                model.addAttribute("groupbuyCount", allResults.getTotalGroupBuyCount());
-                model.addAttribute("postCount", allResults.getTotalPostCount());
-                model.addAttribute("totalResults", totalCount);  // 전체 결과 개수의 합
+                model.addAttribute("recipeCount", recipeCount);
+                model.addAttribute("groupbuyCount", groupBuyCount);
+                model.addAttribute("postCount", postCount);
+                model.addAttribute("totalResults", recipeCount + groupBuyCount + postCount);
             } else if ("POST".equalsIgnoreCase(type)) {
-                // 커뮤니티 탭: 커뮤니티 페이지 객체 제공
+                // 커뮤니티 탭: 커뮤니티 페이지 조회 (COUNT 포함)
                 Page<SearchResultResponse> postPage = searchService.searchPostsPage(keyword, pageable);
+                
+                // 나머지 탭의 COUNT만 조회
+                long postCount = postPage.getTotalElements();  // 이미 조회된 COUNT 재사용
+                long groupBuyCount = searchService.countGroupBuys(keyword);
+                long recipeCount = searchService.countRecipes(keyword);
+                
                 model.addAttribute("posts", postPage.getContent());
                 model.addAttribute("postPage", postPage);
-                model.addAttribute("recipeCount", allResults.getTotalRecipeCount());
-                model.addAttribute("groupbuyCount", allResults.getTotalGroupBuyCount());
-                model.addAttribute("postCount", allResults.getTotalPostCount());
-                model.addAttribute("totalResults", totalCount);  // 전체 결과 개수의 합
+                model.addAttribute("recipeCount", recipeCount);
+                model.addAttribute("groupbuyCount", groupBuyCount);
+                model.addAttribute("postCount", postCount);
+                model.addAttribute("totalResults", recipeCount + groupBuyCount + postCount);
             }
         }
 

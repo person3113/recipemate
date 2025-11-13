@@ -80,14 +80,20 @@ public class SearchService {
         if ("ALL".equals(searchType)) {
             // 전체 탭: 각 도메인별 상위 5개씩만 조회하되, 전체 개수도 계산
             Pageable previewPageable = PageRequest.of(0, 5);
-            groupBuyResults = searchGroupBuys(keyword, previewPageable);
-            postResults = searchPosts(keyword, previewPageable);
-            recipeResults = searchRecipes(keyword, previewPageable);
             
-            // 각 카테고리의 전체 개수 계산
-            Long totalRecipeCount = countRecipes(keyword);
-            Long totalGroupBuyCount = countGroupBuys(keyword);
-            Long totalPostCount = countPosts(keyword);
+            // Page 객체로 받아서 데이터와 전체 개수를 한 번에 가져오기
+            Page<SearchResultResponse> groupBuyPage = searchGroupBuysPage(keyword, previewPageable);
+            Page<SearchResultResponse> postPage = searchPostsPage(keyword, previewPageable);
+            Page<SearchResultResponse> recipePage = searchRecipesPage(keyword, previewPageable);
+            
+            groupBuyResults = groupBuyPage.getContent();
+            postResults = postPage.getContent();
+            recipeResults = recipePage.getContent();
+            
+            // Page 객체에서 전체 개수 추출 (추가 쿼리 없음)
+            Long totalGroupBuyCount = groupBuyPage.getTotalElements();
+            Long totalPostCount = postPage.getTotalElements();
+            Long totalRecipeCount = recipePage.getTotalElements();
             
             log.info("통합 검색 결과 - GroupBuy: {}/{}, Post: {}/{}, Recipe: {}/{}", 
                 groupBuyResults.size(), totalGroupBuyCount,
@@ -107,18 +113,18 @@ public class SearchService {
             // 레시피 탭: 레시피만 페이징하여 전체 조회
             groupBuyResults = new ArrayList<>();
             postResults = new ArrayList<>();
-            recipeResults = searchRecipes(keyword, pageable);
+            recipeResults = searchRecipesPage(keyword, pageable).getContent();
         } else if ("GROUP_BUY".equals(searchType)) {
             // 공구 탭: 공구만 페이징하여 전체 조회
             Pageable limitedPageable = limitPageSize(pageable);
-            groupBuyResults = searchGroupBuys(keyword, limitedPageable);
+            groupBuyResults = searchGroupBuysPage(keyword, limitedPageable).getContent();
             postResults = new ArrayList<>();
             recipeResults = new ArrayList<>();
         } else if ("POST".equals(searchType)) {
             // 커뮤니티 탭: 게시글만 페이징하여 전체 조회
             Pageable limitedPageable = limitPageSize(pageable);
             groupBuyResults = new ArrayList<>();
-            postResults = searchPosts(keyword, limitedPageable);
+            postResults = searchPostsPage(keyword, limitedPageable).getContent();
             recipeResults = new ArrayList<>();
         } else {
             throw new IllegalArgumentException("유효하지 않은 검색 타입입니다: " + searchType);
@@ -132,30 +138,7 @@ public class SearchService {
     }
 
     /**
-     * 공동구매 검색 (List 반환 - 전체 탭용)
-     * QueryDSL 기반 검색으로 제목 + 내용 검색 및 모든 상태 포함
-     */
-    private List<SearchResultResponse> searchGroupBuys(String keyword, Pageable pageable) {
-        try {
-            // GroupBuySearchCondition 생성 (status는 null로 두어 모든 상태 검색)
-            GroupBuySearchCondition condition = GroupBuySearchCondition.builder()
-                .keyword(keyword)
-                .build();
-            
-            // GroupBuyService의 QueryDSL 메소드 사용
-            Page<GroupBuyResponse> groupBuyPage = groupBuyService.getGroupBuyList(condition, pageable);
-
-            return groupBuyPage.getContent().stream()
-                .map(groupBuyResponse -> convertGroupBuyResponseToSearchResult(groupBuyResponse, keyword))
-                .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.error("공동구매 검색 중 오류 발생", e);
-            return new ArrayList<>();
-        }
-    }
-
-    /**
-     * 공동구매 검색 (Page 반환 - 개별 탭용)
+     * 공동구매 검색 (Page 반환)
      * QueryDSL 기반 검색으로 제목 + 내용 검색 및 모든 상태 포함
      */
     public Page<SearchResultResponse> searchGroupBuysPage(String keyword, Pageable pageable) {
@@ -171,23 +154,7 @@ public class SearchService {
     }
 
     /**
-     * 커뮤니티 게시글 검색 (List 반환 - 전체 탭용)
-     */
-    private List<SearchResultResponse> searchPosts(String keyword, Pageable pageable) {
-        try {
-            Page<PostWithCountsDto> postPage = postRepository.searchByKeywordWithCounts(keyword, pageable);
-
-            return postPage.getContent().stream()
-                .map(dto -> convertPostToSearchResult(dto, keyword))
-                .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.error("게시글 검색 중 오류 발생", e);
-            return new ArrayList<>();
-        }
-    }
-
-    /**
-     * 커뮤니티 게시글 검색 (Page 반환 - 개별 탭용)
+     * 커뮤니티 게시글 검색 (Page 반환)
      */
     public Page<SearchResultResponse> searchPostsPage(String keyword, Pageable pageable) {
         Page<PostWithCountsDto> postPage = postRepository.searchByKeywordWithCounts(keyword, pageable);
@@ -218,32 +185,8 @@ public class SearchService {
     }
 
     /**
-     * 레시피 검색 (List 반환 - 전체 탭용)
+     * 레시피 검색 (Page 반환)
      * RecipeService의 findRecipes 메소드를 사용하여 페이징 지원
-     */
-    private List<SearchResultResponse> searchRecipes(String keyword, Pageable pageable) {
-        try {
-            // RecipeService의 findRecipes 메소드 호출 (페이징 지원)
-            RecipeListResponse recipeResponse = recipeService.findRecipes(
-                keyword,    // keyword
-                null,       // ingredients
-                null,       // category
-                "latest",   // sort
-                "desc",     // direction
-                pageable    // pageable
-            );
-
-            return recipeResponse.getRecipes().stream()
-                .map(recipe -> convertRecipeToSearchResult(recipe, keyword))
-                .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.error("레시피 검색 중 오류 발생", e);
-            return new ArrayList<>();
-        }
-    }
-
-    /**
-     * 레시피 검색 (Page 반환 - 개별 탭용)
      */
     public Page<SearchResultResponse> searchRecipesPage(String keyword, Pageable pageable) {
         RecipeListResponse recipeResponse = recipeService.findRecipes(
@@ -448,6 +391,67 @@ public class SearchService {
     }
 
     /**
+     * 검색 결과 개수만 조회 (배지 표시용)
+     * COUNT 쿼리만 실행하여 각 카테고리별 총 개수 반환
+     * 
+     * @param keyword 검색 키워드
+     * @return 카테고리별 개수 정보를 담은 응답 (데이터는 비어있음)
+     */
+    public UnifiedSearchResponse getSearchCounts(String keyword) {
+        validateKeyword(keyword);
+        
+        // 각 repository의 count 메서드 사용 (COUNT 쿼리만 실행)
+        GroupBuySearchCondition condition = GroupBuySearchCondition.builder()
+            .keyword(keyword)
+            .build();
+        
+        long groupBuyCount = groupBuyRepository.countByCondition(condition);
+        long postCount = postRepository.countByKeyword(keyword);
+        long recipeCount = recipeService.countRecipes(keyword);
+        
+        log.info("검색 개수 조회 - GroupBuy: {}, Post: {}, Recipe: {}", 
+            groupBuyCount, postCount, recipeCount);
+        
+        // 빈 리스트와 함께 개수 정보만 반환
+        return UnifiedSearchResponse.ofWithCounts(
+            keyword,
+            new ArrayList<>(),
+            new ArrayList<>(),
+            new ArrayList<>(),
+            recipeCount,
+            groupBuyCount,
+            postCount
+        );
+    }
+
+    /**
+     * 공동구매 검색 결과 개수 조회
+     */
+    public long countGroupBuys(String keyword) {
+        validateKeyword(keyword);
+        GroupBuySearchCondition condition = GroupBuySearchCondition.builder()
+            .keyword(keyword)
+            .build();
+        return groupBuyRepository.countByCondition(condition);
+    }
+
+    /**
+     * 게시글 검색 결과 개수 조회
+     */
+    public long countPosts(String keyword) {
+        validateKeyword(keyword);
+        return postRepository.countByKeyword(keyword);
+    }
+
+    /**
+     * 레시피 검색 결과 개수 조회
+     */
+    public long countRecipes(String keyword) {
+        validateKeyword(keyword);
+        return recipeService.countRecipes(keyword);
+    }
+
+    /**
      * 인기 검색어 상위 N개 조회
      * 
      * @param limit 조회할 개수
@@ -459,64 +463,5 @@ public class SearchService {
                 .stream()
                 .map(SearchKeyword::getKeyword)
                 .collect(Collectors.toList());
-    }
-    
-    /**
-     * 레시피 검색 결과 개수 조회
-     */
-    private Long countRecipes(String keyword) {
-        try {
-            RecipeListResponse recipeResponse = recipeService.findRecipes(
-                keyword,
-                null,
-                null,
-                "latest",
-                "desc",
-                PageRequest.of(0, 1) // 개수만 필요하므로 1개만 조회
-            );
-            return (long) recipeResponse.getTotalCount();
-        } catch (Exception e) {
-            log.error("레시피 개수 조회 중 오류 발생", e);
-            return 0L;
-        }
-    }
-    
-    /**
-     * 공동구매 검색 결과 개수 조회
-     * QueryDSL 기반 검색으로 제목 + 내용 검색 및 모든 상태 포함
-     */
-    private Long countGroupBuys(String keyword) {
-        try {
-            // GroupBuySearchCondition 생성 (status는 null로 두어 모든 상태 검색)
-            GroupBuySearchCondition condition = GroupBuySearchCondition.builder()
-                .keyword(keyword)
-                .build();
-            
-            // GroupBuyService의 QueryDSL 메소드 사용하여 전체 개수 조회
-            Page<GroupBuyResponse> groupBuyPage = groupBuyService.getGroupBuyList(
-                condition, 
-                PageRequest.of(0, 1) // 개수만 필요하므로 1개만 조회
-            );
-            return groupBuyPage.getTotalElements();
-        } catch (Exception e) {
-            log.error("공동구매 개수 조회 중 오류 발생", e);
-            return 0L;
-        }
-    }
-    
-    /**
-     * 커뮤니티 게시글 검색 결과 개수 조회
-     */
-    private Long countPosts(String keyword) {
-        try {
-            Page<PostWithCountsDto> postPage = postRepository.searchByKeywordWithCounts(
-                keyword,
-                PageRequest.of(0, 1)
-            );
-            return postPage.getTotalElements();
-        } catch (Exception e) {
-            log.error("게시글 개수 조회 중 오류 발생", e);
-            return 0L;
-        }
     }
 }

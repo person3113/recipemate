@@ -7,7 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum PostCategory {
     TIPS("팁 공유"),
-    FREE("자유");
+    FREE("자유"),
+    REVIEW("후기");
 
     private final String displayName;
 }

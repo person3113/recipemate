@@ -77,6 +77,19 @@ public class Recipe extends BaseEntity {
     private String sourceApiId;
 
     /**
+     * 레시피 작성자 (사용자 직접 등록 레시피만 해당, API 레시피는 null)
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private com.recipemate.domain.user.entity.User author;
+
+    /**
+     * 조리 방법 (TheMealDB 형식 - 텍스트)
+     */
+    @Column(columnDefinition = "TEXT")
+    private String instructions;
+
+    /**
      * 열량 (kcal)
      */
     @Column
@@ -170,6 +183,61 @@ public class Recipe extends BaseEntity {
      * 동기화 시간 업데이트
      */
     public void updateSyncTime() {
+        this.lastSyncedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 사용자가 작성한 레시피인지 확인
+     */
+    public boolean isUserRecipe() {
+        return this.sourceApi == RecipeSource.USER;
+    }
+
+    /**
+     * 특정 사용자가 이 레시피를 수정할 수 있는지 확인
+     */
+    public boolean canModify(com.recipemate.domain.user.entity.User user) {
+        if (user == null) {
+            return false;
+        }
+        return isUserRecipe() && author != null && author.getId().equals(user.getId());
+    }
+
+    /**
+     * 대표 이미지 업데이트
+     */
+    public void updateMainImage(String imageUrl) {
+        this.fullImageUrl = imageUrl;
+        this.thumbnailImageUrl = imageUrl;
+    }
+
+    /**
+     * 기본 정보 업데이트
+     */
+    public void updateBasicInfo(String title, String category, String area,
+                                 String instructions, String tips,
+                                 String youtubeUrl, String sourceUrl) {
+        if (title != null) {
+            this.title = title;
+        }
+        if (category != null) {
+            this.category = category;
+        }
+        if (area != null) {
+            this.area = area;
+        }
+        if (instructions != null) {
+            this.instructions = instructions;
+        }
+        if (tips != null) {
+            this.tips = tips;
+        }
+        if (youtubeUrl != null) {
+            this.youtubeUrl = youtubeUrl;
+        }
+        if (sourceUrl != null) {
+            this.sourceUrl = sourceUrl;
+        }
         this.lastSyncedAt = LocalDateTime.now();
     }
 }

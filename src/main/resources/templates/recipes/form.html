@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit ? '레시피 수정' : '레시피 작성'} + ' - RecipeMate'">레시피 작성 - RecipeMate</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body class="bg-light">
+    <!-- Header Fragment -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <main class="container my-5">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">
+                            <i class="bi bi-pencil-square"></i>
+                            <span th:text="${isEdit ? '레시피 수정' : '레시피 작성'}">레시피 작성</span>
+                        </h3>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <!-- 폼 시작 -->
+                        <form th:action="${isEdit ? '/recipes/' + recipeId + '/edit' : '/recipes'}"
+                              method="post"
+                              enctype="multipart/form-data"
+                              th:object="${recipe}">
+
+                            <!-- 기본 정보 -->
+                            <div class="mb-4">
+                                <h5 class="border-bottom pb-2 mb-3">기본 정보</h5>
+
+                                <!-- 제목 -->
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">레시피 제목 <span class="text-danger">*</span></label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="title"
+                                           th:field="*{title}"
+                                           placeholder="예: 김치찌개"
+                                           required>
+                                    <div th:if="${#fields.hasErrors('title')}" class="text-danger small" th:errors="*{title}"></div>
+                                </div>
+
+                                <!-- 카테고리 + 지역 -->
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="category" class="form-label">카테고리</label>
+                                        <select class="form-select" id="category" th:field="*{category}">
+                                            <option value="">선택 안함</option>
+                                            <option value="한식">한식</option>
+                                            <option value="양식">양식</option>
+                                            <option value="중식">중식</option>
+                                            <option value="일식">일식</option>
+                                            <option value="디저트">디저트</option>
+                                            <option value="기타">기타</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="area" class="form-label">지역/국가</label>
+                                        <input type="text" class="form-control" id="area" th:field="*{area}" placeholder="예: 한국">
+                                    </div>
+                                </div>
+
+                                <!-- 대표 이미지 -->
+                                <div class="mb-3">
+                                    <label for="mainImage" class="form-label">대표 이미지</label>
+                                    <input type="file"
+                                           class="form-control"
+                                           id="mainImage"
+                                           name="mainImage"
+                                           accept="image/jpeg,image/jpg,image/png"
+                                           onchange="previewMainImage(event)">
+                                    <small class="text-muted">최대 5MB, JPG/PNG 형식</small>
+
+                                    <!-- 이미지 미리보기 -->
+                                    <div id="mainImagePreview" class="mt-2" style="display:none;">
+                                        <img id="mainImagePreviewImg" src="" alt="미리보기" class="img-thumbnail" style="max-height: 200px;">
+                                    </div>
+
+                                    <!-- 수정 시 기존 이미지 표시 -->
+                                    <div th:if="${isEdit and recipe.existingMainImageUrl != null}" class="mt-2">
+                                        <p class="small text-muted">현재 이미지:</p>
+                                        <img th:src="${recipe.existingMainImageUrl}" alt="현재 이미지" class="img-thumbnail" style="max-height: 200px;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 재료 -->
+                            <div class="mb-4">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="bi bi-basket3"></i> 재료 <span class="text-danger">*</span>
+                                </h5>
+
+                                <div id="ingredientsList">
+                                    <!-- 수정 모드: 기존 재료 표시 -->
+                                    <div th:if="${isEdit and recipe.ingredients != null and !recipe.ingredients.isEmpty()}">
+                                        <div th:each="ingredient, iterStat : ${recipe.ingredients}" class="ingredient-item mb-2">
+                                            <div class="row">
+                                                <div class="col-md-5">
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           th:name="|ingredients[${iterStat.index}].name|"
+                                                           th:value="${ingredient.name}"
+                                                           placeholder="재료명"
+                                                           required>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           th:name="|ingredients[${iterStat.index}].measure|"
+                                                           th:value="${ingredient.measure}"
+                                                           placeholder="분량"
+                                                           required>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <button type="button" class="btn btn-danger" onclick="removeIngredient(this)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 작성 모드: 빈 재료 입력 폼 -->
+                                    <div th:if="${!isEdit or recipe.ingredients == null or recipe.ingredients.isEmpty()}" class="ingredient-item mb-2">
+                                        <div class="row">
+                                            <div class="col-md-5">
+                                                <input type="text"
+                                                       class="form-control"
+                                                       name="ingredients[0].name"
+                                                       placeholder="재료명 (예: 돼지고기)"
+                                                       required>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <input type="text"
+                                                       class="form-control"
+                                                       name="ingredients[0].measure"
+                                                       placeholder="분량 (예: 300g)"
+                                                       required>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-danger" onclick="removeIngredient(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addIngredient()">
+                                    <i class="bi bi-plus-circle"></i> 재료 추가
+                                </button>
+                            </div>
+
+                            <!-- 조리 방법 (텍스트) -->
+                            <div class="mb-4">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="bi bi-list-ol"></i> 조리 방법 <span class="text-danger">*</span>
+                                </h5>
+
+                                <textarea class="form-control"
+                                          id="instructions"
+                                          th:field="*{instructions}"
+                                          rows="10"
+                                          placeholder="조리 방법을 자유롭게 입력하세요.&#10;&#10;예시:&#10;1. 돼지고기를 한입 크기로 썰어주세요.&#10;2. 김치는 적당한 크기로 썰어주세요.&#10;3. 냄비에 김치를 넣고 볶다가 돼지고기를 넣어 함께 볶아주세요.&#10;4. 물을 넣고 끓여주세요.&#10;5. 두부와 양념을 넣고 10분간 더 끓이면 완성!"
+                                          required></textarea>
+                                <small class="text-muted">단계별로 자유롭게 작성해주세요.</small>
+                            </div>
+
+                            <!-- 추가 정보 -->
+                            <div class="mb-4">
+                                <h5 class="border-bottom pb-2 mb-3">추가 정보 (선택사항)</h5>
+
+                                <div class="mb-3">
+                                    <label for="tips" class="form-label">요리 팁</label>
+                                    <textarea class="form-control" id="tips" th:field="*{tips}" rows="3" placeholder="저감 조리법 팁이나 주의사항을 입력하세요"></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="youtubeUrl" class="form-label">YouTube 링크</label>
+                                    <input type="url" class="form-control" id="youtubeUrl" th:field="*{youtubeUrl}" placeholder="https://www.youtube.com/watch?v=...">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="sourceUrl" class="form-label">참고 링크</label>
+                                    <input type="url" class="form-control" id="sourceUrl" th:field="*{sourceUrl}" placeholder="https://...">
+                                </div>
+                            </div>
+
+                            <!-- 버튼 -->
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary" onclick="history.back()">
+                                    <i class="bi bi-arrow-left"></i> 취소
+                                </button>
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-check-circle"></i>
+                                    <span th:text="${isEdit ? '수정 완료' : '등록하기'}">등록하기</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // 재료 카운터 초기화 (수정 모드에서는 기존 재료 개수로 시작)
+        let ingredientCount = document.querySelectorAll('.ingredient-item').length;
+
+        // 재료 추가
+        function addIngredient() {
+            const ingredientsList = document.getElementById('ingredientsList');
+            const newIngredient = document.createElement('div');
+            newIngredient.className = 'ingredient-item mb-2';
+            newIngredient.innerHTML = `
+                <div class="row">
+                    <div class="col-md-5">
+                        <input type="text" class="form-control" name="ingredients[${ingredientCount}].name" placeholder="재료명" required>
+                    </div>
+                    <div class="col-md-5">
+                        <input type="text" class="form-control" name="ingredients[${ingredientCount}].measure" placeholder="분량" required>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-danger" onclick="removeIngredient(this)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            ingredientsList.appendChild(newIngredient);
+            ingredientCount++;
+        }
+
+        // 재료 삭제
+        function removeIngredient(button) {
+            const ingredientItem = button.closest('.ingredient-item');
+            if (document.querySelectorAll('.ingredient-item').length > 1) {
+                ingredientItem.remove();
+            } else {
+                alert('최소 1개의 재료가 필요합니다.');
+            }
+        }
+
+        // 대표 이미지 미리보기
+        function previewMainImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('mainImagePreviewImg').src = e.target.result;
+                    document.getElementById('mainImagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+</body>
+</html>
+

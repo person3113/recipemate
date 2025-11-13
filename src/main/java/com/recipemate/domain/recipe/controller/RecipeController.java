@@ -2,27 +2,41 @@ package com.recipemate.domain.recipe.controller;
 
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.recipe.dto.CategoryResponse;
+import com.recipemate.domain.recipe.dto.RecipeCreateRequest;
 import com.recipemate.domain.recipe.dto.RecipeDetailResponse;
 import com.recipemate.domain.recipe.dto.RecipeListResponse;
+import com.recipemate.domain.recipe.dto.RecipeUpdateRequest;
+import com.recipemate.domain.recipe.entity.Recipe;
 import com.recipemate.domain.recipe.entity.RecipeSource;
 import com.recipemate.domain.recipe.service.RecipeService;
 import com.recipemate.domain.recipe.service.RecipeSyncService;
 import com.recipemate.global.common.ApiResponse;
+import com.recipemate.global.exception.CustomException;
+import com.recipemate.global.exception.ErrorCode;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import jakarta.validation.Valid;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -42,6 +56,8 @@ public class RecipeController {
 
     private final RecipeService recipeService;
     private final RecipeSyncService recipeSyncService;
+    private final com.recipemate.domain.user.repository.UserRepository userRepository;
+    private final com.recipemate.domain.recipe.repository.RecipeRepository recipeRepository;
 
     private static final int DEFAULT_RANDOM_COUNT = 5;
     private static final int DEFAULT_PAGE_SIZE = 20;
@@ -130,6 +146,7 @@ public class RecipeController {
     @GetMapping("/{recipeId}")
     public String recipeDetailPage(
             @PathVariable String recipeId,
+            @AuthenticationPrincipal UserDetails userDetails,
             Model model) {
         
         RecipeDetailResponse recipe;
@@ -146,6 +163,26 @@ public class RecipeController {
         
         model.addAttribute("recipe", recipe);
         
+        // ✅ 본인이 작성한 레시피인지 확인
+        boolean isOwner = false;
+        if (userDetails != null && "user".equalsIgnoreCase(recipe.getSource())) {
+            try {
+                com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
+                        .orElse(null);
+
+                if (currentUser != null && recipeId.matches("\\d+")) {
+                    Long dbId = Long.parseLong(recipeId);
+                    Recipe recipeEntity = recipeRepository.findById(dbId).orElse(null);
+                    if (recipeEntity != null) {
+                        isOwner = recipeEntity.canModify(currentUser);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to check recipe ownership", e);
+            }
+        }
+        model.addAttribute("isOwner", isOwner);
+
         // 관련 공동구매 조회
         List<GroupBuyResponse> relatedGroupBuys = recipeService.getRelatedGroupBuys(recipe.getId());
         model.addAttribute("relatedGroupBuys", relatedGroupBuys);
@@ -252,5 +289,238 @@ public class RecipeController {
         log.info("TheMealDB sync completed: requested={}, synced={}", count, syncedCount);
         
         return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    // ========== 사용자 레시피 CRUD ==========
+
+    /**
+     * 레시피 작성 폼 페이지
+     * GET /recipes/new
+     */
+    @GetMapping("/new")
+    public String createRecipeForm(@AuthenticationPrincipal UserDetails userDetails,
+                                   Model model,
+                                   RedirectAttributes redirectAttributes) {
+        // 비로그인 시 로그인 페이지로 리다이렉트
+        if (userDetails == null) {
+            redirectAttributes.addFlashAttribute("message", "로그인이 필요합니다.");
+            return "redirect:/auth/login";
+        }
+
+        model.addAttribute("recipe", new RecipeCreateRequest());
+        model.addAttribute("isEdit", false);
+        return "recipes/form";
+    }
+
+    /**
+     * 레시피 생성 처리
+     * POST /recipes
+     */
+    @PostMapping
+    public String createRecipe(@Valid @ModelAttribute RecipeCreateRequest request,
+                              BindingResult bindingResult,
+                              @AuthenticationPrincipal UserDetails userDetails,
+                              Model model,
+                              RedirectAttributes redirectAttributes) {
+
+        if (userDetails == null) {
+            redirectAttributes.addFlashAttribute("error", "로그인이 필요합니다.");
+            return "redirect:/auth/login";
+        }
+
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("recipe", request);
+            model.addAttribute("isEdit", false);
+            return "recipes/form";
+        }
+
+        try {
+            com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
+                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+            RecipeDetailResponse created = recipeService.createUserRecipe(request, currentUser);
+
+            redirectAttributes.addFlashAttribute("message", "레시피가 성공적으로 등록되었습니다.");
+            return "redirect:/recipes/" + created.getId();
+
+        } catch (Exception e) {
+            log.error("Failed to create recipe", e);
+            redirectAttributes.addFlashAttribute("error", "레시피 등록에 실패했습니다: " + e.getMessage());
+            return "redirect:/recipes/new";
+        }
+    }
+
+    /**
+     * 레시피 수정 폼 페이지
+     * GET /recipes/{id}/edit
+     */
+    @GetMapping("/{id}/edit")
+    public String editRecipeForm(@PathVariable Long id,
+                                 @AuthenticationPrincipal UserDetails userDetails,
+                                 Model model,
+                                 RedirectAttributes redirectAttributes) {
+
+        if (userDetails == null) {
+            redirectAttributes.addFlashAttribute("error", "로그인이 필요합니다.");
+            return "redirect:/auth/login";
+        }
+
+        try {
+            com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
+                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+            // 레시피 조회
+            RecipeDetailResponse recipeDetail = recipeService.getRecipeDetailById(id);
+
+            // ✅ 권한 체크: 사용자 레시피인지, 본인이 작성한 것인지 확인
+            if (!"user".equalsIgnoreCase(recipeDetail.getSource())) {
+                redirectAttributes.addFlashAttribute("error", "API로 가져온 레시피는 수정할 수 없습니다.");
+                return "redirect:/recipes/" + id;
+            }
+
+            // DB에서 레시피 엔티티를 다시 조회하여 권한 체크
+            Recipe recipeEntity = recipeRepository.findById(id)
+                    .orElseThrow(() -> new CustomException(ErrorCode.RECIPE_NOT_FOUND));
+
+            if (!recipeEntity.canModify(currentUser)) {
+                redirectAttributes.addFlashAttribute("error", "이 레시피를 수정할 권한이 없습니다.");
+                return "redirect:/recipes/" + id;
+            }
+
+            // RecipeUpdateRequest 객체 생성 및 기존 데이터 채우기
+            com.recipemate.domain.recipe.dto.RecipeUpdateRequest recipe = new com.recipemate.domain.recipe.dto.RecipeUpdateRequest();
+            recipe.setTitle(recipeDetail.getName());
+            recipe.setCategory(recipeDetail.getCategory());
+            recipe.setArea(recipeDetail.getArea());
+            recipe.setInstructions(recipeDetail.getInstructions());
+            recipe.setTips(null); // tips는 RecipeDetailResponse에 없으므로 null
+            recipe.setYoutubeUrl(recipeDetail.getYoutubeUrl());
+            recipe.setSourceUrl(recipeDetail.getSourceUrl());
+            recipe.setExistingMainImageUrl(recipeDetail.getImageUrl());
+
+            // 재료 변환
+            if (recipeDetail.getIngredients() != null) {
+                java.util.List<com.recipemate.domain.recipe.dto.RecipeUpdateRequest.IngredientDto> ingredients =
+                    new java.util.ArrayList<>();
+                for (RecipeDetailResponse.IngredientInfo ing : recipeDetail.getIngredients()) {
+                    com.recipemate.domain.recipe.dto.RecipeUpdateRequest.IngredientDto ingredientDto =
+                        new com.recipemate.domain.recipe.dto.RecipeUpdateRequest.IngredientDto();
+                    ingredientDto.setName(ing.getName());
+                    ingredientDto.setMeasure(ing.getMeasure());
+                    ingredients.add(ingredientDto);
+                }
+                recipe.setIngredients(ingredients);
+            }
+
+            // 권한 체크는 서비스 레이어에서 처리됨
+            model.addAttribute("recipe", recipe);
+            model.addAttribute("isEdit", true);
+            model.addAttribute("recipeId", id);
+
+            return "recipes/form";
+
+        } catch (CustomException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/recipes/" + id;
+        }
+    }
+
+    /**
+     * 레시피 수정 처리
+     * POST /recipes/{id}/edit
+     */
+    @PostMapping("/{id}/edit")
+    public String updateRecipe(@PathVariable Long id,
+                              @Valid @ModelAttribute com.recipemate.domain.recipe.dto.RecipeUpdateRequest request,
+                              BindingResult bindingResult,
+                              @AuthenticationPrincipal UserDetails userDetails,
+                              Model model,
+                              RedirectAttributes redirectAttributes) {
+
+        if (userDetails == null) {
+            redirectAttributes.addFlashAttribute("error", "로그인이 필요합니다.");
+            return "redirect:/auth/login";
+        }
+
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("recipe", request);
+            model.addAttribute("isEdit", true);
+            model.addAttribute("recipeId", id);
+            return "recipes/form";
+        }
+
+        try {
+            com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
+                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+            recipeService.updateUserRecipe(id, request, currentUser);
+
+            redirectAttributes.addFlashAttribute("message", "레시피가 성공적으로 수정되었습니다.");
+            return "redirect:/recipes/" + id;
+
+        } catch (CustomException e) {
+            log.error("Failed to update recipe", e);
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/recipes/" + id + "/edit";
+        }
+    }
+
+    /**
+     * 레시피 삭제 처리
+     * POST /recipes/{id}/delete
+     */
+    @PostMapping("/{id}/delete")
+    public String deleteRecipe(@PathVariable Long id,
+                              @AuthenticationPrincipal UserDetails userDetails,
+                              RedirectAttributes redirectAttributes) {
+
+        if (userDetails == null) {
+            redirectAttributes.addFlashAttribute("error", "로그인이 필요합니다.");
+            return "redirect:/auth/login";
+        }
+
+        try {
+            com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
+                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+            recipeService.deleteUserRecipe(id, currentUser);
+
+            redirectAttributes.addFlashAttribute("message", "레시피가 성공적으로 삭제되었습니다.");
+            return "redirect:/recipes";
+
+        } catch (CustomException e) {
+            log.error("Failed to delete recipe", e);
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/recipes/" + id;
+        }
+    }
+
+    /**
+     * 내가 작성한 레시피 목록
+     * GET /recipes/my
+     */
+    @GetMapping("/my")
+    public String myRecipes(@AuthenticationPrincipal UserDetails userDetails,
+                           @RequestParam(defaultValue = "0") int page,
+                           @RequestParam(defaultValue = "20") int size,
+                           Model model,
+                           RedirectAttributes redirectAttributes) {
+
+        if (userDetails == null) {
+            redirectAttributes.addFlashAttribute("error", "로그인이 필요합니다.");
+            return "redirect:/auth/login";
+        }
+
+        com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<RecipeListResponse.RecipeSimpleInfo> recipes = recipeService.getUserRecipes(currentUser, pageable);
+
+        model.addAttribute("recipes", recipes);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("pageSize", size);
+
+        return "recipes/my-recipes";
     }
 }

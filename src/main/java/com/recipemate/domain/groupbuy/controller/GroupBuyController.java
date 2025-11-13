@@ -147,7 +147,18 @@ public class GroupBuyController {
         // 레시피 기반 공구인 경우 레시피 정보 조회 및 초기값 설정
         if (recipeApiId != null && !recipeApiId.isBlank()) {
             try {
-                com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = recipeService.getRecipeDetailByApiId(recipeApiId);
+                com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe;
+
+                // ✅ recipeApiId가 순수 숫자인지 확인 (사용자 레시피 = DB ID)
+                if (recipeApiId.matches("\\d+")) {
+                    // 숫자만 있으면 DB ID로 조회
+                    Long dbId = Long.parseLong(recipeApiId);
+                    recipe = recipeService.getRecipeDetailById(dbId);
+                } else {
+                    // 접두사가 있으면 API ID로 조회 (meal-, food- 등)
+                    recipe = recipeService.getRecipeDetailByApiId(recipeApiId);
+                }
+
                 model.addAttribute("recipe", recipe);
                 
                 // 레시피 정보로 폼 초기값 설정

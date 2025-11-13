@@ -1,16 +1,60 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/base}">
-
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="'검색: ' + ${keyword} + ' - RecipeMate'">검색 결과 - RecipeMate</title>
     <meta name="description" th:content="'RecipeMate에서 \'' + ${keyword} + '\' 검색 결과'"/>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    
+    <style>
+        .hover-shadow {
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+        
+        .hover-shadow:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .list-group-item {
+            transition: background-color 0.2s ease;
+        }
+        
+        .list-group-item:hover {
+            background-color: var(--bs-light);
+        }
+        
+        mark {
+            background-color: #fff3cd;
+            color: #000;
+            padding: 0.1em 0.2em;
+            border-radius: 2px;
+            font-weight: 500;
+        }
+        
+        .recipe-card-img {
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .recipe-card-placeholder {
+            height: 200px;
+        }
+    </style>
 </head>
-
-<body>
-<div layout:fragment="content">
-    <div class="container py-4">
+<body class="bg-light">
+    <!-- Header Fragment -->
+    <div th:replace="~{fragments/header :: header}"></div>
+    
+    <!-- Main Content -->
+    <main class="container py-4">
         <!-- 검색 헤더 -->
         <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -24,111 +68,69 @@
             <div class="alert alert-info d-flex align-items-center">
                 <i class="bi bi-info-circle me-2"></i>
                 <span>
-                    '<strong th:text="${keyword}">검색어</strong>' 에 대한 
-                    <strong th:text="${totalResults}">0</strong>개의 결과를 찾았습니다.
+                    '<strong th:text="${keyword}">검색어</strong>' 에 대한 검색 결과입니다.
                 </span>
             </div>
-
-            <!-- 검색 폼 -->
-            <form th:action="@{/search}" method="get" class="mb-4">
-                <div class="input-group input-group-lg">
-                    <input type="text" 
-                           name="keyword" 
-                           class="form-control" 
-                           th:value="${keyword}"
-                           placeholder="레시피, 공동구매, 게시글 검색..."
-                           required/>
-                    <button type="submit" class="btn btn-primary px-4">
-                        <i class="bi bi-search me-1"></i>
-                        검색
-                    </button>
-                </div>
-            </form>
         </div>
 
         <!-- 검색 결과 탭 -->
-        <ul class="nav nav-tabs nav-fill mb-4" id="searchTabs" role="tablist">
+        <ul class="nav nav-tabs nav-fill mb-4" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" 
-                        id="all-tab" 
-                        data-bs-toggle="tab" 
-                        data-bs-target="#all-results" 
-                        type="button" 
-                        role="tab">
+                <a class="nav-link" 
+                   th:href="@{/search(keyword=${keyword}, type='ALL')}"
+                   th:classappend="${type == 'ALL'} ? 'active'">
                     <i class="bi bi-grid-3x3-gap me-2"></i>
                     전체 
                     <span class="badge bg-primary rounded-pill ms-1" th:text="${totalResults}">0</span>
-                </button>
+                </a>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" 
-                        id="recipes-tab" 
-                        data-bs-toggle="tab" 
-                        data-bs-target="#recipes-results" 
-                        type="button" 
-                        role="tab"
-                        hx-get th:hx-get="@{/search/fragments(keyword=${keyword}, type='RECIPE')}"
-                        hx-target="#recipes-results"
-                        hx-trigger="click once">
+                <a class="nav-link" 
+                   th:href="@{/search(keyword=${keyword}, type='RECIPE')}"
+                   th:classappend="${type == 'RECIPE'} ? 'active'">
                     <i class="bi bi-book me-2"></i>
                     레시피 
                     <span class="badge bg-success rounded-pill ms-1" th:text="${recipeCount}">0</span>
-                </button>
+                </a>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" 
-                        id="groupbuys-tab" 
-                        data-bs-toggle="tab" 
-                        data-bs-target="#groupbuys-results" 
-                        type="button" 
-                        role="tab"
-                        hx-get th:hx-get="@{/search/fragments(keyword=${keyword}, type='GROUPBUY')}"
-                        hx-target="#groupbuys-results"
-                        hx-trigger="click once">
+                <a class="nav-link" 
+                   th:href="@{/search(keyword=${keyword}, type='GROUP_BUY')}"
+                   th:classappend="${type == 'GROUP_BUY'} ? 'active'">
                     <i class="bi bi-cart me-2"></i>
                     공동구매 
                     <span class="badge bg-info rounded-pill ms-1" th:text="${groupbuyCount}">0</span>
-                </button>
+                </a>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" 
-                        id="posts-tab" 
-                        data-bs-toggle="tab" 
-                        data-bs-target="#posts-results" 
-                        type="button" 
-                        role="tab"
-                        hx-get th:hx-get="@{/search/fragments(keyword=${keyword}, type='POST')}"
-                        hx-target="#posts-results"
-                        hx-trigger="click once">
+                <a class="nav-link" 
+                   th:href="@{/search(keyword=${keyword}, type='POST')}"
+                   th:classappend="${type == 'POST'} ? 'active'">
                     <i class="bi bi-card-text me-2"></i>
                     커뮤니티 
                     <span class="badge bg-warning rounded-pill ms-1" th:text="${postCount}">0</span>
-                </button>
+                </a>
             </li>
         </ul>
 
-        <!-- 탭 콘텐츠 -->
-        <div class="tab-content" id="searchTabsContent">
-            <!-- 전체 결과 탭 -->
-            <div class="tab-pane fade show active" id="all-results" role="tabpanel">
-                <!-- 레시피 섹션 -->
-                <div th:if="${recipes != null and !recipes.empty}" class="mb-5">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="mb-0">
-                            <i class="bi bi-book text-success me-2"></i>
-                            레시피
-                        </h4>
-                        <button class="btn btn-outline-success btn-sm"
-                                data-bs-toggle="tab" 
-                                data-bs-target="#recipes-results"
-                                hx-get th:hx-get="@{/search/fragments(keyword=${keyword}, type='RECIPE')}"
-                                hx-target="#recipes-results"
-                                hx-trigger="click once">
-                            더보기 <i class="bi bi-arrow-right ms-1"></i>
-                        </button>
-                    </div>
-                    <div class="row g-3">
-                        <div th:each="recipe : ${recipes}" class="col-md-6 col-lg-4">
+        <!-- 전체 탭 콘텐츠 -->
+        <div th:if="${type == 'ALL'}">
+            <!-- 레시피 섹션 -->
+            <div th:if="${recipes != null and !recipes.empty}" class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">
+                        <i class="bi bi-book text-success me-2"></i>
+                        레시피
+                    </h4>
+                    <a th:href="@{/search(keyword=${keyword}, type='RECIPE')}" 
+                       class="btn btn-outline-success btn-sm">
+                        더보기 <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="row g-3">
+                    <div th:each="recipe : ${recipes}" class="col-md-6 col-lg-4">
+                        <a th:href="@{/recipes/{id}(id=${recipe.apiId})}" 
+                           class="text-decoration-none text-dark">
                             <div class="card h-100 border-success border-opacity-25 hover-shadow">
                                 <img th:if="${recipe.imageUrl}" 
                                      th:src="${recipe.imageUrl}" 
@@ -139,11 +141,7 @@
                                     <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
                                 </div>
                                 <div class="card-body">
-                                    <h5 class="card-title">
-                                        <a th:href="@{/recipes/{id}(id=${recipe.apiId})}" 
-                                           class="text-decoration-none text-dark"
-                                           th:text="${recipe.title}">레시피명</a>
-                                    </h5>
+                                    <h5 class="card-title" th:utext="${recipe.highlightedTitle ?: recipe.title}">레시피명</h5>
                                     <p class="card-text text-muted small" 
                                        th:text="${#strings.abbreviate(recipe.content, 100)}">
                                         레시피 설명
@@ -158,28 +156,27 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                 </div>
+            </div>
 
-                <!-- 공동구매 섹션 -->
-                <div th:if="${groupbuys != null and !groupbuys.empty}" class="mb-5">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="mb-0">
-                            <i class="bi bi-cart text-info me-2"></i>
-                            공동구매
-                        </h4>
-                        <button class="btn btn-outline-info btn-sm"
-                                data-bs-toggle="tab" 
-                                data-bs-target="#groupbuys-results"
-                                hx-get th:hx-get="@{/search/fragments(keyword=${keyword}, type='GROUPBUY')}"
-                                hx-target="#groupbuys-results"
-                                hx-trigger="click once">
-                            더보기 <i class="bi bi-arrow-right ms-1"></i>
-                        </button>
-                    </div>
-                    <div class="row g-3">
-                        <div th:each="groupbuy : ${groupbuys}" class="col-md-6 col-lg-4">
+            <!-- 공동구매 섹션 -->
+            <div th:if="${groupbuys != null and !groupbuys.empty}" class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">
+                        <i class="bi bi-cart text-info me-2"></i>
+                        공동구매
+                    </h4>
+                    <a th:href="@{/search(keyword=${keyword}, type='GROUP_BUY')}" 
+                       class="btn btn-outline-info btn-sm">
+                        더보기 <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="row g-3">
+                    <div th:each="groupbuy : ${groupbuys}" class="col-md-6 col-lg-4">
+                        <a th:href="@{/group-purchases/{id}(id=${groupbuy.id})}"
+                           class="text-decoration-none text-dark">
                             <div class="card h-100 border-info border-opacity-25 hover-shadow">
                                 <img th:if="${groupbuy.imageUrl}" 
                                      th:src="${groupbuy.imageUrl}" 
@@ -194,13 +191,9 @@
                                         <span class="badge"
                                               th:classappend="${groupbuy.status.name() == 'RECRUITING'} ? 'bg-success' : 
                                                              (${groupbuy.status.name() == 'CLOSED'} ? 'bg-secondary' : 'bg-primary')"
-                                              th:text="${groupbuy.status.description}">모집중</span>
+                                              th:text="${groupbuy.status.displayName}">모집중</span>
                                     </div>
-                                    <h5 class="card-title">
-                                        <a th:href="@{/groupbuys/{id}(id=${groupbuy.id})}" 
-                                           class="text-decoration-none text-dark"
-                                           th:text="${groupbuy.title}">공동구매 제목</a>
-                                    </h5>
+                                    <h5 class="card-title" th:utext="${groupbuy.highlightedTitle ?: groupbuy.title}">공동구매 제목</h5>
                                     <div class="mb-2">
                                         <div class="d-flex justify-content-between mb-1">
                                             <small class="text-muted">참여 인원</small>
@@ -228,155 +221,329 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                 </div>
+            </div>
 
-                <!-- 커뮤니티 게시글 섹션 -->
-                <div th:if="${posts != null and !posts.empty}" class="mb-5">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="mb-0">
-                            <i class="bi bi-card-text text-warning me-2"></i>
-                            커뮤니티
-                        </h4>
-                        <button class="btn btn-outline-warning btn-sm"
-                                data-bs-toggle="tab" 
-                                data-bs-target="#posts-results"
-                                hx-get th:hx-get="@{/search/fragments(keyword=${keyword}, type='POST')}"
-                                hx-target="#posts-results"
-                                hx-trigger="click once">
-                            더보기 <i class="bi bi-arrow-right ms-1"></i>
-                        </button>
-                    </div>
-                    <div class="list-group">
-                        <a th:each="post : ${posts}" 
-                           th:href="@{/posts/{id}(id=${post.id})}" 
-                           class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1" th:text="${post.title}">게시글 제목</h6>
-                                    <p class="mb-1 text-muted small" 
-                                       th:text="${#strings.abbreviate(post.content, 150)}">
-                                        게시글 내용...
-                                    </p>
-                                    <div class="d-flex gap-3 small text-muted mt-2">
-                                        <span>
-                                            <i class="bi bi-person"></i>
-                                            <span th:text="${post.authorNickname ?: '알 수 없음'}">작성자</span>
-                                        </span>
-                                        <span>
-                                            <i class="bi bi-calendar"></i>
-                                            <span th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd')}">2024-01-01</span>
-                                        </span>
-                                        <span>
-                                            <i class="bi bi-eye"></i>
-                                            <span th:text="${post.viewCount ?: 0}">0</span>
-                                        </span>
-                                    </div>
+            <!-- 커뮤니티 게시글 섹션 -->
+            <div th:if="${posts != null and !posts.empty}" class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">
+                        <i class="bi bi-card-text text-warning me-2"></i>
+                        커뮤니티
+                    </h4>
+                    <a th:href="@{/search(keyword=${keyword}, type='POST')}" 
+                       class="btn btn-outline-warning btn-sm">
+                        더보기 <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="list-group">
+                    <a th:each="post : ${posts}" 
+                       th:href="@{/community-posts/{id}(id=${post.id})}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1" th:utext="${post.highlightedTitle ?: post.title}">게시글 제목</h6>
+                                <p class="mb-1 text-muted small" 
+                                   th:text="${#strings.abbreviate(post.content, 150)}">
+                                    게시글 내용...
+                                </p>
+                                <div class="d-flex gap-3 small text-muted mt-2">
+                                    <span>
+                                        <i class="bi bi-person"></i>
+                                        <span th:text="${post.authorNickname ?: '알 수 없음'}">작성자</span>
+                                    </span>
+                                    <span>
+                                        <i class="bi bi-calendar"></i>
+                                        <span th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd')}">2024-01-01</span>
+                                    </span>
+                                    <span>
+                                        <i class="bi bi-eye"></i>
+                                        <span th:text="${post.viewCount ?: 0}">0</span>
+                                    </span>
                                 </div>
-                                <div th:if="${post.imageUrl}" class="ms-3">
-                                    <img th:src="${post.imageUrl}" 
-                                         class="rounded" 
-                                         style="width: 80px; height: 80px; object-fit: cover;"
-                                         th:alt="${post.title}"/>
+                            </div>
+                            <div th:if="${post.imageUrl}" class="ms-3">
+                                <img th:src="${post.imageUrl}" 
+                                     class="rounded" 
+                                     style="width: 80px; height: 80px; object-fit: cover;"
+                                     th:alt="${post.title}"/>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 결과 없음 -->
+            <div th:if="${totalResults == 0}" class="text-center py-5">
+                <i class="bi bi-search text-muted" style="font-size: 4rem;"></i>
+                <h4 class="mt-3">검색 결과가 없습니다</h4>
+                <p class="text-muted">다른 키워드로 검색해보세요.</p>
+            </div>
+        </div>
+
+        <!-- 레시피 탭 콘텐츠 -->
+        <div th:if="${type == 'RECIPE'}">
+            <div th:if="${recipes.empty}" class="text-center py-5">
+                <i class="bi bi-search text-muted" style="font-size: 4rem;"></i>
+                <h4 class="mt-3">레시피 검색 결과가 없습니다</h4>
+                <p class="text-muted">다른 키워드로 검색해보세요.</p>
+            </div>
+            <div th:unless="${recipes.empty}">
+                <div class="row g-3">
+                    <div th:each="recipe : ${recipes}" class="col-md-6 col-lg-4">
+                        <a th:href="@{/recipes/{id}(id=${recipe.apiId})}" 
+                           class="text-decoration-none text-dark">
+                            <div class="card h-100 border-success border-opacity-25 hover-shadow">
+                                <img th:if="${recipe.imageUrl}" 
+                                     th:src="${recipe.imageUrl}" 
+                                     class="card-img-top recipe-card-img"
+                                     th:alt="${recipe.name}"/>
+                                <div th:unless="${recipe.imageUrl}" 
+                                     class="card-img-top bg-light d-flex align-items-center justify-content-center recipe-card-placeholder">
+                                    <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title" th:utext="${recipe.highlightedTitle ?: recipe.title}">레시피명</h5>
+                                    <p class="card-text text-muted small" 
+                                       th:text="${#strings.abbreviate(recipe.content, 100)}">
+                                        레시피 설명
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div class="d-flex gap-3 small text-muted">
+                                            <span th:if="${recipe.content}">
+                                                <i class="bi bi-tag"></i>
+                                                <span th:text="${recipe.content}">카테고리</span>
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </a>
                     </div>
                 </div>
-
-                <!-- 결과 없음 -->
-                <div th:if="${totalResults == 0}" class="text-center py-5">
-                    <i class="bi bi-search text-muted" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3">검색 결과가 없습니다</h4>
-                    <p class="text-muted">다른 키워드로 검색해보세요.</p>
-                </div>
-            </div>
-
-            <!-- 레시피만 탭 -->
-            <div class="tab-pane fade" id="recipes-results" role="tabpanel">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">로딩 중...</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 공동구매만 탭 -->
-            <div class="tab-pane fade" id="groupbuys-results" role="tabpanel">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">로딩 중...</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 커뮤니티만 탭 -->
-            <div class="tab-pane fade" id="posts-results" role="tabpanel">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">로딩 중...</span>
-                    </div>
-                </div>
+                
+                <!-- 페이지네이션 -->
+                <nav th:if="${recipePage != null and recipePage.totalPages > 1}" class="mt-4" aria-label="레시피 검색 결과 페이지네이션">
+                    <ul class="pagination justify-content-center">
+                        <!-- 이전 페이지 -->
+                        <li class="page-item" th:classappend="${recipePage.first} ? 'disabled'">
+                            <a class="page-link" 
+                               th:href="@{/search(keyword=${keyword}, type='RECIPE', page=${recipePage.number - 1})}"
+                               th:aria-disabled="${recipePage.first}">
+                                이전
+                            </a>
+                        </li>
+                        
+                        <!-- 페이지 번호 (최대 5개 표시) -->
+                        <th:block th:with="startPage=${recipePage.number < 2 ? 0 : (recipePage.number > recipePage.totalPages - 3 ? T(java.lang.Math).max(0, recipePage.totalPages - 5) : recipePage.number - 2)},
+                                           endPage=${T(java.lang.Math).min(startPage + 4, recipePage.totalPages - 1)}">
+                            <li th:each="i : ${#numbers.sequence(startPage, endPage)}"
+                                class="page-item" 
+                                th:classappend="${i == recipePage.number} ? 'active'">
+                                <a class="page-link"
+                                   th:href="@{/search(keyword=${keyword}, type='RECIPE', page=${i})}"
+                                   th:text="${i + 1}">1</a>
+                            </li>
+                        </th:block>
+                        
+                        <!-- 다음 페이지 -->
+                        <li class="page-item" th:classappend="${recipePage.last} ? 'disabled'">
+                            <a class="page-link" 
+                               th:href="@{/search(keyword=${keyword}, type='RECIPE', page=${recipePage.number + 1})}"
+                               th:aria-disabled="${recipePage.last}">
+                                다음
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- 추가 스타일 -->
-<th:block layout:fragment="extra-styles">
-    <style>
-        .hover-shadow {
-            transition: box-shadow 0.3s ease, transform 0.3s ease;
-        }
-        
-        .hover-shadow:hover {
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-            transform: translateY(-2px);
-        }
-        
-        .list-group-item {
-            transition: background-color 0.2s ease;
-        }
-        
-        .list-group-item:hover {
-            background-color: var(--bs-light);
-        }
-    </style>
-</th:block>
+        <!-- 공동구매 탭 콘텐츠 -->
+        <div th:if="${type == 'GROUP_BUY'}">
+            <div th:if="${groupbuys.empty}" class="text-center py-5">
+                <i class="bi bi-search text-muted" style="font-size: 4rem;"></i>
+                <h4 class="mt-3">공동구매 검색 결과가 없습니다</h4>
+                <p class="text-muted">다른 키워드로 검색해보세요.</p>
+            </div>
+            <div th:unless="${groupbuys.empty}">
+                <div class="row g-3">
+                    <div th:each="groupbuy : ${groupbuys}" class="col-md-6 col-lg-4">
+                        <a th:href="@{/group-purchases/{id}(id=${groupbuy.id})}" 
+                           class="text-decoration-none text-dark">
+                            <div class="card h-100 border-info border-opacity-25 hover-shadow">
+                                <img th:if="${groupbuy.imageUrl}" 
+                                     th:src="${groupbuy.imageUrl}" 
+                                     class="card-img-top recipe-card-img"
+                                     th:alt="${groupbuy.title}"/>
+                                <div th:unless="${groupbuy.imageUrl}" 
+                                     class="card-img-top bg-light d-flex align-items-center justify-content-center recipe-card-placeholder">
+                                    <i class="bi bi-cart text-muted" style="font-size: 3rem;"></i>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-2">
+                                        <span class="badge"
+                                              th:classappend="${groupbuy.status.name() == 'RECRUITING'} ? 'bg-success' : 
+                                                             (${groupbuy.status.name() == 'CLOSED'} ? 'bg-secondary' : 'bg-primary')"
+                                              th:text="${groupbuy.status.displayName}">모집중</span>
+                                    </div>
+                                    <h5 class="card-title" th:utext="${groupbuy.highlightedTitle ?: groupbuy.title}">공동구매 제목</h5>
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <small class="text-muted">참여 인원</small>
+                                            <small class="fw-bold">
+                                                <span th:text="${groupbuy.currentParticipants}">0</span>
+                                                /
+                                                <span th:text="${groupbuy.maxParticipants}">10</span>명
+                                            </small>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar"
+                                                 th:classappend="${groupbuy.participationRate < 60} ? 'bg-secondary' : 
+                                                                (${groupbuy.participationRate < 100} ? 'bg-info' : 'bg-success')"
+                                                 th:style="'width: ' + ${groupbuy.participationRate} + '%'"
+                                                 role="progressbar">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-primary fw-bold" th:text="${#numbers.formatInteger(groupbuy.pricePerPerson, 0, 'COMMA')} + '원'">10,000원</span>
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock"></i>
+                                            <span th:text="${#temporals.format(groupbuy.deadline, 'MM/dd')}">01/01</span>까지
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- 페이지네이션 -->
+                <nav th:if="${groupBuyPage != null and groupBuyPage.totalPages > 1}" class="mt-4" aria-label="공동구매 검색 결과 페이지네이션">
+                    <ul class="pagination justify-content-center">
+                        <!-- 이전 페이지 -->
+                        <li class="page-item" th:classappend="${groupBuyPage.first} ? 'disabled'">
+                            <a class="page-link" 
+                               th:href="@{/search(keyword=${keyword}, type='GROUP_BUY', page=${groupBuyPage.number - 1})}"
+                               th:aria-disabled="${groupBuyPage.first}">
+                                이전
+                            </a>
+                        </li>
+                        
+                        <!-- 페이지 번호 (최대 5개 표시) -->
+                        <th:block th:with="startPage=${groupBuyPage.number < 2 ? 0 : (groupBuyPage.number > groupBuyPage.totalPages - 3 ? T(java.lang.Math).max(0, groupBuyPage.totalPages - 5) : groupBuyPage.number - 2)},
+                                           endPage=${T(java.lang.Math).min(startPage + 4, groupBuyPage.totalPages - 1)}">
+                            <li th:each="i : ${#numbers.sequence(startPage, endPage)}"
+                                class="page-item" 
+                                th:classappend="${i == groupBuyPage.number} ? 'active'">
+                                <a class="page-link"
+                                   th:href="@{/search(keyword=${keyword}, type='GROUP_BUY', page=${i})}"
+                                   th:text="${i + 1}">1</a>
+                            </li>
+                        </th:block>
+                        
+                        <!-- 다음 페이지 -->
+                        <li class="page-item" th:classappend="${groupBuyPage.last} ? 'disabled'">
+                            <a class="page-link" 
+                               th:href="@{/search(keyword=${keyword}, type='GROUP_BUY', page=${groupBuyPage.number + 1})}"
+                               th:aria-disabled="${groupBuyPage.last}">
+                                다음
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
 
-<!-- 추가 스크립트 -->
-<th:block layout:fragment="extra-scripts">
-    <script th:inline="javascript">
-        // 검색어 하이라이트 (선택사항)
-        document.addEventListener('DOMContentLoaded', function() {
-            const keyword = /*[[${keyword}]]*/ '';
-            if (keyword && keyword.length > 1) {
-                highlightKeyword(keyword);
-            }
-        });
-        
-        function highlightKeyword(keyword) {
-            const elements = document.querySelectorAll('.card-title, .card-text, .list-group-item h6, .list-group-item p');
-            const regex = new RegExp(`(${keyword})`, 'gi');
-            
-            elements.forEach(element => {
-                if (element.innerHTML.indexOf('<mark>') === -1) { // 이미 하이라이트되지 않은 경우만
-                    element.innerHTML = element.innerHTML.replace(regex, '<mark class="bg-warning bg-opacity-50">$1</mark>');
-                }
-            });
-        }
-        
-        // htmx 이벤트 핸들러
-        document.body.addEventListener('htmx:afterSwap', function(event) {
-            // 탭 콘텐츠 로드 후 하이라이트 재적용
-            const keyword = /*[[${keyword}]]*/ '';
-            if (keyword && keyword.length > 1) {
-                highlightKeyword(keyword);
-            }
-        });
-    </script>
-</th:block>
-
+        <!-- 커뮤니티 탭 콘텐츠 -->
+        <div th:if="${type == 'POST'}">
+            <div th:if="${posts.empty}" class="text-center py-5">
+                <i class="bi bi-search text-muted" style="font-size: 4rem;"></i>
+                <h4 class="mt-3">커뮤니티 게시글 검색 결과가 없습니다</h4>
+                <p class="text-muted">다른 키워드로 검색해보세요.</p>
+            </div>
+            <div th:unless="${posts.empty}">
+                <div class="list-group">
+                    <a th:each="post : ${posts}" 
+                       th:href="@{/community-posts/{id}(id=${post.id})}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1" th:utext="${post.highlightedTitle ?: post.title}">게시글 제목</h6>
+                                <p class="mb-1 text-muted small" 
+                                   th:text="${#strings.abbreviate(post.content, 150)}">
+                                    게시글 내용...
+                                </p>
+                                <div class="d-flex gap-3 small text-muted mt-2">
+                                    <span>
+                                        <i class="bi bi-person"></i>
+                                        <span th:text="${post.authorNickname ?: '알 수 없음'}">작성자</span>
+                                    </span>
+                                    <span>
+                                        <i class="bi bi-calendar"></i>
+                                        <span th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd')}">2024-01-01</span>
+                                    </span>
+                                    <span>
+                                        <i class="bi bi-eye"></i>
+                                        <span th:text="${post.viewCount ?: 0}">0</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div th:if="${post.imageUrl}" class="ms-3">
+                                <img th:src="${post.imageUrl}" 
+                                     class="rounded" 
+                                     style="width: 80px; height: 80px; object-fit: cover;"
+                                     th:alt="${post.title}"/>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- 페이지네이션 -->
+                <nav th:if="${postPage != null and postPage.totalPages > 1}" class="mt-4" aria-label="커뮤니티 검색 결과 페이지네이션">
+                    <ul class="pagination justify-content-center">
+                        <!-- 이전 페이지 -->
+                        <li class="page-item" th:classappend="${postPage.first} ? 'disabled'">
+                            <a class="page-link" 
+                               th:href="@{/search(keyword=${keyword}, type='POST', page=${postPage.number - 1})}"
+                               th:aria-disabled="${postPage.first}">
+                                이전
+                            </a>
+                        </li>
+                        
+                        <!-- 페이지 번호 (최대 5개 표시) -->
+                        <th:block th:with="startPage=${postPage.number < 2 ? 0 : (postPage.number > postPage.totalPages - 3 ? T(java.lang.Math).max(0, postPage.totalPages - 5) : postPage.number - 2)},
+                                           endPage=${T(java.lang.Math).min(startPage + 4, postPage.totalPages - 1)}">
+                            <li th:each="i : ${#numbers.sequence(startPage, endPage)}"
+                                class="page-item" 
+                                th:classappend="${i == postPage.number} ? 'active'">
+                                <a class="page-link"
+                                   th:href="@{/search(keyword=${keyword}, type='POST', page=${i})}"
+                                   th:text="${i + 1}">1</a>
+                            </li>
+                        </th:block>
+                        
+                        <!-- 다음 페이지 -->
+                        <li class="page-item" th:classappend="${postPage.last} ? 'disabled'">
+                            <a class="page-link" 
+                               th:href="@{/search(keyword=${keyword}, type='POST', page=${postPage.number + 1})}"
+                               th:aria-disabled="${postPage.last}">
+                                다음
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

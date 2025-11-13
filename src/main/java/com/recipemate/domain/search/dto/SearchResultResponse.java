@@ -4,6 +4,7 @@ import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.post.dto.PostResponse;
 import com.recipemate.domain.recipe.dto.CookRecipeResponse;
 import com.recipemate.global.common.EntityType;
+import com.recipemate.global.common.GroupBuyStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,10 +26,27 @@ public class SearchResultResponse {
     private Long id; // GroupBuy, Post의 경우 사용
     private String apiId; // Recipe의 경우 사용
     private String title;
+    private String highlightedTitle; // 검색어 하이라이트가 적용된 제목
     private String content;
     private String imageUrl;
     private String authorOrHost;
     private LocalDateTime createdAt;
+    
+    // Recipe용 필드
+    private String name; // 레시피 이름
+    private String category; // 레시피 카테고리
+    
+    // GroupBuy용 필드
+    private GroupBuyStatus status;
+    private Integer currentParticipants;
+    private Integer maxParticipants;
+    private Double participationRate;
+    private Integer pricePerPerson;
+    private LocalDateTime deadline;
+    
+    // Post용 필드
+    private String authorNickname;
+    private Integer viewCount;
 
     // GroupBuy용 정적 팩토리 메서드
     public static SearchResultResponse fromGroupBuy(GroupBuyResponse groupBuy) {
@@ -67,3 +85,4 @@ public class SearchResultResponse {
                 .build();
     }
 }
+

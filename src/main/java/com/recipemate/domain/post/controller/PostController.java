@@ -55,7 +55,21 @@ public class PostController {
     ) {
         // 정렬 정보 생성
         Sort.Direction direction = "asc".equalsIgnoreCase(dir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        String sortProperty = "views".equals(sort) ? "viewCount" : "createdAt";
+        String sortProperty;
+        switch (sort) {
+            case "views":
+                sortProperty = "viewCount";
+                break;
+            case "likes":
+                sortProperty = "likeCount";
+                break;
+            case "comments":
+                sortProperty = "commentCount";
+                break;
+            default:
+                sortProperty = "createdAt";
+                break;
+        }
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortProperty));
         
         // 카테고리 파라미터 변환

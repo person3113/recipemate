@@ -100,6 +100,16 @@
                 조회수순
                 <i th:if="${currentSort == 'views'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
             </a>
+            <a th:href="@{/community-posts/list(category=${currentCategory}, keyword=${keyword}, sort='likes', dir=(${currentSort == 'likes' && currentDir == 'desc'} ? 'asc' : 'desc'))}"
+               class="text-decoration-none" th:classappend="${currentSort == 'likes'} ? 'fw-bold text-primary' : 'text-muted'">
+                좋아요순
+                <i th:if="${currentSort == 'likes'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+            </a>
+            <a th:href="@{/community-posts/list(category=${currentCategory}, keyword=${keyword}, sort='comments', dir=(${currentSort == 'comments' && currentDir == 'desc'} ? 'asc' : 'desc'))}"
+               class="text-decoration-none" th:classappend="${currentSort == 'comments'} ? 'fw-bold text-primary' : 'text-muted'">
+                댓글많은순
+                <i th:if="${currentSort == 'comments'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+            </a>
         </div>
         
         <!-- Post List -->

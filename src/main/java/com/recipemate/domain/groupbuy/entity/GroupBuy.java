@@ -232,26 +232,34 @@ public class GroupBuy extends BaseEntity {
     }
 
     public void cancelParticipation(Participation participation) {
-        // 1. 마감 1일 전 취소 제한 검증
+        // 1. 최종 상태(CLOSED, COMPLETED, CANCELLED)에서는 참여 취소 불가
+        if (this.status == GroupBuyStatus.CLOSED || 
+            this.status == GroupBuyStatus.COMPLETED || 
+            this.status == GroupBuyStatus.CANCELLED) {
+            throw new CustomException(ErrorCode.CANNOT_MODIFY_GROUP_BUY);
+        }
+        
+        // 2. 마감 1일 전 취소 제한 검증
         if (LocalDateTime.now().isAfter(this.deadline.minusDays(1))) {
             throw new CustomException(ErrorCode.CANCELLATION_DEADLINE_PASSED);
         }
 
-        // 2. 참여 정보 제거 및 상태 변경
+        // 3. 참여 정보 제거 (RECRUITING 또는 IMMINENT 상태에서만 가능)
         this.participations.remove(participation);
         decreaseParticipant();
-        if (this.status == GroupBuyStatus.CLOSED && !isTargetReached()) {
-            reopen();
-        }
     }
 
     public void forceRemoveParticipant(Participation participation) {
-        // 주최자 권한으로 강제 탈퇴 처리 (마감 기한 제한 없음)
+        // 최종 상태(CLOSED, COMPLETED, CANCELLED)에서는 참여자 제거 불가
+        if (this.status == GroupBuyStatus.CLOSED || 
+            this.status == GroupBuyStatus.COMPLETED || 
+            this.status == GroupBuyStatus.CANCELLED) {
+            throw new CustomException(ErrorCode.CANNOT_MODIFY_GROUP_BUY);
+        }
+        
+        // 주최자 권한으로 강제 탈퇴 처리 (RECRUITING 또는 IMMINENT 상태에서만 가능, 마감 기한 제한 없음)
         this.participations.remove(participation);
         decreaseParticipant();
-        if (this.status == GroupBuyStatus.CLOSED && !isTargetReached()) {
-            reopen();
-        }
     }
 
     private void increaseParticipant() {
@@ -272,14 +280,11 @@ public class GroupBuy extends BaseEntity {
         return this.currentHeadcount >= this.targetHeadcount;
     }
 
+    /**
+     * 목표 인원 달성 시 호출 - COMPLETED 상태로 변경 (후기 작성 가능)
+     */
     public void close() {
-        this.status = GroupBuyStatus.CLOSED;
-    }
-
-    public void reopen() {
-        if (this.status == GroupBuyStatus.CLOSED) {
-            this.status = GroupBuyStatus.RECRUITING;
-        }
+        this.status = GroupBuyStatus.COMPLETED;
     }
 
     public void markAsImminent() {

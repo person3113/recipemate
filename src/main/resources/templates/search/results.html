@@ -190,10 +190,11 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="mb-2">
-                                        <span class="badge"
-                                              th:classappend="${groupbuy.status.name() == 'RECRUITING'} ? 'bg-success' : 
-                                                             (${groupbuy.status.name() == 'CLOSED'} ? 'bg-secondary' : 'bg-primary')"
-                                              th:text="${groupbuy.status.displayName}">모집중</span>
+                                        <span th:if="${groupbuy.status.name() == 'RECRUITING'}" class="badge bg-info">모집중</span>
+                                        <span th:if="${groupbuy.status.name() == 'IMMINENT'}" class="badge bg-warning">임박</span>
+                                        <span th:if="${groupbuy.status.name() == 'CLOSED'}" class="badge bg-secondary">마감</span>
+                                        <span th:if="${groupbuy.status.name() == 'COMPLETED'}" class="badge bg-success">완료</span>
+                                        <span th:if="${groupbuy.status.name() == 'CANCELLED'}" class="badge bg-danger">취소</span>
                                     </div>
                                     <h5 class="card-title" th:utext="${groupbuy.highlightedTitle ?: groupbuy.title}">공동구매 제목</h5>
                                     <div class="mb-2">
@@ -408,10 +409,11 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="mb-2">
-                                        <span class="badge"
-                                              th:classappend="${groupbuy.status.name() == 'RECRUITING'} ? 'bg-success' : 
-                                                             (${groupbuy.status.name() == 'CLOSED'} ? 'bg-secondary' : 'bg-primary')"
-                                              th:text="${groupbuy.status.displayName}">모집중</span>
+                                        <span th:if="${groupbuy.status.name() == 'RECRUITING'}" class="badge bg-info">모집중</span>
+                                        <span th:if="${groupbuy.status.name() == 'IMMINENT'}" class="badge bg-warning">임박</span>
+                                        <span th:if="${groupbuy.status.name() == 'CLOSED'}" class="badge bg-secondary">마감</span>
+                                        <span th:if="${groupbuy.status.name() == 'COMPLETED'}" class="badge bg-success">완료</span>
+                                        <span th:if="${groupbuy.status.name() == 'CANCELLED'}" class="badge bg-danger">취소</span>
                                     </div>
                                     <h5 class="card-title" th:utext="${groupbuy.highlightedTitle ?: groupbuy.title}">공동구매 제목</h5>
                                     <div class="mb-2">

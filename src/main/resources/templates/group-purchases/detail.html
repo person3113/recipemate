@@ -51,6 +51,8 @@
                                 <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge bg-success" th:text="${groupBuy.status.displayName}">모집중</span>
                                 <span th:if="${groupBuy.status.name() == 'IMMINENT'}" class="badge bg-warning" th:text="${groupBuy.status.displayName}">마감 임박</span>
                                 <span th:if="${groupBuy.status.name() == 'CLOSED'}" class="badge bg-secondary" th:text="${groupBuy.status.displayName}">마감</span>
+                                <span th:if="${groupBuy.status.name() == 'COMPLETED'}" class="badge bg-info" th:text="${groupBuy.status.displayName}">모집 성공</span>
+                                <span th:if="${groupBuy.status.name() == 'CANCELLED'}" class="badge bg-danger" th:text="${groupBuy.status.displayName}">판매자 취소</span>
                             </div>
                         </div>
                         
@@ -325,6 +327,15 @@
                                 </button>
                             </div>
                             
+                            <!-- 후기 보기 버튼: COMPLETED 상태일 때만 표시 -->
+                            <div th:if="${groupBuy.status.name() == 'COMPLETED'}" class="d-grid gap-2 mb-2">
+                                <a th:href="@{/group-purchases/{id}/reviews(id=${groupBuy.id})}" class="btn btn-info">
+                                    <i class="bi bi-star"></i> 후기 보기
+                                    <span th:if="${reviewCount != null and reviewCount > 0}" 
+                                          class="badge bg-light text-dark ms-1" th:text="${reviewCount}">0</span>
+                                </a>
+                            </div>
+                            
                             <!-- 참여하기 버튼: 모집중 또는 마감임박이고, 참여자가 아닐 때만 표시 -->
                             <div th:if="${(groupBuy.status.name() == 'RECRUITING' or groupBuy.status.name() == 'IMMINENT') and groupBuy.isParticipant != null and !groupBuy.isParticipant}" class="d-grid gap-2 mb-2">
                                 <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#participateModal">
@@ -344,16 +355,25 @@
                                     <i class="bi bi-gear"></i> 주최자 메뉴
                                 </h6>
                                 <div class="d-grid gap-2">
-                                    <a th:href="@{/group-purchases/{id}/participants(id=${groupBuy.id})}" class="btn btn-outline-primary">
+                                    <!-- 참여자 관리: RECRUITING 또는 IMMINENT 상태일 때만 표시 -->
+                                    <a th:if="${groupBuy.status.name() == 'RECRUITING' or groupBuy.status.name() == 'IMMINENT'}"
+                                       th:href="@{/group-purchases/{id}/participants(id=${groupBuy.id})}" 
+                                       class="btn btn-outline-primary">
                                         <i class="bi bi-people"></i> 참여자 관리
                                     </a>
+                                    <!-- 공구 수정: RECRUITING 상태일 때만 표시 -->
                                     <a th:if="${groupBuy.status.name() == 'RECRUITING'}" 
                                        th:href="@{/group-purchases/{id}/edit(id=${groupBuy.id})}" 
                                        class="btn btn-outline-secondary">
                                         <i class="bi bi-pencil-square"></i> 공구 수정
                                     </a>
-                                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                                        <i class="bi bi-trash"></i> 공구 삭제
+                                    <!-- 공구 취소: RECRUITING 상태일 때만 표시 -->
+                                    <button th:if="${groupBuy.status.name() == 'RECRUITING'}"
+                                            type="button" 
+                                            class="btn btn-outline-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#cancelGroupBuyModal">
+                                        <i class="bi bi-x-circle"></i> 공구 취소
                                     </button>
                                 </div>
                             </div>
@@ -424,27 +444,27 @@
         </div>
     </div>
     
-    <!-- Delete Modal -->
-    <div sec:authorize="isAuthenticated()" class="modal fade" id="deleteModal" tabindex="-1">
+    <!-- Cancel Modal (공구 취소) -->
+    <div sec:authorize="isAuthenticated()" class="modal fade" id="cancelGroupBuyModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">공구 삭제</h5>
+                    <h5 class="modal-title">공구 취소</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle"></i>
-                        <strong>경고:</strong> 이 작업은 되돌릴 수 없습니다.
+                        <strong>안내:</strong> 이 작업은 공구를 취소 상태로 변경합니다.
                     </div>
-                    <p>정말로 이 공동구매를 삭제하시겠습니까?</p>
-                    <p class="text-muted small">참여자가 있는 경우 삭제할 수 없습니다.</p>
+                    <p>정말로 이 공동구매를 취소하시겠습니까?</p>
+                    <p class="text-muted small">참여자가 있는 경우 취소할 수 없습니다.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-                    <form method="post" th:action="@{/group-purchases/{id}/delete(id=${groupBuy.id})}" class="d-inline">
+                    <form method="post" th:action="@{/group-purchases/{id}/cancel(id=${groupBuy.id})}" class="d-inline">
                         <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                        <button type="submit" class="btn btn-danger">삭제하기</button>
+                        <button type="submit" class="btn btn-danger">취소하기</button>
                     </form>
                 </div>
             </div>

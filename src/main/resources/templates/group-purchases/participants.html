@@ -42,8 +42,14 @@
                                 <i class="bi bi-tag"></i> 
                                 상태: 
                                 <span class="badge" 
-                                      th:classappend="${groupBuy.status.name() == 'RECRUITING'} ? 'bg-info' : (${groupBuy.status.name() == 'CLOSED'} ? 'bg-secondary' : 'bg-success')"
-                                      th:text="${groupBuy.status.name() == 'RECRUITING'} ? '모집중' : (${groupBuy.status.name() == 'CLOSED'} ? '마감' : '완료')">
+                                      th:classappend="${groupBuy.status.name() == 'RECRUITING'} ? 'bg-info' : 
+                                                      (${groupBuy.status.name() == 'IMMINENT'} ? 'bg-warning' : 
+                                                      (${groupBuy.status.name() == 'CLOSED'} ? 'bg-secondary' : 
+                                                      (${groupBuy.status.name() == 'COMPLETED'} ? 'bg-success' : 'bg-danger')))"
+                                      th:text="${groupBuy.status.name() == 'RECRUITING'} ? '모집중' : 
+                                               (${groupBuy.status.name() == 'IMMINENT'} ? '임박' : 
+                                               (${groupBuy.status.name() == 'CLOSED'} ? '마감' : 
+                                               (${groupBuy.status.name() == 'COMPLETED'} ? '완료' : '취소')))">
                                     상태
                                 </span>
                             </div>

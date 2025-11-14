@@ -196,10 +196,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
                     <form th:action="@{/group-purchases/{purchaseId}/reviews/{reviewId}/delete(purchaseId=${review.groupBuyId}, reviewId=${review.id})}" 
-                          method="post"
-                          hx-delete th:hx-delete="@{/group-purchases/{purchaseId}/reviews/{reviewId}(purchaseId=${review.groupBuyId}, reviewId=${review.id})}"
-                          th:hx-target="'#review-' + ${review.id}"
-                          hx-swap="outerHTML">
+                          method="post">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <button type="submit" class="btn btn-danger">삭제하기</button>
                     </form>

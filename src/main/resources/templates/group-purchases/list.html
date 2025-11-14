@@ -93,6 +93,8 @@
                             <option value="RECRUITING" th:selected="${searchCondition.status?.name() == 'RECRUITING'}">모집중</option>
                             <option value="IMMINENT" th:selected="${searchCondition.status?.name() == 'IMMINENT'}">마감 임박</option>
                             <option value="CLOSED" th:selected="${searchCondition.status?.name() == 'CLOSED'}">마감</option>
+                            <option value="COMPLETED" th:selected="${searchCondition.status?.name() == 'COMPLETED'}">완료</option>
+                            <option value="CANCELLED" th:selected="${searchCondition.status?.name() == 'CANCELLED'}">취소</option>
                         </select>
                     </div>
                     
@@ -158,9 +160,11 @@
                                    th:text="${groupBuy.title}"></a>
                             </h5>
                             <!-- 백엔드 상태 값 사용 -->
-                            <span class="badge" 
-                                  th:classappend="${groupBuy.status.name() == 'RECRUITING'} ? 'bg-success' : (${groupBuy.status.name() == 'IMMINENT'} ? 'bg-warning' : 'bg-secondary')"
-                                  th:text="${groupBuy.status.displayName}"></span>
+                            <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge bg-success">모집중</span>
+                            <span th:if="${groupBuy.status.name() == 'IMMINENT'}" class="badge bg-warning">임박</span>
+                            <span th:if="${groupBuy.status.name() == 'CLOSED'}" class="badge bg-secondary">마감</span>
+                            <span th:if="${groupBuy.status.name() == 'COMPLETED'}" class="badge bg-success">완료</span>
+                            <span th:if="${groupBuy.status.name() == 'CANCELLED'}" class="badge bg-danger">취소</span>
                         </div>
                         
                         <!-- 내용 -->

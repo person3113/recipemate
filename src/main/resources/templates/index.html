@@ -108,7 +108,10 @@
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <h5 class="card-title fw-bold mb-0" th:text="${groupBuy.title}">공구 제목</h5>
                                 <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge" style="background-color: #2196F3;">모집중</span>
+                                <span th:if="${groupBuy.status.name() == 'IMMINENT'}" class="badge bg-warning">임박</span>
                                 <span th:if="${groupBuy.status.name() == 'CLOSED'}" class="badge bg-secondary">마감</span>
+                                <span th:if="${groupBuy.status.name() == 'COMPLETED'}" class="badge bg-success">완료</span>
+                                <span th:if="${groupBuy.status.name() == 'CANCELLED'}" class="badge bg-danger">취소</span>
                             </div>
                             <p class="card-text text-muted small" th:text="${groupBuy.content}">공구 설명</p>
                             

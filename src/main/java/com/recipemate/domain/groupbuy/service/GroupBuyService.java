@@ -433,12 +433,7 @@ public class GroupBuyService {
             throw new CustomException(ErrorCode.UNAUTHORIZED_GROUP_BUY_ACCESS);
         }
         
-        // 4. 참여자가 있는지 확인
-        if (groupBuy.getCurrentHeadcount() > 0) {
-            throw new CustomException(ErrorCode.HAS_PARTICIPANTS);
-        }
-        
-        // 5. 연관된 이미지 처리
+        // 4. 연관된 이미지 처리
         List<GroupBuyImage> images = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy);
         if (!images.isEmpty()) {
             // 5-1. Cloudinary에서 이미지 삭제
@@ -456,6 +451,40 @@ public class GroupBuyService {
         // 6. 공구 소프트 삭제
         groupBuy.delete();
         log.info("Soft deleted group buy {}", groupBuyId);
+    }
+
+    /**
+     * 공구 취소 (상태만 변경)
+     * RECRUITING 상태의 공구만 취소 가능 (마감 임박 상태에서는 취소 불가)
+     */
+    @Transactional
+    public void cancelGroupBuy(Long userId, Long groupBuyId) {
+        // 1. 사용자 조회
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        // 2. GroupBuy 조회
+        GroupBuy groupBuy = groupBuyRepository.findByIdWithHost(groupBuyId)
+            .orElseThrow(() -> new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
+        
+        // 3. 권한 검증 (주최자만 취소 가능)
+        if (!groupBuy.isHost(user)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_GROUP_BUY_ACCESS);
+        }
+        
+        // 4. 취소 가능 상태 확인 (RECRUITING만 가능)
+        if (groupBuy.getStatus() != GroupBuyStatus.RECRUITING) {
+            throw new CustomException(ErrorCode.CANNOT_MODIFY_GROUP_BUY);
+        }
+        
+        // 5. 참여자가 있는지 확인
+        if (groupBuy.getCurrentHeadcount() > 0) {
+            throw new CustomException(ErrorCode.HAS_PARTICIPANTS);
+        }
+        
+        // 6. 상태를 CANCELLED로 변경 (이미지 및 데이터는 유지)
+        groupBuy.updateStatus(GroupBuyStatus.CANCELLED);
+        log.info("Cancelled group buy {} by user {}", groupBuyId, userId);
     }
 
     /**

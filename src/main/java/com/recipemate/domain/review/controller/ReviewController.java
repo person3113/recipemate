@@ -36,6 +36,36 @@ public class ReviewController {
     private final ReviewRepository reviewRepository;
 
     /**
+     * 후기 목록 페이지 렌더링
+     * GET /group-purchases/{purchaseId}/reviews
+     */
+    @GetMapping
+    public String showReviewsPage(
+            @PathVariable Long purchaseId,
+            Model model
+    ) {
+        // 1. 공구 정보 조회
+        GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
+        
+        // 2. 후기 목록 조회
+        List<ReviewResponse> reviews = reviewService.getReviewsByGroupBuy(purchaseId);
+        
+        // 3. 평균 평점 조회
+        Double averageRating = reviewService.getAverageRating(purchaseId);
+        
+        // 4. 평점 분포 조회
+        java.util.Map<Integer, Long> ratingDistribution = reviewService.getRatingDistribution(purchaseId);
+        
+        model.addAttribute("groupBuy", groupBuy);
+        model.addAttribute("reviews", reviews);
+        model.addAttribute("averageRating", averageRating);
+        model.addAttribute("ratingDistribution", ratingDistribution);
+        model.addAttribute("reviewCount", reviews.size());
+        
+        return "reviews/group-purchases-reviews";
+    }
+
+    /**
      * 후기 작성 폼 렌더링
      * GET /group-purchases/{purchaseId}/reviews/new
      */
@@ -61,7 +91,12 @@ public class ReviewController {
             throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
         }
         
-        // 4. 빈 폼 데이터 객체 추가
+        // 4. 삭제된 후기 존재 확인 (한 번 삭제하면 다시 작성 불가)
+        if (reviewRepository.existsDeletedReviewByReviewerIdAndGroupBuyId(user.getId(), purchaseId)) {
+            throw new CustomException(ErrorCode.REVIEW_DELETED_CANNOT_REWRITE);
+        }
+        
+        // 5. 빈 폼 데이터 객체 추가
         model.addAttribute("formData", CreateReviewRequest.builder().build());
         model.addAttribute("groupBuy", groupBuy);
         model.addAttribute("groupBuyId", purchaseId);

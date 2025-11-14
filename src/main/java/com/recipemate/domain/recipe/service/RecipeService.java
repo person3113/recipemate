@@ -952,7 +952,7 @@ public class RecipeService {
                 .thumbnailImageUrl(mainImageUrl)  // 같은 이미지 사용
                 .sourceApi(RecipeSource.USER)
                 .author(currentUser)  // 중요!
-                .instructions(request.getInstructions())  // 텍스트 조리방법
+                .instructions(null)  // 사용자 레시피는 instructions 사용 안 함
                 .tips(request.getTips())
                 .youtubeUrl(request.getYoutubeUrl())
                 .sourceUrl(request.getSourceUrl())
@@ -968,10 +968,21 @@ public class RecipeService {
             recipe.addIngredient(ingredient);
         }
 
-        // 4. 저장
+        // 4. 조리 단계 추가 (RecipeStep 사용)
+        int stepNumber = 1;
+        for (RecipeCreateRequest.StepDto stepDto : request.getSteps()) {
+            RecipeStep step = RecipeStep.builder()
+                    .stepNumber(stepNumber++)
+                    .description(stepDto.getDescription())
+                    .imageUrl(null)  // 사용자 레시피는 단계별 이미지 없음
+                    .build();
+            recipe.addStep(step);
+        }
+
+        // 5. 저장
         Recipe savedRecipe = recipeRepository.save(recipe);
 
-        // 5. 응답 DTO 변환 후 반환
+        // 6. 응답 DTO 변환 후 반환
         return convertRecipeEntityToDetailResponse(savedRecipe);
     }
 
@@ -990,10 +1001,21 @@ public class RecipeService {
         }
 
         // 3. 대표 이미지 업데이트 (새 이미지가 있으면)
+        String oldImageUrl = recipe.getFullImageUrl();
         if (request.getMainImage() != null && !request.getMainImage().isEmpty()) {
             List<String> uploadedUrls = imageUploadUtil.uploadImages(List.of(request.getMainImage()));
             if (!uploadedUrls.isEmpty()) {
                 recipe.updateMainImage(uploadedUrls.get(0));
+
+                // 기존 이미지 삭제 (새 이미지 업로드 성공 시)
+                if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
+                    try {
+                        imageUploadUtil.deleteImages(List.of(oldImageUrl));
+                    } catch (Exception e) {
+                        log.warn("Failed to delete old image: {}", oldImageUrl, e);
+                        // 삭제 실패해도 계속 진행
+                    }
+                }
             }
         }
 
@@ -1002,7 +1024,6 @@ public class RecipeService {
             request.getTitle(),
             request.getCategory(),
             request.getArea(),
-            request.getInstructions(),  // 텍스트 조리방법
             request.getTips(),
             request.getYoutubeUrl(),
             request.getSourceUrl()
@@ -1018,7 +1039,19 @@ public class RecipeService {
             recipe.addIngredient(ingredient);
         }
 
-        // 6. 저장 및 반환
+        // 6. 조리 단계 업데이트 (기존 단계 삭제 후 새로 추가)
+        recipe.getSteps().clear();
+        int stepNumber = 1;
+        for (RecipeUpdateRequest.StepDto stepDto : request.getSteps()) {
+            RecipeStep step = RecipeStep.builder()
+                    .stepNumber(stepNumber++)
+                    .description(stepDto.getDescription())
+                    .imageUrl(null)  // 사용자 레시피는 단계별 이미지 없음
+                    .build();
+            recipe.addStep(step);
+        }
+
+        // 7. 저장 및 반환
         Recipe updatedRecipe = recipeRepository.save(recipe);
         return convertRecipeEntityToDetailResponse(updatedRecipe);
     }

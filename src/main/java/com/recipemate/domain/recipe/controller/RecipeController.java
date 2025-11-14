@@ -165,15 +165,16 @@ public class RecipeController {
         
         // ✅ 본인이 작성한 레시피인지 확인
         boolean isOwner = false;
-        if (userDetails != null && "user".equalsIgnoreCase(recipe.getSource())) {
+        if (userDetails != null && recipeId.matches("\\d+")) {
             try {
                 com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
                         .orElse(null);
 
-                if (currentUser != null && recipeId.matches("\\d+")) {
+                if (currentUser != null) {
                     Long dbId = Long.parseLong(recipeId);
                     Recipe recipeEntity = recipeRepository.findById(dbId).orElse(null);
                     if (recipeEntity != null) {
+                        // Recipe 엔티티에서 직접 권한 확인 (source 체크 불필요)
                         isOwner = recipeEntity.canModify(currentUser);
                     }
                 }
@@ -379,30 +380,24 @@ public class RecipeController {
             com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
                     .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-            // 레시피 조회
-            RecipeDetailResponse recipeDetail = recipeService.getRecipeDetailById(id);
-
-            // ✅ 권한 체크: 사용자 레시피인지, 본인이 작성한 것인지 확인
-            if (!"user".equalsIgnoreCase(recipeDetail.getSource())) {
-                redirectAttributes.addFlashAttribute("error", "API로 가져온 레시피는 수정할 수 없습니다.");
-                return "redirect:/recipes/" + id;
-            }
-
-            // DB에서 레시피 엔티티를 다시 조회하여 권한 체크
+            // DB에서 레시피 엔티티 조회
             Recipe recipeEntity = recipeRepository.findById(id)
                     .orElseThrow(() -> new CustomException(ErrorCode.RECIPE_NOT_FOUND));
 
+            // ✅ 권한 체크: canModify()로 통합 확인 (사용자 레시피 + 본인 작성 여부)
             if (!recipeEntity.canModify(currentUser)) {
                 redirectAttributes.addFlashAttribute("error", "이 레시피를 수정할 권한이 없습니다.");
                 return "redirect:/recipes/" + id;
             }
+
+            // RecipeDetailResponse로 조회 (화면 표시용)
+            RecipeDetailResponse recipeDetail = recipeService.getRecipeDetailById(id);
 
             // RecipeUpdateRequest 객체 생성 및 기존 데이터 채우기
             com.recipemate.domain.recipe.dto.RecipeUpdateRequest recipe = new com.recipemate.domain.recipe.dto.RecipeUpdateRequest();
             recipe.setTitle(recipeDetail.getName());
             recipe.setCategory(recipeDetail.getCategory());
             recipe.setArea(recipeDetail.getArea());
-            recipe.setInstructions(recipeDetail.getInstructions());
             recipe.setTips(null); // tips는 RecipeDetailResponse에 없으므로 null
             recipe.setYoutubeUrl(recipeDetail.getYoutubeUrl());
             recipe.setSourceUrl(recipeDetail.getSourceUrl());
@@ -420,6 +415,19 @@ public class RecipeController {
                     ingredients.add(ingredientDto);
                 }
                 recipe.setIngredients(ingredients);
+            }
+
+            // 조리 단계 변환 (manualSteps -> steps)
+            if (recipeDetail.getManualSteps() != null) {
+                java.util.List<com.recipemate.domain.recipe.dto.RecipeUpdateRequest.StepDto> steps =
+                    new java.util.ArrayList<>();
+                for (RecipeDetailResponse.ManualStep step : recipeDetail.getManualSteps()) {
+                    com.recipemate.domain.recipe.dto.RecipeUpdateRequest.StepDto stepDto =
+                        new com.recipemate.domain.recipe.dto.RecipeUpdateRequest.StepDto();
+                    stepDto.setDescription(step.getDescription());
+                    steps.add(stepDto);
+                }
+                recipe.setSteps(steps);
             }
 
             // 권한 체크는 서비스 레이어에서 처리됨

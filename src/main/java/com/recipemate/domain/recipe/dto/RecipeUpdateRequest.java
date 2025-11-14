@@ -30,9 +30,6 @@ public class RecipeUpdateRequest {
 
     private String area;  // 지역/국가
 
-    @NotBlank(message = "조리 방법을 입력해주세요")
-    private String instructions;  // TheMealDB 형식 (텍스트)
-
     private String tips;  // 저감 조리법 팁
 
     private String youtubeUrl;  // YouTube 링크
@@ -52,6 +49,13 @@ public class RecipeUpdateRequest {
     @Builder.Default
     private List<IngredientDto> ingredients = new ArrayList<>();
 
+    // 조리 단계 목록
+    @Valid
+    @NotNull(message = "조리 단계를 최소 1개 이상 입력해주세요")
+    @Size(min = 1, message = "조리 단계를 최소 1개 이상 입력해주세요")
+    @Builder.Default
+    private List<StepDto> steps = new ArrayList<>();
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -62,5 +66,12 @@ public class RecipeUpdateRequest {
         @NotBlank(message = "재료 분량을 입력해주세요")
         private String measure;
     }
-}
 
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StepDto {
+        @NotBlank(message = "조리 단계 설명을 입력해주세요")
+        private String description;
+    }
+}

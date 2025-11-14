@@ -215,8 +215,7 @@ public class Recipe extends BaseEntity {
      * 기본 정보 업데이트
      */
     public void updateBasicInfo(String title, String category, String area,
-                                 String instructions, String tips,
-                                 String youtubeUrl, String sourceUrl) {
+                                 String tips, String youtubeUrl, String sourceUrl) {
         if (title != null) {
             this.title = title;
         }
@@ -225,9 +224,6 @@ public class Recipe extends BaseEntity {
         }
         if (area != null) {
             this.area = area;
-        }
-        if (instructions != null) {
-            this.instructions = instructions;
         }
         if (tips != null) {
             this.tips = tips;

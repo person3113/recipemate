@@ -158,19 +158,58 @@
                                 </button>
                             </div>
 
-                            <!-- 조리 방법 (텍스트) -->
+                            <!-- 조리 방법 (단계별) -->
                             <div class="mb-4">
                                 <h5 class="border-bottom pb-2 mb-3">
                                     <i class="bi bi-list-ol"></i> 조리 방법 <span class="text-danger">*</span>
                                 </h5>
 
-                                <textarea class="form-control"
-                                          id="instructions"
-                                          th:field="*{instructions}"
-                                          rows="10"
-                                          placeholder="조리 방법을 자유롭게 입력하세요.&#10;&#10;예시:&#10;1. 돼지고기를 한입 크기로 썰어주세요.&#10;2. 김치는 적당한 크기로 썰어주세요.&#10;3. 냄비에 김치를 넣고 볶다가 돼지고기를 넣어 함께 볶아주세요.&#10;4. 물을 넣고 끓여주세요.&#10;5. 두부와 양념을 넣고 10분간 더 끓이면 완성!"
-                                          required></textarea>
-                                <small class="text-muted">단계별로 자유롭게 작성해주세요.</small>
+                                <div id="stepsList">
+                                    <!-- 수정 모드: 기존 단계 표시 -->
+                                    <div th:if="${isEdit and recipe.steps != null and !recipe.steps.isEmpty()}">
+                                        <div th:each="step, iterStat : ${recipe.steps}" class="step-item mb-3">
+                                            <div class="d-flex align-items-start">
+                                                <span class="badge bg-primary rounded-circle me-2 mt-1"
+                                                      style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;"
+                                                      th:text="${iterStat.index + 1}">1</span>
+                                                <div class="flex-grow-1 me-2">
+                                                    <textarea class="form-control"
+                                                              th:name="|steps[${iterStat.index}].description|"
+                                                              th:text="${step.description}"
+                                                              rows="3"
+                                                              placeholder="조리 단계를 입력하세요"
+                                                              required></textarea>
+                                                </div>
+                                                <button type="button" class="btn btn-danger" onclick="removeStep(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 작성 모드: 빈 단계 입력 폼 -->
+                                    <div th:if="${!isEdit or recipe.steps == null or recipe.steps.isEmpty()}" class="step-item mb-3">
+                                        <div class="d-flex align-items-start">
+                                            <span class="badge bg-primary rounded-circle me-2 mt-1"
+                                                  style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">1</span>
+                                            <div class="flex-grow-1 me-2">
+                                                <textarea class="form-control"
+                                                          name="steps[0].description"
+                                                          rows="3"
+                                                          placeholder="조리 단계를 입력하세요 (예: 돼지고기를 한입 크기로 썰어주세요)"
+                                                          required></textarea>
+                                            </div>
+                                            <button type="button" class="btn btn-danger" onclick="removeStep(this)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addStep()">
+                                    <i class="bi bi-plus-circle"></i> 단계 추가
+                                </button>
+                                <small class="text-muted d-block mt-2">각 단계별로 나누어 작성하면 보기 편해요!</small>
                             </div>
 
                             <!-- 추가 정보 -->
@@ -217,6 +256,8 @@
     <script>
         // 재료 카운터 초기화 (수정 모드에서는 기존 재료 개수로 시작)
         let ingredientCount = document.querySelectorAll('.ingredient-item').length;
+        // 조리 단계 카운터 초기화
+        let stepCount = document.querySelectorAll('.step-item').length;
 
         // 재료 추가
         function addIngredient() {
@@ -265,6 +306,59 @@
                 if (measureInput) measureInput.name = `ingredients[${index}].measure`;
             });
             ingredientCount = ingredientItems.length;
+        }
+
+        // 조리 단계 추가
+        function addStep() {
+            const stepsList = document.getElementById('stepsList');
+            const newStep = document.createElement('div');
+            newStep.className = 'step-item mb-3';
+            const stepNumber = stepCount + 1;
+            newStep.innerHTML = `
+                <div class="d-flex align-items-start">
+                    <span class="badge bg-primary rounded-circle me-2 mt-1"
+                          style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">${stepNumber}</span>
+                    <div class="flex-grow-1 me-2">
+                        <textarea class="form-control"
+                                  name="steps[${stepCount}].description"
+                                  rows="3"
+                                  placeholder="조리 단계를 입력하세요"
+                                  required></textarea>
+                    </div>
+                    <button type="button" class="btn btn-danger" onclick="removeStep(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+            stepsList.appendChild(newStep);
+            stepCount++;
+        }
+
+        // 조리 단계 삭제
+        function removeStep(button) {
+            const stepItem = button.closest('.step-item');
+            if (document.querySelectorAll('.step-item').length > 1) {
+                stepItem.remove();
+                // 삭제 후 인덱스 및 번호 재정렬
+                reindexSteps();
+            } else {
+                alert('최소 1개의 조리 단계가 필요합니다.');
+            }
+        }
+
+        // 조리 단계 인덱스 및 번호 재정렬
+        function reindexSteps() {
+            const stepItems = document.querySelectorAll('.step-item');
+            stepItems.forEach((item, index) => {
+                // 번호 표시 업데이트
+                const badge = item.querySelector('.badge');
+                if (badge) badge.textContent = index + 1;
+
+                // textarea name 업데이트
+                const textarea = item.querySelector('textarea[name*=".description"]');
+                if (textarea) textarea.name = `steps[${index}].description`;
+            });
+            stepCount = stepItems.length;
         }
 
         // 대표 이미지 미리보기

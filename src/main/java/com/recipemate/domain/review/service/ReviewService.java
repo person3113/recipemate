@@ -39,8 +39,9 @@ public class ReviewService {
     /**
      * 후기 작성
      * - 참여자만 작성 가능
-     * - CLOSED 상태의 공구만 작성 가능
+     * - COMPLETED 상태의 공구만 작성 가능
      * - 중복 작성 방지
+     * - 삭제된 후기가 있으면 재작성 불가
      * - 매너온도 반영
      */
     @Transactional
@@ -63,7 +64,12 @@ public class ReviewService {
             throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
         }
 
-        // 5. 후기 생성 (Review.create() 내부에서 CLOSED 상태 검증)
+        // 5. 삭제된 후기 존재 확인 (한 번 삭제하면 다시 작성 불가)
+        if (reviewRepository.existsDeletedReviewByReviewerIdAndGroupBuyId(userId, groupBuyId)) {
+            throw new CustomException(ErrorCode.REVIEW_DELETED_CANNOT_REWRITE);
+        }
+
+        // 6. 후기 생성 (Review.create() 내부에서 COMPLETED 상태 검증)
         Review review = Review.create(
                 user,
                 groupBuy,
@@ -71,10 +77,10 @@ public class ReviewService {
                 request.getContent()
         );
 
-        // 6. 후기 저장
+        // 7. 후기 저장
         Review savedReview = reviewRepository.save(review);
 
-        // 7. 후기 생성 관련 이벤트 발행 (매너온도, 알림, 포인트, 뱃지 등)
+        // 8. 후기 생성 관련 이벤트 발행 (매너온도, 알림, 포인트, 뱃지 등)
         eventPublisher.publishEvent(new ReviewCreatedEvent(savedReview));
 
         return ReviewResponse.from(savedReview);
@@ -106,7 +112,7 @@ public class ReviewService {
     }
 
     /**
-     * 후기 삭제
+     * 후기 삭제 (소프트 삭제)
      * - 작성자만 삭제 가능
      */
     @Transactional
@@ -124,8 +130,8 @@ public class ReviewService {
             throw new CustomException(ErrorCode.UNAUTHORIZED_REVIEW_ACCESS);
         }
 
-        // 4. 후기 삭제
-        reviewRepository.delete(review);
+        // 4. 후기 소프트 삭제
+        review.softDelete();
     }
 
     /**

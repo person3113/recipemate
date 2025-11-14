@@ -53,6 +53,20 @@
                             마감
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link"
+                           th:href="@{/users/me/group-purchases(status='COMPLETED')}"
+                           th:classappend="${currentStatus != null and currentStatus.name() == 'COMPLETED'} ? 'active' : ''">
+                            모집 성공
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link"
+                           th:href="@{/users/me/group-purchases(status='CANCELLED')}"
+                           th:classappend="${currentStatus != null and currentStatus.name() == 'CANCELLED'} ? 'active' : ''">
+                            판매자 취소
+                        </a>
+                    </li>
                 </ul>
                 
                 <!-- Group Buys List -->
@@ -70,8 +84,8 @@
                                                    th:text="${groupBuy.title}">공구 제목</a>
                                             </h5>
                                             <span class="badge" 
-                                                  th:classappend="${groupBuy.status.name() == 'RECRUITING'} ? 'bg-info' : (${groupBuy.status.name() == 'IMMINENT'} ? 'bg-warning' : 'bg-secondary')"
-                                                  th:text="${groupBuy.status.name() == 'RECRUITING'} ? '모집중' : (${groupBuy.status.name() == 'IMMINENT'} ? '마감임박' : '마감')">
+                                                  th:classappend="${groupBuy.status.name() == 'RECRUITING'} ? 'bg-success' : (${groupBuy.status.name() == 'IMMINENT'} ? 'bg-warning' : (${groupBuy.status.name() == 'COMPLETED'} ? 'bg-info' : (${groupBuy.status.name() == 'CANCELLED'} ? 'bg-danger' : 'bg-secondary')))"
+                                                  th:text="${groupBuy.status.displayName}">
                                                 상태
                                             </span>
                                         </div>
@@ -117,7 +131,16 @@
                                                 <i class="bi bi-eye"></i> 상세보기
                                             </a>
                                             
-                                            <a th:href="@{/group-purchases/{id}/participants(id=${groupBuy.id})}" 
+                                            <!-- 후기 보기 버튼: COMPLETED 상태일 때만 표시 -->
+                                            <a th:if="${groupBuy.status.name() == 'COMPLETED'}"
+                                               th:href="@{/group-purchases/{id}/reviews(id=${groupBuy.id})}" 
+                                               class="btn btn-info">
+                                                <i class="bi bi-star"></i> 후기 보기
+                                            </a>
+                                            
+                                            <!-- 참여자 관리 버튼: RECRUITING/IMMINENT 상태일 때만 표시 -->
+                                            <a th:if="${groupBuy.status.name() == 'RECRUITING' or groupBuy.status.name() == 'IMMINENT'}"
+                                               th:href="@{/group-purchases/{id}/participants(id=${groupBuy.id})}" 
                                                class="btn btn-outline-secondary">
                                                 <i class="bi bi-people"></i> 참여자 관리
                                             </a>
@@ -129,13 +152,25 @@
                                                 <i class="bi bi-pencil"></i> 수정
                                             </a>
                                             
-                                            <!-- Delete Button -->
-                                            <form th:action="@{/group-purchases/{id}/delete(id=${groupBuy.id})}" 
+                                            <!-- 공구 취소 버튼: RECRUITING 상태일 때만 표시 -->
+                                            <form th:if="${groupBuy.status.name() == 'RECRUITING'}"
+                                                  th:action="@{/group-purchases/{id}/cancel(id=${groupBuy.id})}" 
                                                   method="post"
-                                                  th:attr="onsubmit=${groupBuy.currentHeadcount > 0} ? 'alert(\'참여자가 있어 삭제할 수 없습니다.\'); return false;' : 'return confirm(\'정말 삭제하시겠습니까?\');'">
+                                                  onsubmit="return confirm('정말로 이 공동구매를 취소하시겠습니까?\n참여자들에게 알림이 전송됩니다.');">
                                                 <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                                                 <button type="submit" class="btn btn-outline-danger w-100">
-                                                    <i class="bi bi-trash"></i> 삭제
+                                                    <i class="bi bi-x-circle"></i> 공구 취소
+                                                </button>
+                                            </form>
+                                            
+                                            <!-- 기록 지우기 Button (Only for CLOSED/CANCELLED status) -->
+                                            <form th:if="${groupBuy.status.name() == 'CLOSED' or groupBuy.status.name() == 'CANCELLED'}"
+                                                  th:action="@{/group-purchases/{id}/delete(id=${groupBuy.id})}" 
+                                                  method="post"
+                                                  onsubmit="return confirm('정말로 이 공구 기록을 삭제하시겠습니까?\n삭제된 기록은 복구할 수 없습니다.');">
+                                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                                <button type="submit" class="btn btn-outline-danger w-100">
+                                                    <i class="bi bi-trash"></i> 기록 지우기
                                                 </button>
                                             </form>
                                         </div>

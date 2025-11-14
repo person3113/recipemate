@@ -91,6 +91,8 @@ public class GroupBuyController {
         model.addAttribute("groupBuys", result);
         model.addAttribute("searchCondition", condition);
         model.addAttribute("categories", GroupBuyCategory.values()); // enum 값들을 템플릿에 전달
+        model.addAttribute("currentSort", sortBy);
+        model.addAttribute("currentDir", direction);
         
         return "group-purchases/list";
     }
@@ -407,16 +409,40 @@ public class GroupBuyController {
      */
     @PostMapping("/{purchaseId}/delete")
     public String deleteGroupBuy(
-        @AuthenticationPrincipal UserDetails userDetails,
         @PathVariable Long purchaseId,
+        @AuthenticationPrincipal UserDetails userDetails,
         RedirectAttributes redirectAttributes
     ) {
         User user = userRepository.findByEmail(userDetails.getUsername())
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
         groupBuyService.deleteGroupBuy(user.getId(), purchaseId);
-        redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 삭제되었습니다.");
+        redirectAttributes.addFlashAttribute("successMessage", "공동구매 기록이 삭제되었습니다.");
         return "redirect:/group-purchases/list";
+    }
+
+    /**
+     * 공구 취소 폼 제출
+     */
+    @PostMapping("/{purchaseId}/cancel")
+    public String cancelGroupBuy(
+        @PathVariable Long purchaseId,
+        @AuthenticationPrincipal UserDetails userDetails,
+        RedirectAttributes redirectAttributes
+    ) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        try {
+            groupBuyService.cancelGroupBuy(user.getId(), purchaseId);
+            redirectAttributes.addFlashAttribute("successMessage", "공동구매가 취소되었습니다.");
+        } catch (CustomException e) {
+            log.error("공구 취소 실패 - userId: {}, groupBuyId: {}, error: {}", 
+                user.getId(), purchaseId, e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        
+        return "redirect:/group-purchases/" + purchaseId;
     }
 
     /**

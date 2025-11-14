@@ -65,9 +65,9 @@ public class Review extends BaseEntity {
             throw new CustomException(ErrorCode.INVALID_RATING);
         }
 
-        // 공구 상태 검증: CLOSED 상태만 후기 작성 가능
-        if (groupBuy.getStatus() != GroupBuyStatus.CLOSED) {
-            throw new CustomException(ErrorCode.GROUP_BUY_NOT_CLOSED);
+        // 공구 상태 검증: COMPLETED 상태만 후기 작성 가능
+        if (groupBuy.getStatus() != GroupBuyStatus.COMPLETED) {
+            throw new CustomException(ErrorCode.GROUP_BUY_NOT_COMPLETED);
         }
     }
 
@@ -102,5 +102,13 @@ public class Review extends BaseEntity {
 
     public boolean isReviewedBy(User user) {
         return this.reviewer.equals(user);
+    }
+
+    //== 삭제 메서드 ==//
+    /**
+     * 소프트 삭제
+     */
+    public void softDelete() {
+        this.delete();
     }
 }

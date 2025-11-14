@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface PostRepository extends JpaRepository<Post, Long> {
+public interface PostRepository extends JpaRepository<Post, Long>, PostRepositoryCustom {
 
     List<Post> findByAuthorId(Long authorId);
 
@@ -28,6 +28,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
             "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
             "FROM Post p " +
+            "LEFT JOIN FETCH p.author " +
             "WHERE p.deletedAt IS NULL")
     Page<PostWithCountsDto> findAllWithCounts(Pageable pageable);
 
@@ -36,6 +37,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
             "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
             "FROM Post p " +
+            "LEFT JOIN FETCH p.author " +
             "WHERE p.category = :category AND p.deletedAt IS NULL")
     Page<PostWithCountsDto> findByCategoryWithCounts(@Param("category") PostCategory category, Pageable pageable);
 
@@ -44,6 +46,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
             "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
             "FROM Post p " +
+            "LEFT JOIN FETCH p.author " +
             "WHERE p.deletedAt IS NULL " +
             "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
@@ -54,6 +57,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
             "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
             "FROM Post p " +
+            "LEFT JOIN FETCH p.author " +
             "WHERE p.category = :category AND p.deletedAt IS NULL " +
             "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
@@ -83,6 +87,19 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
             "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
             "FROM Post p " +
+            "LEFT JOIN FETCH p.author " +
             "WHERE p.id IN :postIds AND p.deletedAt IS NULL")
     List<PostWithCountsDto> findAllWithCountsByIdIn(@Param("postIds") List<Long> postIds);
+    
+    /**
+     * 키워드로 검색한 게시글 개수 조회 (COUNT 쿼리)
+     * 
+     * @param keyword 검색 키워드
+     * @return 검색 결과 개수
+     */
+    @Query("SELECT COUNT(p) FROM Post p " +
+            "WHERE p.deletedAt IS NULL " +
+            "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    long countByKeyword(@Param("keyword") String keyword);
 }

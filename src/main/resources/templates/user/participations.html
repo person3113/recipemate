@@ -48,6 +48,20 @@
                             마감
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" 
+                           th:href="@{/users/me/participations(status='COMPLETED')}"
+                           th:classappend="${currentStatus != null and currentStatus.name() == 'COMPLETED'} ? 'active' : ''">
+                            완료
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" 
+                           th:href="@{/users/me/participations(status='CANCELLED')}"
+                           th:classappend="${currentStatus != null and currentStatus.name() == 'CANCELLED'} ? 'active' : ''">
+                            취소
+                        </a>
+                    </li>
                 </ul>
                 
                 <!-- Participations List -->
@@ -59,8 +73,14 @@
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <h5 class="card-title mb-0" th:text="${participation.groupBuyTitle}">공구 제목</h5>
                                     <span class="badge" 
-                                          th:classappend="${participation.groupBuyStatus == 'RECRUITING'} ? 'bg-info' : (${participation.groupBuyStatus == 'CLOSED'} ? 'bg-secondary' : 'bg-warning')"
-                                          th:text="${participation.groupBuyStatus == 'RECRUITING'} ? '모집중' : (${participation.groupBuyStatus == 'CLOSED'} ? '마감' : '임박')">
+                                          th:classappend="${participation.groupBuyStatus == 'RECRUITING'} ? 'bg-info' : 
+                                                          (${participation.groupBuyStatus == 'IMMINENT'} ? 'bg-warning' : 
+                                                          (${participation.groupBuyStatus == 'CLOSED'} ? 'bg-secondary' : 
+                                                          (${participation.groupBuyStatus == 'COMPLETED'} ? 'bg-success' : 'bg-danger')))"
+                                          th:text="${participation.groupBuyStatus == 'RECRUITING'} ? '모집중' : 
+                                                   (${participation.groupBuyStatus == 'IMMINENT'} ? '임박' : 
+                                                   (${participation.groupBuyStatus == 'CLOSED'} ? '마감' : 
+                                                   (${participation.groupBuyStatus == 'COMPLETED'} ? '완료' : '취소')))">
                                         상태
                                     </span>
                                 </div>
@@ -107,16 +127,28 @@
                                         </button>
                                     </form>
                                     
-                                    <!-- Review Button (Only for CLOSED status without review) -->
-                                    <a th:if="${participation.groupBuyStatus == 'CLOSED' and !reviewExistsMap[participation.groupBuyId]}" 
-                                       th:href="@{/group-purchases/{id}/reviews/new(id=${participation.groupBuyId})}" 
-                                       class="btn btn-warning btn-sm">
-                                        <i class="bi bi-star"></i> 후기 작성
-                                    </a>
-                                    <span th:if="${participation.groupBuyStatus == 'CLOSED' and reviewExistsMap[participation.groupBuyId]}" 
-                                          class="badge bg-success w-100 py-2">
-                                        <i class="bi bi-check-circle"></i> 후기 작성 완료
-                                    </span>
+                                    <!-- Review Button (Only for COMPLETED status) -->
+                                    <div th:if="${participation.groupBuyStatus == 'COMPLETED'}">
+                                        <!-- Case 1: Active review exists -->
+                                        <span th:if="${reviewExistsMap[participation.groupBuyId]}" 
+                                              class="badge bg-success w-100 py-2">
+                                            <i class="bi bi-check-circle"></i> 후기 작성 완료
+                                        </span>
+                                        
+                                        <!-- Case 2: Review was deleted (cannot write again) -->
+                                        <span th:if="${!reviewExistsMap[participation.groupBuyId] and deletedReviewExistsMap[participation.groupBuyId]}" 
+                                              class="badge bg-secondary w-100 py-2"
+                                              title="삭제된 후기는 다시 작성할 수 없습니다">
+                                            <i class="bi bi-x-circle"></i> 후기 취소됨
+                                        </span>
+                                        
+                                        <!-- Case 3: No review at all (can write) -->
+                                        <a th:if="${!reviewExistsMap[participation.groupBuyId] and !deletedReviewExistsMap[participation.groupBuyId]}" 
+                                           th:href="@{/group-purchases/{id}/reviews/new(id=${participation.groupBuyId})}" 
+                                           class="btn btn-warning btn-sm">
+                                            <i class="bi bi-star"></i> 후기 작성
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>

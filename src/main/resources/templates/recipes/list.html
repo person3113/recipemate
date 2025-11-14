@@ -62,26 +62,13 @@
                         <input type="text" name="ingredients" class="form-control" 
                                th:value="${ingredients}" placeholder="재료명 검색 (예: 당근, 양파, 소고기)">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-4">
                         <select name="category" class="form-select">
                             <option value="">전체 카테고리</option>
                             <option th:each="cat : ${categories}" 
                                     th:value="${cat.name}" 
                                     th:text="${cat.name}"
                                     th:selected="${category != null and category == cat.name}"></option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <select name="sort" class="form-select">
-                            <option value="latest" th:selected="${sort == null or sort == 'latest'}">최신순</option>
-                            <option value="name" th:selected="${sort == 'name'}">이름순</option>
-                            <option value="popularity" th:selected="${sort == 'popularity'}">인기순</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <select name="direction" class="form-select">
-                            <option value="desc" th:selected="${direction == null or direction == 'desc'}">내림차순 ↓</option>
-                            <option value="asc" th:selected="${direction == 'asc'}">오름차순 ↑</option>
                         </select>
                     </div>
                     <div class="col-12">
@@ -91,6 +78,25 @@
                     </div>
                 </form>
             </div>
+        </div>
+        
+        <!-- Sort Options -->
+        <div class="d-flex justify-content-end align-items-center gap-3 mb-3">
+            <a th:href="@{/recipes(keyword=${keyword}, ingredients=${ingredients}, category=${category}, sort='latest', direction=(${sort == 'latest' || sort == null} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
+               class="text-decoration-none" th:classappend="${sort == 'latest' || sort == null} ? 'fw-bold text-primary' : 'text-muted'">
+                최신순
+                <i th:if="${sort == 'latest' || sort == null}" class="bi" th:classappend="${direction == 'desc' || direction == null} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+            </a>
+            <a th:href="@{/recipes(keyword=${keyword}, ingredients=${ingredients}, category=${category}, sort='name', direction=(${sort == 'name'} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'asc'))}"
+               class="text-decoration-none" th:classappend="${sort == 'name'} ? 'fw-bold text-primary' : 'text-muted'">
+                이름순
+                <i th:if="${sort == 'name'}" class="bi" th:classappend="${direction == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+            </a>
+            <a th:href="@{/recipes(keyword=${keyword}, ingredients=${ingredients}, category=${category}, sort='popularity', direction=(${sort == 'popularity'} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
+               class="text-decoration-none" th:classappend="${sort == 'popularity'} ? 'fw-bold text-primary' : 'text-muted'">
+                인기순
+                <i th:if="${sort == 'popularity'}" class="bi" th:classappend="${direction == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+            </a>
         </div>
         
         <!-- Quick Links -->

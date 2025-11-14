@@ -161,31 +161,22 @@ public class PostService {
     }
 
     /**
-     * 게시글 목록 조회 (필터링 + 검색 + 페이징)
+     * 게시글 목록 조회 (필터링 + 검색 + 페이징 + 동적 정렬)
+     * QueryDSL 기반 동적 쿼리로 통합하여 likeCount, commentCount 정렬 지원
      * 캐싱 적용으로 반복 조회 시 성능 향상
      * @param category 카테고리 필터 (선택)
      * @param keyword 검색 키워드 (선택)
-     * @param pageable 페이징 정보
+     * @param pageable 페이징 및 정렬 정보
      * @return 게시글 목록 (페이징)
      */
     @Cacheable(
             value = CacheConfig.VIEW_COUNTS_CACHE,
-            key = "'post_list:' + (#category != null ? #category.name() : 'all') + ':' + (#keyword != null ? #keyword : 'none') + ':' + #pageable.pageNumber + ':' + #pageable.pageSize",
+            key = "'post_list:' + (#category != null ? #category.name() : 'all') + ':' + (#keyword != null ? #keyword : 'none') + ':' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort.toString()",
             unless = "#result.isEmpty()"
     )
     public Page<PostResponse> getPostList(PostCategory category, String keyword, Pageable pageable) {
-        Page<PostWithCountsDto> postsWithCounts;
-
-        // 조건에 따라 적절한 repository 메서드 호출
-        if (category != null && keyword != null && !keyword.trim().isEmpty()) {
-            postsWithCounts = postRepository.searchByCategoryAndKeywordWithCounts(category, keyword.trim(), pageable);
-        } else if (category != null) {
-            postsWithCounts = postRepository.findByCategoryWithCounts(category, pageable);
-        } else if (keyword != null && !keyword.trim().isEmpty()) {
-            postsWithCounts = postRepository.searchByKeywordWithCounts(keyword.trim(), pageable);
-        } else {
-            postsWithCounts = postRepository.findAllWithCounts(pageable);
-        }
+        // QueryDSL 커스텀 메서드 호출로 통합
+        Page<PostWithCountsDto> postsWithCounts = postRepository.findAllWithCountsDynamic(category, keyword, pageable);
 
         // DTO 변환
         return postsWithCounts.map(dto -> {

@@ -13,6 +13,27 @@
             </button>
             
             <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- 통합 검색창 -->
+                <form th:action="@{/search}" method="get" class="d-flex mx-auto position-relative" style="max-width: 500px; width: 100%;">
+                    <div class="input-group">
+                        <input type="text" 
+                               id="search-input"
+                               name="keyword" 
+                               class="form-control" 
+                               placeholder="레시피, 공구, 커뮤니티 통합 검색" 
+                               aria-label="통합 검색"
+                               autocomplete="off"
+                               required>
+                        <button class="btn btn-outline-primary" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                    <!-- 자동완성 드롭다운 -->
+                    <div id="search-autocomplete" class="search-autocomplete-dropdown" style="display: none;">
+                        <ul id="autocomplete-list" class="list-unstyled mb-0"></ul>
+                    </div>
+                </form>
+                
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a th:href="@{/recipes}" class="nav-link">레시피</a>

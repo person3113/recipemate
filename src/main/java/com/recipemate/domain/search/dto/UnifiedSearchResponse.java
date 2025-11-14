@@ -22,6 +22,11 @@ public class UnifiedSearchResponse {
     private List<SearchResultResponse> posts;
     private List<SearchResultResponse> recipes;
     private Integer totalResults;
+    
+    // 각 카테고리의 전체 개수 (전체 탭에서 배지 표시용)
+    private Long totalRecipeCount;
+    private Long totalGroupBuyCount;
+    private Long totalPostCount;
 
     public static UnifiedSearchResponse of(
             String query,
@@ -37,6 +42,29 @@ public class UnifiedSearchResponse {
                 .posts(posts)
                 .recipes(recipes)
                 .totalResults(total)
+                .build();
+    }
+    
+    public static UnifiedSearchResponse ofWithCounts(
+            String query,
+            List<SearchResultResponse> groupBuys,
+            List<SearchResultResponse> posts,
+            List<SearchResultResponse> recipes,
+            Long totalRecipeCount,
+            Long totalGroupBuyCount,
+            Long totalPostCount) {
+        
+        int total = groupBuys.size() + posts.size() + recipes.size();
+        
+        return UnifiedSearchResponse.builder()
+                .query(query)
+                .groupBuys(groupBuys)
+                .posts(posts)
+                .recipes(recipes)
+                .totalResults(total)
+                .totalRecipeCount(totalRecipeCount)
+                .totalGroupBuyCount(totalGroupBuyCount)
+                .totalPostCount(totalPostCount)
                 .build();
     }
 }

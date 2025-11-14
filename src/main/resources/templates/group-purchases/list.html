@@ -93,11 +93,13 @@
                             <option value="RECRUITING" th:selected="${searchCondition.status?.name() == 'RECRUITING'}">모집중</option>
                             <option value="IMMINENT" th:selected="${searchCondition.status?.name() == 'IMMINENT'}">마감 임박</option>
                             <option value="CLOSED" th:selected="${searchCondition.status?.name() == 'CLOSED'}">마감</option>
+                            <option value="COMPLETED" th:selected="${searchCondition.status?.name() == 'COMPLETED'}">완료</option>
+                            <option value="CANCELLED" th:selected="${searchCondition.status?.name() == 'CANCELLED'}">취소</option>
                         </select>
                     </div>
                     
                     <!-- 레시피 기반 필터 -->
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <div class="form-check mt-2">
                             <input type="checkbox" name="recipeOnly" class="form-check-input" id="recipeOnly"
                                    th:checked="${searchCondition.recipeOnly}">
@@ -105,32 +107,38 @@
                         </div>
                     </div>
                     
-                    <!-- 정렬 기준 -->
-                    <div class="col-md-3">
-                        <select name="sortBy" class="form-select">
-                            <option value="latest" th:selected="${searchCondition.sortBy == null or searchCondition.sortBy == 'latest'}">최신순</option>
-                            <option value="deadline" th:selected="${searchCondition.sortBy == 'deadline'}">마감임박순</option>
-                            <option value="price" th:selected="${searchCondition.sortBy == 'price'}">가격순</option>
-                            <option value="participants" th:selected="${searchCondition.sortBy == 'participants'}">참여자순</option>
-                        </select>
-                    </div>
-                    
-                    <!-- 정렬 방향 -->
-                    <div class="col-md-2">
-                        <select name="direction" class="form-select">
-                            <option value="desc" th:selected="${searchCondition.direction == null or searchCondition.direction == 'desc'}">내림차순 ↓</option>
-                            <option value="asc" th:selected="${searchCondition.direction == 'asc'}">오름차순 ↑</option>
-                        </select>
-                    </div>
-                    
                     <!-- 검색 버튼 -->
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="bi bi-search"></i> 검색
                         </button>
                     </div>
                 </form>
             </div>
+        </div>
+        
+        <!-- Sort Options -->
+        <div class="d-flex justify-content-end align-items-center gap-3 mb-3">
+            <a th:href="@{/group-purchases/list(keyword=${searchCondition.keyword}, ingredients=${searchCondition.ingredients}, category=${searchCondition.category?.name()}, status=${searchCondition.status?.name()}, recipeOnly=${searchCondition.recipeOnly}, sortBy='latest', direction=(${currentSort == 'latest' || currentSort == null} ? (${currentDir == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
+               class="text-decoration-none" th:classappend="${currentSort == 'latest' || currentSort == null} ? 'fw-bold text-primary' : 'text-muted'">
+                최신순
+                <i th:if="${currentSort == 'latest' || currentSort == null}" class="bi" th:classappend="${currentDir == 'desc' || currentDir == null} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+            </a>
+            <a th:href="@{/group-purchases/list(keyword=${searchCondition.keyword}, ingredients=${searchCondition.ingredients}, category=${searchCondition.category?.name()}, status=${searchCondition.status?.name()}, recipeOnly=${searchCondition.recipeOnly}, sortBy='deadline', direction=(${currentSort == 'deadline'} ? (${currentDir == 'asc'} ? 'desc' : 'asc') : 'asc'))}"
+               class="text-decoration-none" th:classappend="${currentSort == 'deadline'} ? 'fw-bold text-primary' : 'text-muted'">
+                마감임박순
+                <i th:if="${currentSort == 'deadline'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+            </a>
+            <a th:href="@{/group-purchases/list(keyword=${searchCondition.keyword}, ingredients=${searchCondition.ingredients}, category=${searchCondition.category?.name()}, status=${searchCondition.status?.name()}, recipeOnly=${searchCondition.recipeOnly}, sortBy='price', direction=(${currentSort == 'price'} ? (${currentDir == 'asc'} ? 'desc' : 'asc') : 'asc'))}"
+               class="text-decoration-none" th:classappend="${currentSort == 'price'} ? 'fw-bold text-primary' : 'text-muted'">
+                가격순
+                <i th:if="${currentSort == 'price'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+            </a>
+            <a th:href="@{/group-purchases/list(keyword=${searchCondition.keyword}, ingredients=${searchCondition.ingredients}, category=${searchCondition.category?.name()}, status=${searchCondition.status?.name()}, recipeOnly=${searchCondition.recipeOnly}, sortBy='participants', direction=(${currentSort == 'participants'} ? (${currentDir == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
+               class="text-decoration-none" th:classappend="${currentSort == 'participants'} ? 'fw-bold text-primary' : 'text-muted'">
+                참여자순
+                <i th:if="${currentSort == 'participants'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+            </a>
         </div>
         
         <!-- Create Button -->
@@ -158,9 +166,11 @@
                                    th:text="${groupBuy.title}"></a>
                             </h5>
                             <!-- 백엔드 상태 값 사용 -->
-                            <span class="badge" 
-                                  th:classappend="${groupBuy.status.name() == 'RECRUITING'} ? 'bg-success' : (${groupBuy.status.name() == 'IMMINENT'} ? 'bg-warning' : 'bg-secondary')"
-                                  th:text="${groupBuy.status.displayName}"></span>
+                            <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge bg-success">모집중</span>
+                            <span th:if="${groupBuy.status.name() == 'IMMINENT'}" class="badge bg-warning">임박</span>
+                            <span th:if="${groupBuy.status.name() == 'CLOSED'}" class="badge bg-secondary">마감</span>
+                            <span th:if="${groupBuy.status.name() == 'COMPLETED'}" class="badge bg-success">완료</span>
+                            <span th:if="${groupBuy.status.name() == 'CANCELLED'}" class="badge bg-danger">취소</span>
                         </div>
                         
                         <!-- 내용 -->

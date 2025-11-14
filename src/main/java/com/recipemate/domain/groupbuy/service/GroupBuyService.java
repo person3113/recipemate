@@ -218,6 +218,7 @@ public class GroupBuyService {
 
     /**
      * 공구 목록 조회 (검색 및 필터링 지원 - QueryDSL 기반)
+     * 리뷰 통계를 함께 조회하여 N+1 문제 해결
      */
     public Page<GroupBuyResponse> getGroupBuyList(GroupBuySearchCondition condition, Pageable pageable) {
         // condition이 null인 경우 빈 조건으로 초기화
@@ -225,12 +226,13 @@ public class GroupBuyService {
             ? condition 
             : GroupBuySearchCondition.builder().build();
         
-        // QueryDSL 기반 동적 검색 사용
-        Page<GroupBuy> groupBuys = groupBuyRepository.searchGroupBuys(searchCondition, pageable);
+        // QueryDSL 기반 동적 검색 사용 (리뷰 통계 포함)
+        Page<com.recipemate.domain.groupbuy.dto.GroupBuyWithReviewStatsDto> groupBuysWithStats = 
+            groupBuyRepository.searchGroupBuysWithReviewStats(searchCondition, pageable);
         
         // N+1 문제 해결: 모든 공구의 이미지를 한 번에 조회
-        List<Long> groupBuyIds = groupBuys.getContent().stream()
-                .map(GroupBuy::getId)
+        List<Long> groupBuyIds = groupBuysWithStats.getContent().stream()
+                .map(dto -> dto.getGroupBuy().getId())
                 .toList();
         
         List<GroupBuyImage> allImages = groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(groupBuyIds);
@@ -242,9 +244,9 @@ public class GroupBuyService {
                     java.util.stream.Collectors.mapping(GroupBuyImage::getImageUrl, java.util.stream.Collectors.toList())
                 ));
         
-        return groupBuys.map(groupBuy -> {
-            List<String> imageUrls = imageMap.getOrDefault(groupBuy.getId(), List.of());
-            return mapToResponse(groupBuy, imageUrls);
+        return groupBuysWithStats.map(dto -> {
+            List<String> imageUrls = imageMap.getOrDefault(dto.getGroupBuy().getId(), List.of());
+            return mapToResponseWithStats(dto.getGroupBuy(), imageUrls, dto.getAverageRating(), dto.getReviewCountAsInt());
         });
     }
 
@@ -431,12 +433,7 @@ public class GroupBuyService {
             throw new CustomException(ErrorCode.UNAUTHORIZED_GROUP_BUY_ACCESS);
         }
         
-        // 4. 참여자가 있는지 확인
-        if (groupBuy.getCurrentHeadcount() > 0) {
-            throw new CustomException(ErrorCode.HAS_PARTICIPANTS);
-        }
-        
-        // 5. 연관된 이미지 처리
+        // 4. 연관된 이미지 처리
         List<GroupBuyImage> images = groupBuyImageRepository.findByGroupBuyOrderByDisplayOrderAsc(groupBuy);
         if (!images.isEmpty()) {
             // 5-1. Cloudinary에서 이미지 삭제
@@ -454,6 +451,40 @@ public class GroupBuyService {
         // 6. 공구 소프트 삭제
         groupBuy.delete();
         log.info("Soft deleted group buy {}", groupBuyId);
+    }
+
+    /**
+     * 공구 취소 (상태만 변경)
+     * RECRUITING 상태의 공구만 취소 가능 (마감 임박 상태에서는 취소 불가)
+     */
+    @Transactional
+    public void cancelGroupBuy(Long userId, Long groupBuyId) {
+        // 1. 사용자 조회
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        // 2. GroupBuy 조회
+        GroupBuy groupBuy = groupBuyRepository.findByIdWithHost(groupBuyId)
+            .orElseThrow(() -> new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
+        
+        // 3. 권한 검증 (주최자만 취소 가능)
+        if (!groupBuy.isHost(user)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_GROUP_BUY_ACCESS);
+        }
+        
+        // 4. 취소 가능 상태 확인 (RECRUITING만 가능)
+        if (groupBuy.getStatus() != GroupBuyStatus.RECRUITING) {
+            throw new CustomException(ErrorCode.CANNOT_MODIFY_GROUP_BUY);
+        }
+        
+        // 5. 참여자가 있는지 확인
+        if (groupBuy.getCurrentHeadcount() > 0) {
+            throw new CustomException(ErrorCode.HAS_PARTICIPANTS);
+        }
+        
+        // 6. 상태를 CANCELLED로 변경 (이미지 및 데이터는 유지)
+        groupBuy.updateStatus(GroupBuyStatus.CANCELLED);
+        log.info("Cancelled group buy {} by user {}", groupBuyId, userId);
     }
 
     /**
@@ -513,6 +544,39 @@ public class GroupBuyService {
             images.add(image);
         }
         groupBuyImageRepository.saveAll(images);
+    }
+
+    /**
+     * Entity를 Response DTO로 변환 (리뷰 통계 포함)
+     */
+    private GroupBuyResponse mapToResponseWithStats(GroupBuy groupBuy, List<String> imageUrls, Double averageRating, int reviewCount) {
+        return GroupBuyResponse.builder()
+            .id(groupBuy.getId())
+            .title(groupBuy.getTitle())
+            .content(groupBuy.getContent())
+            .ingredients(groupBuy.getIngredients())
+            .category(groupBuy.getCategory())
+            .totalPrice(groupBuy.getTotalPrice())
+            .targetHeadcount(groupBuy.getTargetHeadcount())
+            .currentHeadcount(groupBuy.getCurrentHeadcount())
+            .deadline(groupBuy.getDeadline())
+            .deliveryMethod(groupBuy.getDeliveryMethod())
+            .meetupLocation(groupBuy.getMeetupLocation())
+            .parcelFee(groupBuy.getParcelFee())
+            .isParticipantListPublic(groupBuy.getParticipantListPublic())
+            .status(groupBuy.getStatus())
+            .hostId(groupBuy.getHost().getId())
+            .hostNickname(groupBuy.getHost().getNickname())
+            .hostMannerTemperature(groupBuy.getHost().getMannerTemperature())
+            .recipeApiId(groupBuy.getRecipeApiId())
+            .recipeName(groupBuy.getRecipeName())
+            .recipeImageUrl(groupBuy.getRecipeImageUrl())
+            .imageUrls(imageUrls)
+            .averageRating(averageRating)
+            .reviewCount(reviewCount)
+            .createdAt(groupBuy.getCreatedAt())
+            .updatedAt(groupBuy.getUpdatedAt())
+            .build();
     }
 
     /**

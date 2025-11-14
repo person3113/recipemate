@@ -253,13 +253,17 @@ public class UserController {
                 .toList();
         
         java.util.Map<Long, Boolean> reviewExistsMap = new java.util.HashMap<>();
+        java.util.Map<Long, Boolean> deletedReviewExistsMap = new java.util.HashMap<>();
         for (Long groupBuyId : groupBuyIds) {
             boolean hasReview = reviewRepository.existsByReviewerIdAndGroupBuyId(user.getId(), groupBuyId);
+            boolean hasDeletedReview = reviewRepository.existsDeletedReviewByReviewerIdAndGroupBuyId(user.getId(), groupBuyId);
             reviewExistsMap.put(groupBuyId, hasReview);
+            deletedReviewExistsMap.put(groupBuyId, hasDeletedReview);
         }
         
         model.addAttribute("participations", participations);
         model.addAttribute("reviewExistsMap", reviewExistsMap);
+        model.addAttribute("deletedReviewExistsMap", deletedReviewExistsMap);
         model.addAttribute("currentStatus", status);
         return "user/participations";
     }

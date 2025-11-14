@@ -93,7 +93,11 @@
                                     <span th:text="${#strings.substring(review.authorNickname, 0, 1)}">A</span>
                                 </div>
                                 <div>
-                                    <div class="fw-bold" th:text="${review.authorNickname}">작성자</div>
+                                    <div class="fw-bold">
+                                        <a th:href="@{/users/profile/{nickname}(nickname=${review.authorNickname})}" 
+                                           class="text-decoration-none text-dark"
+                                           th:text="${review.authorNickname}">작성자</a>
+                                    </div>
                                     <div class="text-muted small">
                                         <span th:text="${#temporals.format(review.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</span>
                                     </div>

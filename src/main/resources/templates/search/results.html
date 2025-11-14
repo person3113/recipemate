@@ -242,9 +242,10 @@
                     </a>
                 </div>
                 <div class="list-group">
-                    <a th:each="post : ${posts}" 
-                       th:href="@{/community-posts/{id}(id=${post.id})}" 
-                       class="list-group-item list-group-item-action">
+                    <div th:each="post : ${posts}" 
+                       class="list-group-item list-group-item-action"
+                       style="cursor: pointer;"
+                       th:onclick="|window.location.href='@{/community-posts/{id}(id=${post.id})}'|">
                         <div class="d-flex w-100 justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <h6 class="mb-1" th:utext="${post.highlightedTitle ?: post.title}">게시글 제목</h6>
@@ -255,7 +256,10 @@
                                 <div class="d-flex gap-3 small text-muted mt-2">
                                     <span>
                                         <i class="bi bi-person"></i>
-                                        <span th:text="${post.authorNickname ?: '알 수 없음'}">작성자</span>
+                                        <a th:href="@{/users/profile/{nickname}(nickname=${post.authorNickname})}" 
+                                           class="text-decoration-none text-muted"
+                                           th:text="${post.authorNickname ?: '알 수 없음'}"
+                                           onclick="event.stopPropagation();">작성자</a>
                                     </span>
                                     <span>
                                         <i class="bi bi-calendar"></i>
@@ -274,7 +278,7 @@
                                      th:alt="${post.title}"/>
                             </div>
                         </div>
-                    </a>
+                    </div>
                 </div>
             </div>
 
@@ -493,9 +497,10 @@
             </div>
             <div th:unless="${posts.empty}">
                 <div class="list-group">
-                    <a th:each="post : ${posts}" 
-                       th:href="@{/community-posts/{id}(id=${post.id})}" 
-                       class="list-group-item list-group-item-action">
+                    <div th:each="post : ${posts}" 
+                       class="list-group-item list-group-item-action"
+                       style="cursor: pointer;"
+                       th:onclick="|window.location.href='@{/community-posts/{id}(id=${post.id})}'|">
                         <div class="d-flex w-100 justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <h6 class="mb-1" th:utext="${post.highlightedTitle ?: post.title}">게시글 제목</h6>
@@ -506,7 +511,10 @@
                                 <div class="d-flex gap-3 small text-muted mt-2">
                                     <span>
                                         <i class="bi bi-person"></i>
-                                        <span th:text="${post.authorNickname ?: '알 수 없음'}">작성자</span>
+                                        <a th:href="@{/users/profile/{nickname}(nickname=${post.authorNickname})}" 
+                                           class="text-decoration-none text-muted"
+                                           th:text="${post.authorNickname ?: '알 수 없음'}"
+                                           onclick="event.stopPropagation();">작성자</a>
                                     </span>
                                     <span>
                                         <i class="bi bi-calendar"></i>
@@ -525,7 +533,7 @@
                                      th:alt="${post.title}"/>
                             </div>
                         </div>
-                    </a>
+                    </div>
                 </div>
                 
                 <!-- 페이지네이션 -->

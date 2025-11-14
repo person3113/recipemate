@@ -53,7 +53,11 @@
                     <div class="d-flex align-items-center">
                         <i class="bi bi-person-circle fs-4 me-2"></i>
                         <div>
-                            <div class="fw-semibold" th:text="${post.authorNickname ?: '알 수 없음'}">작성자</div>
+                            <div class="fw-semibold">
+                                <a th:href="@{/users/profile/{nickname}(nickname=${post.authorNickname})}" 
+                                   class="text-decoration-none text-dark"
+                                   th:text="${post.authorNickname ?: '알 수 없음'}">작성자</a>
+                            </div>
                             <small class="text-muted" th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</small>
                         </div>
                     </div>

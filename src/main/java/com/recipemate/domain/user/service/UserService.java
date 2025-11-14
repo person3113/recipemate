@@ -1,5 +1,7 @@
 package com.recipemate.domain.user.service;
 
+import com.recipemate.domain.badge.entity.Badge;
+import com.recipemate.domain.badge.repository.BadgeRepository;
 import com.recipemate.domain.comment.entity.Comment;
 import com.recipemate.domain.comment.repository.CommentRepository;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
@@ -13,6 +15,7 @@ import com.recipemate.domain.like.entity.PostLike;
 import com.recipemate.domain.like.repository.PostLikeRepository;
 import com.recipemate.domain.post.dto.PostWithCountsDto;
 import com.recipemate.domain.post.repository.PostRepository;
+import com.recipemate.global.common.BadgeType;
 import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
@@ -45,6 +48,7 @@ public class UserService {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final PostLikeRepository postLikeRepository;
+    private final BadgeRepository badgeRepository;
 
     @Transactional
     public UserResponse signup(SignupRequest request) {
@@ -254,5 +258,42 @@ public class UserService {
                 );
             }
         });
+    }
+
+    public UserProfileResponseDto getUserProfile(String nickname, Pageable pageable) {
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        List<Badge> badges = badgeRepository.findByUserIdOrderByAcquiredAtDesc(user.getId());
+        List<BadgeType> badgeTypes = badges.stream()
+                .map(Badge::getBadgeType)
+                .collect(Collectors.toList());
+
+        Page<GroupBuy> groupBuys = groupBuyRepository.findByHostIdAndNotDeleted(user.getId(), pageable);
+
+        List<Long> groupBuyIds = groupBuys.getContent().stream()
+                .map(GroupBuy::getId)
+                .toList();
+        
+        List<GroupBuyImage> allImages = groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(groupBuyIds);
+        
+        Map<Long, List<String>> imageMap = allImages.stream()
+                .collect(Collectors.groupingBy(
+                    img -> img.getGroupBuy().getId(),
+                    Collectors.mapping(GroupBuyImage::getImageUrl, Collectors.toList())
+                ));
+
+        Page<GroupBuyResponse> hostedGroupBuysDto = groupBuys.map(groupBuy -> {
+            List<String> imageUrls = imageMap.getOrDefault(groupBuy.getId(), List.of());
+            return GroupBuyResponse.from(groupBuy, imageUrls);
+        });
+
+        return UserProfileResponseDto.of(
+                user.getNickname(), 
+                user.getProfileImageUrl(),
+                user.getMannerTemperature(), 
+                badgeTypes, 
+                hostedGroupBuysDto
+        );
     }
 }

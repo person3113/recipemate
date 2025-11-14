@@ -321,7 +321,10 @@
                             </div>
                             <div class="mt-2 d-flex justify-content-between align-items-center">
                                 <div class="text-muted small">
-                                    <i class="bi bi-person"></i> <span th:text="${groupBuy.hostNickname}"></span>
+                                    <i class="bi bi-person"></i> 
+                                    <a th:href="@{/users/profile/{nickname}(nickname=${groupBuy.hostNickname})}" 
+                                       class="text-decoration-none text-muted"
+                                       th:text="${groupBuy.hostNickname}">주최자</a>
                                 </div>
                                 <!-- 평점 표시 -->
                                 <div th:if="${groupBuy.reviewCount != null and groupBuy.reviewCount > 0}" class="text-warning small">

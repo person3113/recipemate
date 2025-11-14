@@ -70,7 +70,8 @@ public class SecurityConfig {
                             "/search/**",                         // Search pages
                             "/comments/fragments",                // Comment list fragments (HTMX)
                             "/recipes/*/bookmarks/status",        // Recipe bookmark status check (returns false for non-auth)
-                            "/group-purchases/*/bookmarks/status" // Group-buy bookmark status check (returns false for non-auth)
+                            "/group-purchases/*/bookmarks/status", // Group-buy bookmark status check (returns false for non-auth)
+                            "/users/profile/**"                   // User profile pages
                         ).permitAll()
                         
                         // API endpoints that require authentication

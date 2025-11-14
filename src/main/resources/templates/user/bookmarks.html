@@ -117,7 +117,9 @@
                                             </span>
                                             <small class="text-muted">
                                                 <i class="bi bi-person"></i>
-                                                주최자: <span th:text="${wishlist.hostNickname}">홍길동</span>
+                                                주최자: <a th:href="@{/users/profile/{nickname}(nickname=${wishlist.hostNickname})}" 
+                                                         class="text-decoration-none text-muted"
+                                                         th:text="${wishlist.hostNickname}">홍길동</a>
                                             </small>
                                             <small class="text-muted">
                                                 <i class="bi bi-heart"></i>

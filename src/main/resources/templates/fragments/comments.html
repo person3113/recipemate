@@ -38,7 +38,11 @@
                         <span th:text="${#strings.substring(comment.authorNickname, 0, 1)}">A</span>
                     </div>
                     <div>
-                        <div class="fw-bold" th:text="${comment.authorNickname}">작성자</div>
+                        <div class="fw-bold">
+                            <a th:href="@{/users/profile/{nickname}(nickname=${comment.authorNickname})}" 
+                               class="text-decoration-none text-dark"
+                               th:text="${comment.authorNickname}">작성자</a>
+                        </div>
                         <small class="text-muted" th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</small>
                         <span th:if="${!comment.isDeleted and comment.updatedAt != null and comment.updatedAt.isAfter(comment.createdAt)}" class="badge bg-secondary ms-1">수정됨</span>
                     </div>
@@ -195,7 +199,11 @@
                 <span th:text="${#strings.substring(reply.authorNickname, 0, 1)}">A</span>
             </div>
             <div>
-                <div class="fw-bold small" th:text="${reply.authorNickname}">작성자</div>
+                <div class="fw-bold small">
+                    <a th:href="@{/users/profile/{nickname}(nickname=${reply.authorNickname})}" 
+                       class="text-decoration-none text-dark"
+                       th:text="${reply.authorNickname}">작성자</a>
+                </div>
                 <small class="text-muted" th:text="${#temporals.format(reply.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</small>
                 <span th:if="${!reply.isDeleted and reply.updatedAt != null and reply.updatedAt.isAfter(reply.createdAt)}" class="badge bg-secondary ms-1">수정됨</span>
             </div>

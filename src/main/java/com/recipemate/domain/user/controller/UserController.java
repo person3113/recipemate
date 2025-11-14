@@ -14,6 +14,7 @@ import com.recipemate.domain.user.dto.MyLikedPostDto;
 import com.recipemate.domain.user.dto.MyPostDto;
 import com.recipemate.domain.user.dto.PointHistoryResponse;
 import com.recipemate.domain.user.dto.UpdateProfileRequest;
+import com.recipemate.domain.user.dto.UserProfileResponseDto;
 import com.recipemate.domain.user.dto.UserResponse;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
@@ -328,6 +329,20 @@ public class UserController {
         model.addAttribute("pageSize", size);
 
         return "user/my-recipes";
+    }
+
+    /**
+     * 사용자 프로필 페이지 렌더링
+     * GET /users/profile/{nickname}
+     */
+    @GetMapping("/profile/{nickname}")
+    public String userProfile(
+            @PathVariable String nickname,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Model model) {
+        UserProfileResponseDto userProfile = userService.getUserProfile(nickname, pageable);
+        model.addAttribute("userProfile", userProfile);
+        return "user/profile";
     }
 
     // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========

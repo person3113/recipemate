@@ -80,7 +80,11 @@
                         <div class="d-flex align-items-center border-top border-bottom py-3 mb-4">
                             <i class="bi bi-person-circle fs-3 me-3"></i>
                             <div>
-                                <div class="fw-semibold" th:text="${groupBuy.hostNickname ?: '알 수 없음'}">주최자</div>
+                                <div class="fw-semibold">
+                                    <a th:href="@{/users/profile/{nickname}(nickname=${groupBuy.hostNickname})}" 
+                                       class="text-decoration-none text-dark"
+                                       th:text="${groupBuy.hostNickname ?: '알 수 없음'}">주최자</a>
+                                </div>
                                 <div class="text-muted small">
                                     매너온도 
                                     <span class="text-primary fw-semibold" th:text="${groupBuy.hostMannerTemperature ?: 36.5} + '°C'">36.5°C</span>

@@ -4,6 +4,7 @@ import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyCategory;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -39,6 +40,7 @@ public class UpdateGroupBuyRequest {
 
     @NotNull(message = "마감일은 필수입니다")
     @Future(message = "마감일은 현재보다 이후여야 합니다")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     private LocalDateTime deadline;
 
     @NotNull(message = "수령 방법은 필수입니다")
@@ -51,6 +53,13 @@ public class UpdateGroupBuyRequest {
     private Integer parcelFee;
 
     private Boolean isParticipantListPublic;
+    
+    // 재료 목록 (레시피 기반 공구 수정 시 사용)
+    @Builder.Default
+    private List<SelectedIngredient> selectedIngredients = new ArrayList<>();
+    
+    // JSON 형식의 재료 데이터 (폼 필드 개수 제한 우회)
+    private String selectedIngredientsJson;
     
     // 기존 이미지 URL 목록 (유지할 이미지)
     @Builder.Default

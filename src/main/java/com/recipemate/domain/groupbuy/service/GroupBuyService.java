@@ -88,6 +88,7 @@ public class GroupBuyService {
                 host,
                 request.getTitle(),
                 request.getContent(),
+                request.getIngredientsJson(), // 일반 공구도 재료 JSON 전달
                 request.getCategory(),
                 request.getTotalPrice(),
                 request.getTargetHeadcount(),
@@ -136,7 +137,7 @@ public class GroupBuyService {
 
     /**
      * 레시피 정보로 요청 데이터 보강
-     * 선택된 재료만 content에 추가하고, recipeName과 recipeImageUrl이 없으면 레시피 API에서 가져와서 채웁니다.
+     * 선택된 재료만 JSON으로 변환하고, recipeName과 recipeImageUrl이 없으면 레시피 API에서 가져와서 채웁니다.
      */
     private CreateGroupBuyRequest enrichWithRecipeInfo(CreateGroupBuyRequest request) {
         // 이미 모든 레시피 정보가 제공된 경우 API 호출 생략
@@ -162,15 +163,15 @@ public class GroupBuyService {
             }
         }
         
-        // 선택된 재료만 필터링하여 문자열로 변환
-        String ingredientsText = buildSelectedIngredientsText(request.getSelectedIngredients());
+        // 선택된 재료를 JSON으로 변환
+        String ingredientsJson = buildSelectedIngredientsJson(request.getSelectedIngredients());
         
         // 새로운 요청 객체 생성 (레시피 정보 보강)
-        // 재료 정보는 content에 추가하지 않고 별도 필드로 관리
+        // 재료 정보는 JSON 형식으로 별도 필드에 저장
         return CreateGroupBuyRequest.builder()
             .title(request.getTitle())
             .content(request.getContent())
-            .ingredients(ingredientsText) // 재료는 별도 필드로 저장
+            .ingredients(ingredientsJson) // 재료는 JSON 형식으로 별도 필드에 저장
             .category(request.getCategory())
             .totalPrice(request.getTotalPrice())
             .targetHeadcount(request.getTargetHeadcount())
@@ -188,11 +189,11 @@ public class GroupBuyService {
     }
 
     /**
-     * 선택된 재료 목록을 문자열로 변환
+     * 선택된 재료 목록을 JSON 문자열로 변환
      */
-    private String buildSelectedIngredientsText(List<com.recipemate.domain.groupbuy.dto.SelectedIngredient> selectedIngredients) {
+    private String buildSelectedIngredientsJson(List<com.recipemate.domain.groupbuy.dto.SelectedIngredient> selectedIngredients) {
         if (selectedIngredients == null || selectedIngredients.isEmpty()) {
-            return "";
+            return null;
         }
         
         // 선택된 재료만 필터링
@@ -201,19 +202,16 @@ public class GroupBuyService {
             .toList();
         
         if (filteredIngredients.isEmpty()) {
-            return "";
+            return null;
         }
         
-        StringBuilder sb = new StringBuilder("필요한 재료:\n");
-        for (com.recipemate.domain.groupbuy.dto.SelectedIngredient ingredient : filteredIngredients) {
-            sb.append("- ").append(ingredient.getName());
-            if (ingredient.getMeasure() != null && !ingredient.getMeasure().isBlank()) {
-                sb.append(" (").append(ingredient.getMeasure()).append(")");
-            }
-            sb.append("\n");
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            return mapper.writeValueAsString(filteredIngredients);
+        } catch (Exception e) {
+            log.error("재료 JSON 직렬화 실패: {}", e.getMessage());
+            return null;
         }
-        
-        return sb.toString().trim();
     }
 
     /**
@@ -387,7 +385,13 @@ public class GroupBuyService {
             }
         }
         
-        // 5. 공구 정보 수정
+        // 5. 재료 정보 업데이트 (모든 공구 유형 지원)
+        String updatedIngredients = null;
+        if (request.getSelectedIngredients() != null && !request.getSelectedIngredients().isEmpty()) {
+            updatedIngredients = buildSelectedIngredientsJson(request.getSelectedIngredients());
+        }
+        
+        // 6. 공구 정보 수정
         groupBuy.update(
             request.getTitle(),
             request.getContent(),
@@ -400,6 +404,11 @@ public class GroupBuyService {
             request.getParcelFee(),
             request.getIsParticipantListPublic() != null ? request.getIsParticipantListPublic() : false
         );
+        
+        // 재료 정보가 있으면 업데이트 (null이면 기존 값 유지)
+        if (updatedIngredients != null) {
+            groupBuy.updateIngredients(updatedIngredients);
+        }
         
         // 마감일을 기준으로 상태 재계산 및 업데이트
         GroupBuyStatus updatedStatus = determineStatus(groupBuy.getDeadline());

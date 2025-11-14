@@ -1,5 +1,6 @@
 package com.recipemate.domain.groupbuy.dto;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyCategory;
 import jakarta.validation.constraints.*;
@@ -86,4 +87,20 @@ public class CreateGroupBuyRequest {
         LocalDateTime maxDeadline = LocalDateTime.now().plusMonths(1);
         return !deadline.isAfter(maxDeadline);
     }
+    
+    /**
+     * selectedIngredients List를 JSON 문자열로 변환
+     * GroupBuy 엔티티의 ingredients 필드에 저장하기 위해 사용
+     */
+    public String getIngredientsJson() {
+        if (selectedIngredients == null || selectedIngredients.isEmpty()) {
+            return null;
+        }
+        try {
+            return new ObjectMapper().writeValueAsString(selectedIngredients);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }
+

@@ -49,10 +49,14 @@ public class PostController {
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(defaultValue = "desc") String dir,
             Model model
     ) {
-        // 페이징 정보 생성 (최신순 정렬)
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        // 정렬 정보 생성
+        Sort.Direction direction = "asc".equalsIgnoreCase(dir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        String sortProperty = "views".equals(sort) ? "viewCount" : "createdAt";
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortProperty));
         
         // 카테고리 파라미터 변환
         PostCategory postCategory = null;
@@ -71,6 +75,8 @@ public class PostController {
         model.addAttribute("posts", posts);
         model.addAttribute("currentCategory", category);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("currentSort", sort);
+        model.addAttribute("currentDir", dir);
         
         return "community-posts/list";
     }

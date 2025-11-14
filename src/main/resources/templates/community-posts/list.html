@@ -42,21 +42,21 @@
         <ul class="nav nav-tabs mb-4">
             <li class="nav-item">
                 <a class="nav-link" 
-                   th:href="@{/community-posts/list}"
+                   th:href="@{/community-posts/list(keyword=${keyword}, sort=${currentSort}, dir=${currentDir})}"
                    th:classappend="${currentCategory == null or currentCategory == ''} ? 'active' : ''">
                     전체
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" 
-                   th:href="@{/community-posts/list(category='TIPS')}"
+                   th:href="@{/community-posts/list(category='TIPS', keyword=${keyword}, sort=${currentSort}, dir=${currentDir})}"
                    th:classappend="${currentCategory == 'TIPS'} ? 'active' : ''">
                     팁
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" 
-                   th:href="@{/community-posts/list(category='FREE')}"
+                   th:href="@{/community-posts/list(category='FREE', keyword=${keyword}, sort=${currentSort}, dir=${currentDir})}"
                    th:classappend="${currentCategory == 'FREE'} ? 'active' : ''">
                     자유
                 </a>
@@ -86,6 +86,20 @@
                     </div>
                 </form>
             </div>
+        </div>
+        
+        <!-- Sort Options -->
+        <div class="d-flex justify-content-end align-items-center gap-3 mb-3">
+            <a th:href="@{/community-posts/list(category=${currentCategory}, keyword=${keyword}, sort='latest', dir=(${currentSort == 'latest' && currentDir == 'desc'} ? 'asc' : 'desc'))}"
+               class="text-decoration-none" th:classappend="${currentSort == 'latest' || currentSort == null} ? 'fw-bold text-primary' : 'text-muted'">
+                최신순
+                <i th:if="${currentSort == 'latest' || currentSort == null}" class="bi" th:classappend="${currentDir == 'desc' || currentDir == null} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+            </a>
+            <a th:href="@{/community-posts/list(category=${currentCategory}, keyword=${keyword}, sort='views', dir=(${currentSort == 'views' && currentDir == 'desc'} ? 'asc' : 'desc'))}"
+               class="text-decoration-none" th:classappend="${currentSort == 'views'} ? 'fw-bold text-primary' : 'text-muted'">
+                조회수순
+                <i th:if="${currentSort == 'views'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+            </a>
         </div>
         
         <!-- Post List -->
@@ -137,22 +151,22 @@
         </div>
         
         <!-- Pagination -->
-        <nav th:if="${posts != null and !posts.isEmpty() and totalPages > 1}" class="mt-4">
+        <nav th:if="${posts != null and !posts.isEmpty() and posts.totalPages > 1}" class="mt-4">
             <ul class="pagination justify-content-center">
-                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                    <a class="page-link" th:href="@{/community-posts/list(page=${currentPage - 1}, size=${size})}">
+                <li class="page-item" th:classappend="${posts.number == 0} ? 'disabled'">
+                    <a class="page-link" th:href="@{/community-posts/list(page=${posts.number - 1}, size=${posts.size}, category=${currentCategory}, keyword=${keyword}, sort=${currentSort}, dir=${currentDir})}">
                         <i class="bi bi-chevron-left"></i>
                     </a>
                 </li>
                 
-                <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                <li th:each="i : ${#numbers.sequence(0, posts.totalPages - 1)}" 
                     class="page-item" 
-                    th:classappend="${i == currentPage} ? 'active'">
-                    <a class="page-link" th:href="@{/community-posts/list(page=${i}, size=${size})}" th:text="${i + 1}">1</a>
+                    th:classappend="${i == posts.number} ? 'active'">
+                    <a class="page-link" th:href="@{/community-posts/list(page=${i}, size=${posts.size}, category=${currentCategory}, keyword=${keyword}, sort=${currentSort}, dir=${currentDir})}" th:text="${i + 1}">1</a>
                 </li>
                 
-                <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
-                    <a class="page-link" th:href="@{/community-posts/list(page=${currentPage + 1}, size=${size})}">
+                <li class="page-item" th:classappend="${posts.number == posts.totalPages - 1} ? 'disabled'">
+                    <a class="page-link" th:href="@{/community-posts/list(page=${posts.number + 1}, size=${posts.size}, category=${currentCategory}, keyword=${keyword}, sort=${currentSort}, dir=${currentDir})}">
                         <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>

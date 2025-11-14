@@ -19,6 +19,8 @@ import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.domain.user.service.PointService;
 import com.recipemate.domain.user.service.UserService;
+import com.recipemate.domain.recipe.dto.RecipeListResponse;
+import com.recipemate.domain.recipe.service.RecipeService;
 import com.recipemate.domain.recipewishlist.dto.RecipeWishlistResponse;
 import com.recipemate.domain.recipewishlist.service.RecipeWishlistService;
 import com.recipemate.domain.wishlist.dto.WishlistResponse;
@@ -27,6 +29,7 @@ import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.PageRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -53,6 +56,7 @@ public class UserController {
     private final UserRepository userRepository;
     private final BadgeService badgeService;
     private final PointService pointService;
+    private final RecipeService recipeService;
     private final GroupBuyRepository groupBuyRepository;
     private final ParticipationRepository participationRepository;
     private final com.recipemate.domain.review.repository.ReviewRepository reviewRepository;
@@ -295,7 +299,37 @@ public class UserController {
         model.addAttribute("currentTab", tab);
         return "user/my-community-activity";
     }
-    
+
+    /**
+     * 내가 작성한 레시피 목록 페이지 렌더링
+     * GET /users/me/recipes
+     */
+    @GetMapping("/me/recipes")
+    public String myRecipesPage(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        if (userDetails == null) {
+            redirectAttributes.addFlashAttribute("error", "로그인이 필요합니다.");
+            return "redirect:/auth/login";
+        }
+
+        User currentUser = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<RecipeListResponse.RecipeSimpleInfo> recipes = recipeService.getUserRecipes(currentUser, pageable);
+
+        model.addAttribute("recipes", recipes);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("pageSize", size);
+
+        return "user/my-recipes";
+    }
+
     // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========
     // TODO: htmx 통합 시 아래 엔드포인트 구현
     // @GetMapping("/me/fragments/profile") - 프로필 정보 HTML 조각

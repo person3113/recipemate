@@ -18,8 +18,16 @@
     
     <!-- Main Content -->
     <main class="container py-4">
-        <h1 class="mb-4">레시피 탐색</h1>
-        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0">레시피 탐색</h1>
+            <!-- 레시피 작성 버튼 (로그인한 사용자만 표시) -->
+            <a sec:authorize="isAuthenticated()"
+               th:href="@{/recipes/new}"
+               class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> 내 레시피 작성하기
+            </a>
+        </div>
+
         <!-- Filter Indicators -->
         <div th:if="${keyword != null or category != null or ingredients != null}" 
              class="alert alert-primary mb-4">

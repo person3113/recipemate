@@ -107,4 +107,19 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long>, JpaSpecif
      */
     @Query("SELECT DISTINCT r.area FROM Recipe r WHERE r.sourceApi = :sourceApi AND r.area IS NOT NULL ORDER BY r.area")
     List<String> findDistinctAreasBySourceApi(@Param("sourceApi") RecipeSource sourceApi);
+
+    /**
+     * 사용자가 작성한 레시피 목록 조회
+     */
+    Page<Recipe> findByAuthor(com.recipemate.domain.user.entity.User author, Pageable pageable);
+
+    /**
+     * 사용자가 작성한 레시피 개수
+     */
+    long countByAuthor(com.recipemate.domain.user.entity.User author);
+
+    /**
+     * ID와 작성자로 조회 (권한 체크용)
+     */
+    Optional<Recipe> findByIdAndAuthor(Long id, com.recipemate.domain.user.entity.User author);
 }

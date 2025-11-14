@@ -52,6 +52,7 @@ public class RecipeService {
     private final RecipeIngredientRepository recipeIngredientRepository;
     private final JPAQueryFactory queryFactory;
     private final com.recipemate.domain.review.repository.ReviewRepository reviewRepository;
+    private final com.recipemate.global.util.ImageUploadUtil imageUploadUtil;
 
     private static final String MEAL_PREFIX = "meal-";
     private static final String FOOD_PREFIX = "food-";
@@ -655,31 +656,50 @@ public class RecipeService {
      * Recipe 엔티티를 RecipeSimpleInfo로 변환
      */
     private RecipeListResponse.RecipeSimpleInfo convertRecipeEntityToSimpleInfo(Recipe recipe) {
-        String apiId = recipe.getSourceApi() == RecipeSource.MEAL_DB 
-                ? MEAL_PREFIX + recipe.getSourceApiId()
-                : FOOD_PREFIX + recipe.getSourceApiId();
-        
+        // API ID 결정 (사용자 레시피는 DB ID 사용)
+        String apiId;
+        if (recipe.getSourceApi() == RecipeSource.USER) {
+            apiId = String.valueOf(recipe.getId());  // 사용자 레시피는 DB ID
+        } else if (recipe.getSourceApi() == RecipeSource.MEAL_DB) {
+            apiId = MEAL_PREFIX + recipe.getSourceApiId();
+        } else {
+            apiId = FOOD_PREFIX + recipe.getSourceApiId();
+        }
+
         String imageUrl = recipe.getThumbnailImageUrl() != null 
                 ? recipe.getThumbnailImageUrl() 
                 : recipe.getFullImageUrl();
         
+        // 출처 결정: 사용자 레시피는 작성자 닉네임, API 레시피는 소스명
+        String source;
+        if (recipe.getSourceApi() == RecipeSource.USER && recipe.getAuthor() != null) {
+            source = recipe.getAuthor().getNickname();
+        } else {
+            source = recipe.getSourceApi().name().toLowerCase();
+        }
+
         return RecipeListResponse.RecipeSimpleInfo.builder()
                 .id(apiId)
                 .name(recipe.getTitle())
                 .imageUrl(imageUrl)
                 .category(recipe.getCategory())
-                .source(recipe.getSourceApi().name().toLowerCase())
+                .source(source)
                 .build();
     }
-
     /**
      * Recipe 엔티티를 RecipeDetailResponse로 변환
      */
     private RecipeDetailResponse convertRecipeEntityToDetailResponse(Recipe recipe) {
-        String apiId = recipe.getSourceApi() == RecipeSource.MEAL_DB 
-                ? MEAL_PREFIX + recipe.getSourceApiId()
-                : FOOD_PREFIX + recipe.getSourceApiId();
-        
+        // API ID 결정 (사용자 레시피는 DB ID 사용)
+        String apiId;
+        if (recipe.getSourceApi() == RecipeSource.USER) {
+            apiId = String.valueOf(recipe.getId());
+        } else if (recipe.getSourceApi() == RecipeSource.MEAL_DB) {
+            apiId = MEAL_PREFIX + recipe.getSourceApiId();
+        } else {
+            apiId = FOOD_PREFIX + recipe.getSourceApiId();
+        }
+
         // 재료 정보 변환
         List<RecipeDetailResponse.IngredientInfo> ingredients = recipe.getIngredients().stream()
                 .map(ing -> RecipeDetailResponse.IngredientInfo.builder()
@@ -714,19 +734,27 @@ public class RecipeService {
         // 관련 공동구매 목록 조회 (평점 정보 포함)
         List<GroupBuyResponse> relatedGroupBuys = getRelatedGroupBuys(apiId);
         
+        // 출처 결정: 사용자 레시피는 작성자 닉네임, API 레시피는 소스명
+        String source;
+        if (recipe.getSourceApi() == RecipeSource.USER && recipe.getAuthor() != null) {
+            source = recipe.getAuthor().getNickname() + " (사용자)";
+        } else {
+            source = recipe.getSourceApi().name().toLowerCase();
+        }
+
         return RecipeDetailResponse.builder()
                 .id(apiId)
                 .name(recipe.getTitle())
                 .imageUrl(recipe.getFullImageUrl() != null ? recipe.getFullImageUrl() : recipe.getThumbnailImageUrl())
                 .category(recipe.getCategory())
                 .area(recipe.getArea())
-                .instructions(null) // TheMealDB는 steps에, FoodSafety는 manualSteps에 저장됨
+                .instructions(recipe.getInstructions()) // 사용자 레시피는 instructions 필드 사용
                 .youtubeUrl(recipe.getYoutubeUrl())
                 .sourceUrl(recipe.getSourceUrl())
                 .ingredients(ingredients)
                 .manualSteps(manualSteps.isEmpty() ? null : manualSteps)
                 .nutritionInfo(nutritionInfo)
-                .source(recipe.getSourceApi().name().toLowerCase())
+                .source(source)
                 .relatedGroupBuys(relatedGroupBuys)
                 .build();
     }
@@ -897,5 +925,159 @@ public class RecipeService {
         } else {
             return "both";
         }
+    }
+
+    // ========== 사용자 레시피 CRUD ==========
+
+    /**
+     * 사용자 레시피 생성
+     */
+    @Transactional
+    public RecipeDetailResponse createUserRecipe(RecipeCreateRequest request, com.recipemate.domain.user.entity.User currentUser) {
+        // 1. 대표 이미지 업로드 (Cloudinary)
+        String mainImageUrl = null;
+        if (request.getMainImage() != null && !request.getMainImage().isEmpty()) {
+            List<String> uploadedUrls = imageUploadUtil.uploadImages(List.of(request.getMainImage()));
+            if (!uploadedUrls.isEmpty()) {
+                mainImageUrl = uploadedUrls.get(0);
+            }
+        }
+
+        // 2. Recipe 엔티티 생성 (간소화 버전)
+        Recipe recipe = Recipe.builder()
+                .title(request.getTitle())
+                .category(request.getCategory())
+                .area(request.getArea())
+                .fullImageUrl(mainImageUrl)
+                .thumbnailImageUrl(mainImageUrl)  // 같은 이미지 사용
+                .sourceApi(RecipeSource.USER)
+                .author(currentUser)  // 중요!
+                .instructions(null)  // 사용자 레시피는 instructions 사용 안 함
+                .tips(request.getTips())
+                .youtubeUrl(request.getYoutubeUrl())
+                .sourceUrl(request.getSourceUrl())
+                .lastSyncedAt(java.time.LocalDateTime.now())
+                .build();
+
+        // 3. 재료 추가
+        for (RecipeCreateRequest.IngredientDto ingredientDto : request.getIngredients()) {
+            RecipeIngredient ingredient = RecipeIngredient.builder()
+                    .name(ingredientDto.getName())
+                    .measure(ingredientDto.getMeasure())
+                    .build();
+            recipe.addIngredient(ingredient);
+        }
+
+        // 4. 조리 단계 추가 (RecipeStep 사용)
+        int stepNumber = 1;
+        for (RecipeCreateRequest.StepDto stepDto : request.getSteps()) {
+            RecipeStep step = RecipeStep.builder()
+                    .stepNumber(stepNumber++)
+                    .description(stepDto.getDescription())
+                    .imageUrl(null)  // 사용자 레시피는 단계별 이미지 없음
+                    .build();
+            recipe.addStep(step);
+        }
+
+        // 5. 저장
+        Recipe savedRecipe = recipeRepository.save(recipe);
+
+        // 6. 응답 DTO 변환 후 반환
+        return convertRecipeEntityToDetailResponse(savedRecipe);
+    }
+
+    /**
+     * 사용자 레시피 수정
+     */
+    @Transactional
+    public RecipeDetailResponse updateUserRecipe(Long recipeId, RecipeUpdateRequest request, com.recipemate.domain.user.entity.User currentUser) {
+        // 1. 레시피 조회
+        Recipe recipe = recipeRepository.findById(recipeId)
+                .orElseThrow(() -> new CustomException(ErrorCode.RECIPE_NOT_FOUND));
+
+        // 2. 권한 검사
+        if (!recipe.canModify(currentUser)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        // 3. 대표 이미지 업데이트 (새 이미지가 있으면)
+        String oldImageUrl = recipe.getFullImageUrl();
+        if (request.getMainImage() != null && !request.getMainImage().isEmpty()) {
+            List<String> uploadedUrls = imageUploadUtil.uploadImages(List.of(request.getMainImage()));
+            if (!uploadedUrls.isEmpty()) {
+                recipe.updateMainImage(uploadedUrls.get(0));
+
+                // 기존 이미지 삭제 (새 이미지 업로드 성공 시)
+                if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
+                    try {
+                        imageUploadUtil.deleteImages(List.of(oldImageUrl));
+                    } catch (Exception e) {
+                        log.warn("Failed to delete old image: {}", oldImageUrl, e);
+                        // 삭제 실패해도 계속 진행
+                    }
+                }
+            }
+        }
+
+        // 4. 기본 정보 업데이트
+        recipe.updateBasicInfo(
+            request.getTitle(),
+            request.getCategory(),
+            request.getArea(),
+            request.getTips(),
+            request.getYoutubeUrl(),
+            request.getSourceUrl()
+        );
+
+        // 5. 재료 업데이트 (기존 재료 삭제 후 새로 추가)
+        recipe.getIngredients().clear();
+        for (RecipeUpdateRequest.IngredientDto ingredientDto : request.getIngredients()) {
+            RecipeIngredient ingredient = RecipeIngredient.builder()
+                    .name(ingredientDto.getName())
+                    .measure(ingredientDto.getMeasure())
+                    .build();
+            recipe.addIngredient(ingredient);
+        }
+
+        // 6. 조리 단계 업데이트 (기존 단계 삭제 후 새로 추가)
+        recipe.getSteps().clear();
+        int stepNumber = 1;
+        for (RecipeUpdateRequest.StepDto stepDto : request.getSteps()) {
+            RecipeStep step = RecipeStep.builder()
+                    .stepNumber(stepNumber++)
+                    .description(stepDto.getDescription())
+                    .imageUrl(null)  // 사용자 레시피는 단계별 이미지 없음
+                    .build();
+            recipe.addStep(step);
+        }
+
+        // 7. 저장 및 반환
+        Recipe updatedRecipe = recipeRepository.save(recipe);
+        return convertRecipeEntityToDetailResponse(updatedRecipe);
+    }
+
+    /**
+     * 사용자 레시피 삭제
+     */
+    @Transactional
+    public void deleteUserRecipe(Long recipeId, com.recipemate.domain.user.entity.User currentUser) {
+        Recipe recipe = recipeRepository.findById(recipeId)
+                .orElseThrow(() -> new CustomException(ErrorCode.RECIPE_NOT_FOUND));
+
+        if (!recipe.canModify(currentUser)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        recipeRepository.delete(recipe);
+        // orphanRemoval = true 설정 덕분에 재료와 조리단계도 자동 삭제됨
+    }
+
+    /**
+     * 사용자가 작성한 레시피 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public Page<RecipeListResponse.RecipeSimpleInfo> getUserRecipes(com.recipemate.domain.user.entity.User user, Pageable pageable) {
+        Page<Recipe> recipes = recipeRepository.findByAuthor(user, pageable);
+        return recipes.map(this::convertRecipeEntityToSimpleInfo);
     }
 }

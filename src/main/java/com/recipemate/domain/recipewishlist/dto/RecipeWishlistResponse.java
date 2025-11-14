@@ -31,8 +31,21 @@ public class RecipeWishlistResponse {
     private Integer fat;
     private Integer sodium;
     
+    // 삭제된 레시피 여부
+    private boolean isDeleted;
+    
     public static RecipeWishlistResponse from(RecipeWishlist wishlist) {
         Recipe recipe = wishlist.getRecipe();
+        
+        // 소프트 삭제된 레시피인 경우
+        if (recipe == null) {
+            return RecipeWishlistResponse.builder()
+                    .wishlistId(wishlist.getId())
+                    .wishedAt(wishlist.getWishedAt())
+                    .isDeleted(true)
+                    .title("삭제된 레시피")
+                    .build();
+        }
         
         return RecipeWishlistResponse.builder()
                 .wishlistId(wishlist.getId())
@@ -49,6 +62,7 @@ public class RecipeWishlistResponse {
                 .protein(recipe.getProtein())
                 .fat(recipe.getFat())
                 .sodium(recipe.getSodium())
+                .isDeleted(false)
                 .build();
     }
 }

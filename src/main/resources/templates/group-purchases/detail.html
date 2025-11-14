@@ -147,9 +147,25 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="row g-3">
-                            <div th:if="${groupBuy.recipeImageUrl}" class="col-md-4">
-                                <img th:src="${groupBuy.recipeImageUrl}" class="img-fluid rounded" alt="레시피 이미지">
+                        <!-- 레시피가 삭제된 경우 -->
+                        <div th:if="${isRecipeDeleted != null and isRecipeDeleted}" class="alert alert-warning mb-0">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>삭제된 레시피</strong>
+                            <p class="mb-0 mt-2">이 공동구매와 연관된 레시피가 삭제되었습니다.</p>
+                        </div>
+                        
+                        <!-- 레시피가 존재하는 경우 -->
+                        <div th:if="${isRecipeDeleted == null or !isRecipeDeleted}" class="row g-3">
+                            <div th:if="${groupBuy.recipeImageUrl != null and !#strings.isEmpty(groupBuy.recipeImageUrl)}" class="col-md-4">
+                                <img th:src="${groupBuy.recipeImageUrl}" 
+                                     class="img-fluid rounded" 
+                                     alt="레시피 이미지"
+                                     onerror="this.onerror=null; this.src='https://via.placeholder.com/300x200?text=No+Image';">
+                            </div>
+                            <div th:if="${groupBuy.recipeImageUrl == null or #strings.isEmpty(groupBuy.recipeImageUrl)}" class="col-md-4">
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 150px;">
+                                    <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                </div>
                             </div>
                             <div class="col-md-8">
                                 <h6 class="fw-bold mb-2" th:text="${groupBuy.recipeName}">레시피 이름</h6>

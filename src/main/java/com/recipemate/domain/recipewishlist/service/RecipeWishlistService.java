@@ -46,7 +46,8 @@ public class RecipeWishlistService {
 
     @Transactional
     public void removeWishlist(Long userId, Long recipeId) {
-        RecipeWishlist wishlist = recipeWishlistRepository.findByUserIdAndRecipeId(userId, recipeId)
+        // 삭제된 레시피도 찜 취소가 가능하도록 네이티브 쿼리로 직접 조회
+        RecipeWishlist wishlist = recipeWishlistRepository.findByUserIdAndRecipeIdIncludingDeleted(userId, recipeId)
                 .orElseThrow(() -> new CustomException(ErrorCode.WISHLIST_NOT_FOUND));
 
         recipeWishlistRepository.delete(wishlist);
@@ -58,7 +59,9 @@ public class RecipeWishlistService {
 
         List<RecipeWishlist> wishlists = recipeWishlistRepository.findByUserIdOrderByWishedAtDesc(userId, pageable);
         
+        // 삭제된 레시피는 자동으로 필터링 (recipe가 null인 경우 제외)
         List<RecipeWishlistResponse> responses = wishlists.stream()
+                .filter(wishlist -> wishlist.getRecipe() != null) // 삭제된 레시피 제외
                 .map(RecipeWishlistResponse::from)
                 .collect(Collectors.toList());
 

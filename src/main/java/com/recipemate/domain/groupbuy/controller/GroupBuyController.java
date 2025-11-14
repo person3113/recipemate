@@ -120,6 +120,35 @@ public class GroupBuyController {
             : groupBuyService.getGroupBuyDetail(purchaseId);
         model.addAttribute("groupBuy", groupBuy);
         
+        // 레시피 기반 공구인 경우, 레시피가 삭제되었는지 확인
+        if (groupBuy.getRecipeApiId() != null) {
+            try {
+                String recipeApiId = groupBuy.getRecipeApiId();
+                
+                // 사용자 레시피 (순수 숫자) vs API 레시피 (meal-, food- 접두사) 구분
+                if (recipeApiId.matches("\\d+")) {
+                    // 순수 숫자 = 사용자 레시피 (DB ID로 조회)
+                    Long recipeDbId = Long.parseLong(recipeApiId);
+                    recipeService.getRecipeDetailById(recipeDbId);
+                } else {
+                    // 접두사 있음 = API 레시피 (API ID로 조회)
+                    recipeService.getRecipeDetail(recipeApiId);
+                }
+                
+                model.addAttribute("isRecipeDeleted", false);
+            } catch (CustomException e) {
+                if (e.getErrorCode() == ErrorCode.RECIPE_NOT_FOUND) {
+                    log.info("Recipe {} for group buy {} is deleted", groupBuy.getRecipeApiId(), purchaseId);
+                    model.addAttribute("isRecipeDeleted", true);
+                } else {
+                    log.error("Error checking recipe status for group buy {}: {}", purchaseId, e.getMessage());
+                    throw e;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to check recipe status for group buy {}: {}", purchaseId, e.getMessage());
+            }
+        }
+        
         // 재료 목록 JSON 파싱 (모든 공구 유형에서 시도)
         if (groupBuy.getIngredients() != null && !groupBuy.getIngredients().isBlank()) {
             try {

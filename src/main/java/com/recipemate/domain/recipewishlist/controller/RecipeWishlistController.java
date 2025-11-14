@@ -140,6 +140,7 @@ public class RecipeWishlistController {
     private Long resolveRecipeId(String recipeId) {
         // recipeId가 순수 숫자인지 확인 (DB ID)
         if (recipeId.matches("\\d+")) {
+            // DB ID로 직접 반환 (삭제된 레시피도 찜 취소 가능하도록)
             return Long.parseLong(recipeId);
         } else {
             // API ID로 조회하여 DB ID 반환

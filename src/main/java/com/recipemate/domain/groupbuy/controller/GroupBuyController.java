@@ -91,6 +91,8 @@ public class GroupBuyController {
         model.addAttribute("groupBuys", result);
         model.addAttribute("searchCondition", condition);
         model.addAttribute("categories", GroupBuyCategory.values()); // enum 값들을 템플릿에 전달
+        model.addAttribute("currentSort", sortBy);
+        model.addAttribute("currentDir", direction);
         
         return "group-purchases/list";
     }

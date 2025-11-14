@@ -328,6 +328,16 @@ public class RecipeController {
             return "redirect:/auth/login";
         }
 
+        // 빈 재료 필터링 (name 또는 measure가 비어있는 경우 제거)
+        if (request.getIngredients() != null) {
+            request.setIngredients(
+                request.getIngredients().stream()
+                    .filter(ingredient -> ingredient.getName() != null && !ingredient.getName().trim().isEmpty()
+                                       && ingredient.getMeasure() != null && !ingredient.getMeasure().trim().isEmpty())
+                    .collect(java.util.stream.Collectors.toList())
+            );
+        }
+
         if (bindingResult.hasErrors()) {
             model.addAttribute("recipe", request);
             model.addAttribute("isEdit", false);
@@ -442,6 +452,16 @@ public class RecipeController {
             return "redirect:/auth/login";
         }
 
+        // 빈 재료 필터링 (name 또는 measure가 비어있는 경우 제거)
+        if (request.getIngredients() != null) {
+            request.setIngredients(
+                request.getIngredients().stream()
+                    .filter(ingredient -> ingredient.getName() != null && !ingredient.getName().trim().isEmpty()
+                                       && ingredient.getMeasure() != null && !ingredient.getMeasure().trim().isEmpty())
+                    .collect(java.util.stream.Collectors.toList())
+            );
+        }
+
         if (bindingResult.hasErrors()) {
             model.addAttribute("recipe", request);
             model.addAttribute("isEdit", true);
@@ -493,34 +513,5 @@ public class RecipeController {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             return "redirect:/recipes/" + id;
         }
-    }
-
-    /**
-     * 내가 작성한 레시피 목록
-     * GET /recipes/my
-     */
-    @GetMapping("/my")
-    public String myRecipes(@AuthenticationPrincipal UserDetails userDetails,
-                           @RequestParam(defaultValue = "0") int page,
-                           @RequestParam(defaultValue = "20") int size,
-                           Model model,
-                           RedirectAttributes redirectAttributes) {
-
-        if (userDetails == null) {
-            redirectAttributes.addFlashAttribute("error", "로그인이 필요합니다.");
-            return "redirect:/auth/login";
-        }
-
-        com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<RecipeListResponse.RecipeSimpleInfo> recipes = recipeService.getUserRecipes(currentUser, pageable);
-
-        model.addAttribute("recipes", recipes);
-        model.addAttribute("currentPage", page);
-        model.addAttribute("pageSize", size);
-
-        return "recipes/my-recipes";
     }
 }

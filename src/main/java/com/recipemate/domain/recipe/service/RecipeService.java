@@ -670,15 +670,22 @@ public class RecipeService {
                 ? recipe.getThumbnailImageUrl() 
                 : recipe.getFullImageUrl();
         
+        // 출처 결정: 사용자 레시피는 작성자 닉네임, API 레시피는 소스명
+        String source;
+        if (recipe.getSourceApi() == RecipeSource.USER && recipe.getAuthor() != null) {
+            source = recipe.getAuthor().getNickname();
+        } else {
+            source = recipe.getSourceApi().name().toLowerCase();
+        }
+
         return RecipeListResponse.RecipeSimpleInfo.builder()
                 .id(apiId)
                 .name(recipe.getTitle())
                 .imageUrl(imageUrl)
                 .category(recipe.getCategory())
-                .source(recipe.getSourceApi().name().toLowerCase())
+                .source(source)
                 .build();
     }
-
     /**
      * Recipe 엔티티를 RecipeDetailResponse로 변환
      */
@@ -727,6 +734,14 @@ public class RecipeService {
         // 관련 공동구매 목록 조회 (평점 정보 포함)
         List<GroupBuyResponse> relatedGroupBuys = getRelatedGroupBuys(apiId);
         
+        // 출처 결정: 사용자 레시피는 작성자 닉네임, API 레시피는 소스명
+        String source;
+        if (recipe.getSourceApi() == RecipeSource.USER && recipe.getAuthor() != null) {
+            source = recipe.getAuthor().getNickname() + " (사용자)";
+        } else {
+            source = recipe.getSourceApi().name().toLowerCase();
+        }
+
         return RecipeDetailResponse.builder()
                 .id(apiId)
                 .name(recipe.getTitle())
@@ -739,7 +754,7 @@ public class RecipeService {
                 .ingredients(ingredients)
                 .manualSteps(manualSteps.isEmpty() ? null : manualSteps)
                 .nutritionInfo(nutritionInfo)
-                .source(recipe.getSourceApi().name().toLowerCase())
+                .source(source)
                 .relatedGroupBuys(relatedGroupBuys)
                 .build();
     }

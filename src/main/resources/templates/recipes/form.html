@@ -247,9 +247,24 @@
             const ingredientItem = button.closest('.ingredient-item');
             if (document.querySelectorAll('.ingredient-item').length > 1) {
                 ingredientItem.remove();
+                // 삭제 후 인덱스 재정렬
+                reindexIngredients();
             } else {
                 alert('최소 1개의 재료가 필요합니다.');
             }
+        }
+
+        // 재료 인덱스 재정렬
+        function reindexIngredients() {
+            const ingredientItems = document.querySelectorAll('.ingredient-item');
+            ingredientItems.forEach((item, index) => {
+                const nameInput = item.querySelector('input[name*=".name"]');
+                const measureInput = item.querySelector('input[name*=".measure"]');
+
+                if (nameInput) nameInput.name = `ingredients[${index}].name`;
+                if (measureInput) measureInput.name = `ingredients[${index}].measure`;
+            });
+            ingredientCount = ingredientItems.length;
         }
 
         // 대표 이미지 미리보기

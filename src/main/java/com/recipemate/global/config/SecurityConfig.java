@@ -80,8 +80,7 @@ public class SecurityConfig {
                             "/group-purchases/*/bookmarks",       // Group-buy bookmark add
                             "/group-purchases/*/bookmarks/cancel", // Group-buy bookmark cancel
                             "/recipes/new",                       // Recipe creation form
-                            "/recipes/*/edit",                    // Recipe edit form
-                            "/recipes/my"                         // My recipes list
+                            "/recipes/*/edit"                     // Recipe edit form
                         ).authenticated()
                         
                         // All other requests require authentication

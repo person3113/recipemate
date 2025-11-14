@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내가 작성한 레시피 - RecipeMate</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body class="bg-light">
+    <!-- Header Fragment -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <!-- Main Content -->
+    <main class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0">
+                <i class="bi bi-book"></i> 내가 작성한 레시피
+            </h1>
+            <a th:href="@{/recipes/new}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> 새 레시피 작성
+            </a>
+        </div>
+
+        <!-- 레시피가 없을 때 -->
+        <div th:if="${recipes.isEmpty()}" class="text-center py-5">
+            <i class="bi bi-journal-x display-1 text-muted"></i>
+            <h4 class="mt-3 text-muted">작성한 레시피가 없습니다</h4>
+            <p class="text-muted">나만의 특별한 레시피를 공유해보세요!</p>
+            <a th:href="@{/recipes/new}" class="btn btn-primary mt-3">
+                <i class="bi bi-plus-lg"></i> 첫 레시피 작성하기
+            </a>
+        </div>
+
+        <!-- 레시피 목록 -->
+        <div th:if="${!recipes.isEmpty()}">
+            <!-- 레시피 카드 그리드 -->
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4 mb-4">
+                <div th:each="recipe : ${recipes.content}" class="col">
+                    <div class="card h-100 shadow-sm recipe-card">
+                        <a th:href="@{/recipes/{id}(id=${recipe.id})}" class="text-decoration-none">
+                            <!-- 이미지 -->
+                            <div th:if="${recipe.imageUrl != null}" class="card-img-top-wrapper">
+                                <img th:src="${recipe.imageUrl}"
+                                     th:alt="${recipe.name}"
+                                     class="card-img-top recipe-img">
+                            </div>
+                            <div th:unless="${recipe.imageUrl != null}"
+                                 class="image-placeholder text-white">
+                                <i class="bi bi-egg-fried display-4"></i>
+                            </div>
+
+                            <!-- 카드 내용 -->
+                            <div class="card-body">
+                                <h5 class="card-title text-dark" th:text="${recipe.name}">레시피 이름</h5>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-primary" th:text="${recipe.category ?: '기타'}">카테고리</span>
+                                    <span class="badge bg-success">내 레시피</span>
+                                </div>
+                            </div>
+                        </a>
+
+                        <!-- 액션 버튼 -->
+                        <div class="card-footer bg-white border-top-0">
+                            <div class="d-flex gap-2">
+                                <a th:href="@{/recipes/{id}(id=${recipe.id})}"
+                                   class="btn btn-sm btn-outline-primary flex-fill">
+                                    <i class="bi bi-eye"></i> 보기
+                                </a>
+                                <a th:href="@{/recipes/{id}/edit(id=${recipe.id})}"
+                                   class="btn btn-sm btn-outline-warning flex-fill">
+                                    <i class="bi bi-pencil"></i> 수정
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 페이지네이션 -->
+            <nav th:if="${recipes.totalPages > 1}" aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    <!-- 이전 페이지 -->
+                    <li class="page-item" th:classappend="${recipes.first} ? 'disabled'">
+                        <a class="page-link"
+                           th:href="@{/users/me/recipes(page=${currentPage - 1}, size=${pageSize})}"
+                           aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+
+                    <!-- 페이지 번호 -->
+                    <li th:each="i : ${#numbers.sequence(0, recipes.totalPages - 1)}"
+                        class="page-item"
+                        th:classappend="${i == currentPage} ? 'active'">
+                        <a class="page-link"
+                           th:href="@{/users/me/recipes(page=${i}, size=${pageSize})}"
+                           th:text="${i + 1}">1</a>
+                    </li>
+
+                    <!-- 다음 페이지 -->
+                    <li class="page-item" th:classappend="${recipes.last} ? 'disabled'">
+                        <a class="page-link"
+                           th:href="@{/users/me/recipes(page=${currentPage + 1}, size=${pageSize})}"
+                           aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- 통계 정보 -->
+            <div class="text-center text-muted mt-3">
+                <small>
+                    총 <strong th:text="${recipes.totalElements}">0</strong>개의 레시피
+                    (페이지 <strong th:text="${currentPage + 1}">1</strong> / <strong th:text="${recipes.totalPages}">1</strong>)
+                </small>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

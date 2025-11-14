@@ -67,18 +67,60 @@
                                 <input type="hidden" name="recipeImageUrl" th:value="${recipe.imageUrl}">
                             </div>
                             
-                            <!-- Ingredients Selection (레시피 기반 공구인 경우만 표시) -->
-<div th:if="${recipe != null}" class="mb-4">
+                            <!-- Ingredients Selection (모든 공구 유형에서 표시) -->
+                            <div class="mb-4">
                                 <label class="form-label fw-semibold">
                                     필요한 재료 선택 <span class="text-danger">*</span>
                                 </label>
                                 <div class="card">
                                     <div class="card-body">
                                         <p class="text-muted small mb-3">
-                                            <i class="bi bi-info-circle"></i> 공동구매에 포함할 재료를 선택하세요. 분량은 수정할 수 있습니다.
+                                            <i class="bi bi-info-circle"></i> 
+                                            <span th:if="${groupBuy != null}">
+                                                공동구매에 포함할 재료를 수정하세요. 분량은 수정할 수 있습니다.
+                                            </span>
+                                            <span th:if="${groupBuy == null and recipe != null}">
+                                                공동구매에 포함할 재료를 선택하세요. 분량은 수정할 수 있습니다.
+                                            </span>
+                                            <span th:if="${groupBuy == null and recipe == null}">
+                                                공동구매에 필요한 재료를 추가하세요. (선택사항)
+                                            </span>
                                         </p>
                                         <div class="row g-2" id="ingredientsList">
-                                            <div th:each="ingredient, stat : ${recipe.ingredients}" class="col-md-6">
+                                            <!-- 레시피 기반 생성 (공구 수정이 아닌 경우만): recipe.ingredients를 표시 -->
+                                            <th:block th:if="${recipe != null and groupBuy == null}">
+                                                <div th:each="ingredient, stat : ${recipe.ingredients}" class="col-md-6">
+                                                    <div class="border rounded p-3 ingredient-item">
+                                                        <div class="form-check mb-2">
+                                                            <input class="form-check-input ingredient-checkbox" 
+                                                                   type="checkbox" 
+                                                                   th:id="'ingredient-' + ${stat.index}"
+                                                                   th:data-name="${ingredient.name}"
+                                                                   th:data-measure="${ingredient.measure}"
+                                                                   checked>
+                                                            <label class="form-check-label fw-semibold w-100" th:for="'ingredient-' + ${stat.index}">
+                                                                <input type="text" 
+                                                                       class="form-control form-control-sm d-inline-block ingredient-name-input" 
+                                                                       th:id="'name-' + ${stat.index}"
+                                                                       th:value="${ingredient.name}"
+                                                                       placeholder="재료명"
+                                                                       style="width: 100%;">
+                                                            </label>
+                                                        </div>
+                                                        <input type="text" 
+                                                               class="form-control form-control-sm ingredient-measure" 
+                                                               th:id="'measure-' + ${stat.index}"
+                                                               th:value="${ingredient.measure}"
+                                                               placeholder="분량 (예: 200g, 2개)">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger mt-2 remove-ingredient">
+                                                            <i class="bi bi-trash"></i> 제거
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </th:block>
+                                            
+                                            <!-- 공구 수정 (일반/레시피 모두): ingredientsList를 표시 -->
+                                            <div th:if="${groupBuy != null and ingredientsList != null}" th:each="ingredient, stat : ${ingredientsList}" class="col-md-6">
                                                 <div class="border rounded p-3 ingredient-item">
                                                     <div class="form-check mb-2">
                                                         <input class="form-check-input ingredient-checkbox" 
@@ -692,13 +734,15 @@
         });
     </script>
     
-    <!-- Recipe-based Group Buy Script -->
-    <script th:if="${recipe != null}">
+    <!-- Ingredients Management Script (모든 공구 유형에서 동작) -->
+    <script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('groupBuyForm');
             const addIngredientBtn = document.getElementById('addIngredientBtn');
             const ingredientsList = document.getElementById('ingredientsList');
-            let ingredientIndex = [[${recipe.ingredients.size()}]];
+            
+            // ingredientIndex 초기화: 레시피 생성 모드(recipe != null && groupBuy == null)와 공구 수정 모드(ingredientsList != null) 구분
+            let ingredientIndex = /*[[${groupBuy == null and recipe != null ? recipe.ingredients.size() : (ingredientsList != null ? ingredientsList.size() : 0)}]]*/ 0;
             
             if (!form) {
                 console.error('필수 요소를 찾을 수 없습니다.');
@@ -745,6 +789,7 @@
                     }
                 });
                 
+                // 최소 1개 이상의 재료 필수
                 if (selectedIngredients.length === 0) {
                     e.preventDefault();
                     alert('최소 1개 이상의 재료를 선택해주세요.');

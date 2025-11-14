@@ -120,6 +120,20 @@ public class GroupBuyController {
             : groupBuyService.getGroupBuyDetail(purchaseId);
         model.addAttribute("groupBuy", groupBuy);
         
+        // 재료 목록 JSON 파싱 (모든 공구 유형에서 시도)
+        if (groupBuy.getIngredients() != null && !groupBuy.getIngredients().isBlank()) {
+            try {
+                List<SelectedIngredient> ingredientsList = objectMapper.readValue(
+                    groupBuy.getIngredients(),
+                    new TypeReference<List<SelectedIngredient>>() {}
+                );
+                model.addAttribute("ingredientsList", ingredientsList);
+            } catch (Exception e) {
+                log.warn("Failed to parse ingredients JSON for group buy {}: {}", purchaseId, e.getMessage());
+                // 파싱 실패 시 프론트엔드에서 Fallback 표시 (원본 텍스트)
+            }
+        }
+        
         // 참여자 목록 공개 여부 확인 후 로드 (비로그인 사용자도 가능)
         if (groupBuy.getIsParticipantListPublic()) {
             try {
@@ -197,6 +211,23 @@ public class GroupBuyController {
         // 기존 이미지 URL 목록 추가
         model.addAttribute("existingImages", groupBuy.getImageUrls());
         
+        // 재료 목록 파싱 (모든 공구 유형에서 시도)
+        if (groupBuy.getIngredients() != null && !groupBuy.getIngredients().isBlank()) {
+            try {
+                List<SelectedIngredient> ingredientsList = objectMapper.readValue(
+                    groupBuy.getIngredients(),
+                    new TypeReference<List<SelectedIngredient>>() {}
+                );
+                model.addAttribute("ingredientsList", ingredientsList);
+            } catch (Exception e) {
+                log.warn("Failed to parse ingredients JSON for group buy {}: {}", purchaseId, e.getMessage());
+                // 파싱 실패 시에도 폼은 정상 표시 (사용자가 재료를 다시 입력 가능)
+            }
+        }
+        
+        // 레시피 기반 공구 수정 시: 레시피 정보는 추가하지 않음
+        // (수정 시에는 DB에 저장된 재료만 표시하고, 레시피 재료는 로딩하지 않음)
+        
         model.addAttribute("formData", formData);
         model.addAttribute("updateGroupBuyRequest", formData); // POST 핸들러와의 호환성
         model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 전달
@@ -245,6 +276,38 @@ public class GroupBuyController {
             model.addAttribute("formData", request); // Thymeleaf th:object를 위해 필수
             model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
             // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
+            return "group-purchases/form";
+        }
+        
+        // 2. JSON에서 선택된 재료 파싱 (일반 공구도 재료 필수)
+        if (request.getSelectedIngredientsJson() != null && !request.getSelectedIngredientsJson().isBlank()) {
+            try {
+                java.util.List<SelectedIngredient> ingredients = objectMapper.readValue(
+                    request.getSelectedIngredientsJson(), 
+                    new TypeReference<java.util.List<SelectedIngredient>>() {}
+                );
+                
+                if (ingredients == null || ingredients.isEmpty()) {
+                    model.addAttribute("formData", request);
+                    model.addAttribute("errorMessage", "선택된 재료가 없습니다. 최소 1개 이상의 재료를 선택해주세요.");
+                    model.addAttribute("categories", GroupBuyCategory.values());
+                    return "group-purchases/form";
+                }
+                
+                request.setSelectedIngredients(ingredients);
+                log.info("일반 공구 생성: 선택된 재료 개수={}", ingredients.size());
+                
+            } catch (Exception e) {
+                log.error("재료 JSON 파싱 실패: {}", e.getMessage());
+                model.addAttribute("formData", request);
+                model.addAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
+                model.addAttribute("categories", GroupBuyCategory.values());
+                return "group-purchases/form";
+            }
+        } else {
+            model.addAttribute("formData", request);
+            model.addAttribute("errorMessage", "선택된 재료 정보가 없습니다. 최소 1개 이상의 재료를 선택해주세요.");
+            model.addAttribute("categories", GroupBuyCategory.values());
             return "group-purchases/form";
         }
         
@@ -383,6 +446,27 @@ public class GroupBuyController {
             model.addAttribute("existingImages", groupBuy.getImageUrls());
             // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
             return "group-purchases/form";
+        }
+        
+        // 2. 재료 JSON 파싱 (레시피 기반 공구인 경우)
+        if (request.getSelectedIngredientsJson() != null && !request.getSelectedIngredientsJson().isBlank()) {
+            try {
+                List<SelectedIngredient> ingredients = objectMapper.readValue(
+                    request.getSelectedIngredientsJson(),
+                    new TypeReference<List<SelectedIngredient>>() {}
+                );
+                request.setSelectedIngredients(ingredients);
+                log.info("Parsed {} ingredients for group buy update", ingredients.size());
+            } catch (Exception e) {
+                log.error("Failed to parse ingredients JSON: {}", e.getMessage());
+                model.addAttribute("formData", request);
+                model.addAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
+                model.addAttribute("categories", GroupBuyCategory.values());
+                GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
+                model.addAttribute("groupBuy", groupBuy);
+                model.addAttribute("existingImages", groupBuy.getImageUrls());
+                return "group-purchases/form";
+            }
         }
         
         User user = userRepository.findByEmail(userDetails.getUsername())

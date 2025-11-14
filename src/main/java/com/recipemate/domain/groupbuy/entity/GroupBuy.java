@@ -112,7 +112,7 @@ public class GroupBuy extends BaseEntity {
 
     //== 생성 메서드 ==//
     public static GroupBuy createGeneral(
-        User host, String title, String content, GroupBuyCategory category, Integer totalPrice,
+        User host, String title, String content, String ingredients, GroupBuyCategory category, Integer totalPrice,
         Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
         String meetupLocation, Integer parcelFee, boolean isParticipantListPublic
     ) {
@@ -121,7 +121,7 @@ public class GroupBuy extends BaseEntity {
             .host(host)
             .title(title)
             .content(content)
-            .ingredients(null) // 일반 공구는 재료 없음
+            .ingredients(ingredients) // 일반 공구도 재료 저장
             .category(category)
             .totalPrice(totalPrice)
             .targetHeadcount(targetHeadcount)
@@ -198,6 +198,13 @@ public class GroupBuy extends BaseEntity {
         this.meetupLocation = meetupLocation;
         this.parcelFee = parcelFee;
         this.isParticipantListPublic = isParticipantListPublic;
+    }
+    
+    /**
+     * 재료 목록 업데이트 (레시피 기반 공구 수정 시 사용)
+     */
+    public void updateIngredients(String ingredients) {
+        this.ingredients = ingredients;
     }
 
     //== 비즈니스 로직 ==//

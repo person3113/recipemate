@@ -113,13 +113,27 @@
                             <p class="text-pre-wrap" th:text="${groupBuy.content}">공동구매 내용</p>
                         </div>
                         
-                        <!-- Ingredients (if recipe-based) -->
+                        <!-- Ingredients (재료가 있으면 항상 표시) -->
                         <div th:if="${groupBuy.ingredients != null and !groupBuy.ingredients.isBlank()}" class="border-top pt-4 mt-4">
                             <h5 class="fw-bold mb-3">
                                 <i class="bi bi-basket3 text-primary"></i> 필요한 재료
                             </h5>
-                            <div class="bg-light p-3 rounded">
-                                <p class="text-pre-wrap mb-0" th:text="${groupBuy.ingredients}">재료 목록</p>
+                            
+                            <!-- JSON 파싱 성공 시 -->
+                            <div th:if="${ingredientsList != null and !ingredientsList.isEmpty()}" class="row g-2">
+                                <div th:each="ingredient : ${ingredientsList}" class="col-md-6">
+                                    <div class="d-flex align-items-center p-2 bg-light rounded">
+                                        <i class="bi bi-circle-fill text-primary me-2 difficulty-icon"></i>
+                                        <span class="fw-semibold me-2" th:text="${ingredient.name}">재료명</span>
+                                        <span class="text-muted small" th:text="${ingredient.measure}">분량</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- JSON 파싱 실패 시 Fallback: 원본 텍스트 표시 -->
+                            <div th:if="${ingredientsList == null or ingredientsList.isEmpty()}" class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> 
+                                <span th:text="${groupBuy.ingredients}">재료 정보</span>
                             </div>
                         </div>
                     </div>
@@ -307,11 +321,11 @@
                                 <span class="text-muted"><i class="bi bi-truck"></i> 배송 방법</span>
                                 <span class="fw-semibold" th:text="${groupBuy.deliveryMethod.displayName}">택배/직거래</span>
                             </div>
-                            <div th:if="${groupBuy.deliveryMethod == 'DIRECT' and groupBuy.meetupLocation}" class="d-flex justify-content-between mb-2">
+                            <div th:if="${(groupBuy.deliveryMethod.name() == 'DIRECT' or groupBuy.deliveryMethod.name() == 'BOTH') and groupBuy.meetupLocation != null and !#strings.isEmpty(groupBuy.meetupLocation)}" class="d-flex justify-content-between mb-2">
                                 <span class="text-muted"><i class="bi bi-geo-alt"></i> 만남 장소</span>
                                 <span class="fw-semibold small" th:text="${groupBuy.meetupLocation}">장소</span>
                             </div>
-                            <div th:if="${groupBuy.deliveryMethod == 'PARCEL' and groupBuy.parcelFee != null}" class="d-flex justify-content-between mb-2">
+                            <div th:if="${(groupBuy.deliveryMethod.name() == 'PARCEL' or groupBuy.deliveryMethod.name() == 'BOTH') and groupBuy.parcelFee != null}" class="d-flex justify-content-between mb-2">
                                 <span class="text-muted"><i class="bi bi-cash"></i> 택배비</span>
                                 <span class="fw-semibold" th:text="${#numbers.formatInteger(groupBuy.parcelFee, 0, 'COMMA')} + '원'">3,000원</span>
                             </div>

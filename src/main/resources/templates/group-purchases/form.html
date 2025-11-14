@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${groupBuy != null ? '공동구매 수정' : '공동구매 작성'} + ' - RecipeMate'">공동구매 작성 - RecipeMate</title>
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
+
     <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
 <body class="bg-light">
     <!-- Header Fragment -->
     <div th:replace="~{fragments/header :: header}"></div>
-    
+
     <main class="container my-5">
         <div class="row justify-content-center">
             <div class="col-lg-8">
@@ -27,28 +27,28 @@
                     </h1>
                     <p class="text-muted" th:text="${recipe != null ? '레시피 재료를 선택하고 공동구매를 만들어보세요' : '함께 구매할 상품의 정보를 입력해주세요'}">함께 구매할 상품의 정보를 입력해주세요</p>
                 </div>
-                
+
                 <!-- Flash Messages -->
                 <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
                     <i class="bi bi-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
-                
+
                 <!-- Form Card -->
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
-                        <form id="groupBuyForm" method="post" 
+                        <form id="groupBuyForm" method="post"
                               th:action="${groupBuy != null ? '/group-purchases/' + groupBuy.id : (recipe != null ? '/group-purchases/recipe-based' : '/group-purchases')}"
                               th:object="${formData}"
                               enctype="multipart/form-data">
                             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                            
+
                             <!-- Recipe Info Section (레시피 기반 공구인 경우만 표시) -->
                             <div th:if="${recipe != null}" class="alert alert-info mb-4">
                                 <div class="d-flex align-items-center">
-                                    <img th:if="${recipe.imageUrl != null}" 
-                                         th:src="${recipe.imageUrl}" 
-                                         th:alt="${recipe.name}" 
+                                    <img th:if="${recipe.imageUrl != null}"
+                                         th:src="${recipe.imageUrl}"
+                                         th:alt="${recipe.name}"
                                          class="rounded me-3"
                                          style="width: 80px; height: 80px; object-fit: cover;">
                                     <div class="flex-grow-1">
@@ -66,9 +66,9 @@
                                 <input type="hidden" name="recipeName" th:value="${recipe.name}">
                                 <input type="hidden" name="recipeImageUrl" th:value="${recipe.imageUrl}">
                             </div>
-                            
+
                             <!-- Ingredients Selection (레시피 기반 공구인 경우만 표시) -->
-<div th:if="${recipe != null}" class="mb-4">
+                                <div th:if="${recipe != null}" class="mb-4">
                                 <label class="form-label fw-semibold">
                                     필요한 재료 선택 <span class="text-danger">*</span>
                                 </label>
@@ -81,23 +81,23 @@
                                             <div th:each="ingredient, stat : ${recipe.ingredients}" class="col-md-6">
                                                 <div class="border rounded p-3 ingredient-item">
                                                     <div class="form-check mb-2">
-                                                        <input class="form-check-input ingredient-checkbox" 
-                                                               type="checkbox" 
+                                                        <input class="form-check-input ingredient-checkbox"
+                                                               type="checkbox"
                                                                th:id="'ingredient-' + ${stat.index}"
                                                                th:data-name="${ingredient.name}"
                                                                th:data-measure="${ingredient.measure}"
                                                                checked>
                                                         <label class="form-check-label fw-semibold w-100" th:for="'ingredient-' + ${stat.index}">
-                                                            <input type="text" 
-                                                                   class="form-control form-control-sm d-inline-block ingredient-name-input" 
+                                                            <input type="text"
+                                                                   class="form-control form-control-sm d-inline-block ingredient-name-input"
                                                                    th:id="'name-' + ${stat.index}"
                                                                    th:value="${ingredient.name}"
                                                                    placeholder="재료명"
                                                                    style="width: 100%;">
                                                         </label>
                                                     </div>
-                                                    <input type="text" 
-                                                           class="form-control form-control-sm ingredient-measure" 
+                                                    <input type="text"
+                                                           class="form-control form-control-sm ingredient-measure"
                                                            th:id="'measure-' + ${stat.index}"
                                                            th:value="${ingredient.measure}"
                                                            placeholder="분량 (예: 200g, 2개)">
@@ -115,14 +115,14 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- Title -->
                             <div class="mb-4">
                                 <label for="title" class="form-label fw-semibold">
                                     제목 <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" 
-                                       id="title" 
+                                <input type="text"
+                                       id="title"
                                        th:field="*{title}"
                                        class="form-control"
                                        th:classappend="${#fields.hasErrors('title')} ? 'is-invalid'"
@@ -131,7 +131,7 @@
                                        maxlength="100">
                                 <div class="invalid-feedback" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
                             </div>
-                            
+
                             <!-- Category -->
                             <div class="mb-4">
                                 <label for="category" class="form-label fw-semibold">
@@ -139,20 +139,20 @@
                                 </label>
                                 <select id="category" th:field="*{category}" class="form-select" required>
                                     <option value="">카테고리를 선택하세요</option>
-                                    <option th:each="cat : ${categories}" 
-                                            th:value="${cat.name()}" 
+                                    <option th:each="cat : ${categories}"
+                                            th:value="${cat.name()}"
                                             th:text="${cat.displayName}"></option>
                                 </select>
                             </div>
-                            
+
                             <!-- Content -->
                             <div class="mb-4">
                                 <label for="content" class="form-label fw-semibold">
                                     상세 설명 <span class="text-danger">*</span>
                                 </label>
-                                <textarea id="content" 
+                                <textarea id="content"
                                           th:field="*{content}"
-                                          class="form-control" 
+                                          class="form-control"
                                           rows="8"
                                           placeholder="공동구매에 대한 상세한 설명을 입력하세요"
                                           required></textarea>
@@ -160,7 +160,7 @@
                                     <i class="bi bi-info-circle"></i> 상품의 상태, 수령 방법 등을 자세히 작성해주세요.
                                 </div>
                             </div>
-                            
+
                             <div class="row">
                                 <!-- Total Price -->
                                 <div class="col-md-6 mb-4">
@@ -168,29 +168,29 @@
                                         총 가격 <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group">
-                                        <input type="number" 
-                                               id="totalPrice" 
+                                        <input type="number"
+                                               id="totalPrice"
                                                th:field="*{totalPrice}"
-                                               class="form-control" 
-                                               min="0" 
+                                               class="form-control"
+                                               min="0"
                                                step="1000"
                                                placeholder="0"
                                                required>
                                         <span class="input-group-text">원</span>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Target Headcount -->
                                 <div class="col-md-6 mb-4">
                                     <label for="targetHeadcount" class="form-label fw-semibold">
                                         목표 인원 <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group">
-                                        <input type="number" 
-                                               id="targetHeadcount" 
+                                        <input type="number"
+                                               id="targetHeadcount"
                                                th:field="*{targetHeadcount}"
-                                               class="form-control" 
-                                               min="2" 
+                                               class="form-control"
+                                               min="2"
                                                max="100"
                                                placeholder="2"
                                                required>
@@ -198,7 +198,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- Price Per Person (Auto-calculated) -->
                             <div class="alert alert-success mb-4" id="pricePerPersonAlert" style="display: none;">
                                 <div class="d-flex align-items-center justify-content-between">
@@ -209,14 +209,14 @@
                                     <div class="fs-5 fw-bold" id="pricePerPerson">0원</div>
                                 </div>
                             </div>
-                            
+
                             <!-- Deadline -->
                             <div class="mb-4">
                                 <label for="deadline" class="form-label fw-semibold">
                                     마감일 <span class="text-danger">*</span>
                                 </label>
-                                <input type="datetime-local" 
-                                       id="deadline" 
+                                <input type="datetime-local"
+                                       id="deadline"
                                        th:field="*{deadline}"
                                        class="form-control"
                                        th:classappend="${#fields.hasErrors('deadline')} ? 'is-invalid'"
@@ -226,11 +226,11 @@
                                 </div>
                                 <div class="invalid-feedback" th:if="${#fields.hasErrors('deadline')}" th:errors="*{deadline}"></div>
                             </div>
-                            
+
                             <hr class="my-4">
-                            
+
                             <h5 class="fw-bold mb-3">배송 정보</h5>
-                            
+
                             <!-- Delivery Method -->
                             <div class="mb-4">
                                 <label for="deliveryMethod" class="form-label fw-semibold">
@@ -249,47 +249,47 @@
                                     </option>
                                 </select>
                             </div>
-                            
+
                             <!-- Meetup Location -->
                             <div class="mb-4">
                                 <label for="meetupLocation" class="form-label fw-semibold">
                                     만남 장소 <span class="text-muted small">(직거래 시)</span>
                                 </label>
-                                <input type="text" 
-                                       id="meetupLocation" 
+                                <input type="text"
+                                       id="meetupLocation"
                                        th:field="*{meetupLocation}"
-                                       class="form-control" 
+                                       class="form-control"
                                        placeholder="예: 서울역 3번 출구">
                                 <div class="form-text">
                                     <i class="bi bi-geo-alt"></i> 구체적인 만남 장소를 입력해주세요.
                                 </div>
                             </div>
-                            
+
                             <!-- Parcel Fee -->
                             <div class="mb-4">
                                 <label for="parcelFee" class="form-label fw-semibold">
                                     택배비 <span class="text-muted small">(택배 배송 시)</span>
                                 </label>
                                 <div class="input-group">
-                                    <input type="number" 
-                                           id="parcelFee" 
+                                    <input type="number"
+                                           id="parcelFee"
                                            th:field="*{parcelFee}"
-                                           class="form-control" 
+                                           class="form-control"
                                            min="0"
                                            step="500"
                                            placeholder="0">
                                     <span class="input-group-text">원</span>
                                 </div>
                             </div>
-                            
+
                             <hr class="my-4">
-                            
+
                             <!-- Participant List Public -->
                             <div class="mb-4">
                                 <div class="form-check">
-                                    <input type="checkbox" 
-                                           class="form-check-input" 
-                                           id="isParticipantListPublic" 
+                                    <input type="checkbox"
+                                           class="form-check-input"
+                                           id="isParticipantListPublic"
                                            th:field="*{isParticipantListPublic}">
                                     <label class="form-check-label" for="isParticipantListPublic">
                                         <i class="bi bi-people"></i> 참여자 명단 공개
@@ -297,7 +297,7 @@
                                     <div class="form-text">참여자 목록을 다른 사용자에게 공개합니다.</div>
                                 </div>
                             </div>
-                            
+
                             <!-- Existing Images (수정 모드인 경우) -->
                             <div th:if="${groupBuy != null and existingImages != null and !existingImages.isEmpty()}" class="mb-4">
                                 <label class="form-label fw-semibold">
@@ -308,7 +308,7 @@
                                         <div class="card existing-image-card" th:data-url="${imageUrl}">
                                             <img th:src="${imageUrl}" class="card-img-top" alt="공구 이미지" style="height: 150px; object-fit: cover;">
                                             <div class="card-body p-2 text-center">
-                                                <button type="button" 
+                                                <button type="button"
                                                         class="btn btn-sm btn-danger delete-existing-image-btn"
                                                         th:data-url="${imageUrl}"
                                                         onclick="markImageForDeletion(this, this.dataset.url)">
@@ -321,32 +321,32 @@
                                 <!-- Hidden input for deleted images -->
                                 <input type="hidden" id="deletedImagesInput" name="deletedImages" value="">
                             </div>
-                            
+
                             <!-- Image Upload -->
                             <div class="mb-4">
                                 <label for="imageFiles" class="form-label fw-semibold">
                                     <span th:text="${groupBuy != null ? '새 이미지 추가' : '이미지 업로드'}">이미지 업로드</span>
                                     <span class="text-muted small">(최대 3장, 각 5MB)</span>
                                 </label>
-                                <input type="file" 
-                                       id="imageFiles" 
+                                <input type="file"
+                                       id="imageFiles"
                                        th:name="${groupBuy != null ? 'images' : 'imageFiles'}"
-                                       class="form-control" 
-                                       multiple 
+                                       class="form-control"
+                                       multiple
                                        accept="image/jpeg,image/png">
                                 <div class="form-text">
                                     <i class="bi bi-image"></i> JPG, PNG 형식만 업로드 가능하며, 각 파일은 5MB 이하여야 합니다.
                                 </div>
                                 <div id="imagePreviewContainer" class="mt-3 row g-2"></div>
                             </div>
-                            
+
                             <!-- Form Actions -->
                             <div class="d-flex gap-2 mt-4">
                                 <button type="submit" class="btn btn-primary px-4">
                                     <i class="bi bi-check-circle"></i>
                                     <span th:text="${groupBuy != null ? '수정하기' : '작성하기'}">작성하기</span>
                                 </button>
-                                <a th:href="${groupBuy != null ? '/group-purchases/' + groupBuy.id : '/group-purchases/list'}" 
+                                <a th:href="${groupBuy != null ? '/group-purchases/' + groupBuy.id : '/group-purchases/list'}"
                                    class="btn btn-outline-secondary px-4">
                                     <i class="bi bi-x-circle"></i> 취소
                                 </a>
@@ -354,7 +354,7 @@
                         </form>
                     </div>
                 </div>
-                
+
                 <!-- Help Card -->
                 <div class="card border-0 bg-light mt-3">
                     <div class="card-body">
@@ -372,13 +372,13 @@
             </div>
         </div>
     </main>
-    
+
     <!-- Footer Fragment -->
     <div th:replace="~{fragments/footer :: footer}"></div>
-    
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Existing Image Deletion Script -->
     <script>
         // 기존 이미지 삭제 마크 (전역 함수로 선언)

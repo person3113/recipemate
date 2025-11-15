@@ -95,7 +95,7 @@ public class SearchService {
      */
     private List<SearchResultResponse> searchPosts(String keyword, Pageable pageable) {
         try {
-            Page<Post> postPage = postRepository.searchByKeyword(keyword, pageable);
+            Page<Post> postPage = postRepository.searchByKeywordIncludingComments(keyword, pageable);
 
             return postPage.getContent().stream()
                 .map(this::convertPostToSearchResult)

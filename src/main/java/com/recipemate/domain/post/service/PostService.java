@@ -1,3 +1,4 @@
+// java
 package com.recipemate.domain.post.service;
 
 import com.recipemate.domain.post.dto.CreatePostRequest;
@@ -57,9 +58,7 @@ public class PostService {
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
 
-        // 조회수 증가 (즉시 DB에 반영하지 않고 나중에 배치로 처리)
         post.increaseViewCount();
-        
         return PostResponse.from(post);
     }
 
@@ -100,14 +99,6 @@ public class PostService {
         log.debug("Post deleted and cache evicted");
     }
 
-    /**
-     * 게시글 목록 조회 (필터링 + 검색 + 페이징)
-     * 캐싱 적용으로 반복 조회 시 성능 향상
-     * @param category 카테고리 필터 (선택)
-     * @param keyword 검색 키워드 (선택)
-     * @param pageable 페이징 정보
-     * @return 게시글 목록 (페이징)
-     */
     @Cacheable(
             value = CacheConfig.VIEW_COUNTS_CACHE,
             key = "'post_list:' + (#category != null ? #category.name() : 'all') + ':' + (#keyword != null ? #keyword : 'none') + ':' + #pageable.pageNumber + ':' + #pageable.pageSize",
@@ -115,17 +106,17 @@ public class PostService {
     )
     public Page<PostResponse> getPostList(PostCategory category, String keyword, Pageable pageable) {
         Page<Post> posts;
+        String trimmedKeyword = (keyword != null ? keyword.trim() : null);
 
-        // 조건에 따라 적절한 repository 메서드 호출
-        if (category != null && keyword != null && !keyword.trim().isEmpty()) {
-            // 카테고리 + 키워드 검색
-            posts = postRepository.searchByCategoryAndKeyword(category, keyword.trim(), pageable);
+        if (category != null && trimmedKeyword != null && !trimmedKeyword.isEmpty()) {
+            // 카테고리 + 키워드(댓글 포함) 검색
+            posts = postRepository.searchByCategoryAndKeyword(category, trimmedKeyword, pageable);
         } else if (category != null) {
             // 카테고리만 필터링
             posts = postRepository.findByCategoryAndDeletedAtIsNull(category, pageable);
-        } else if (keyword != null && !keyword.trim().isEmpty()) {
-            // 키워드만 검색
-            posts = postRepository.searchByKeyword(keyword.trim(), pageable);
+        } else if (trimmedKeyword != null && !trimmedKeyword.isEmpty()) {
+            // 키워드만 검색(댓글 포함)
+            posts = postRepository.searchByKeywordIncludingComments(trimmedKeyword, pageable);
         } else {
             // 전체 목록 조회
             posts = postRepository.findAllByDeletedAtIsNull(pageable);
@@ -133,5 +124,4 @@ public class PostService {
 
         return posts.map(PostResponse::from);
     }
-
 }

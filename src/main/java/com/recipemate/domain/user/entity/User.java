@@ -96,7 +96,7 @@ public class User extends BaseEntity {
             this.phoneNumber = phoneNumber;
         }
         if (profileImageUrl != null) {
-            this.profileImageUrl = profileImageUrl.isBlank() ? null : profileImageUrl;
+            this.profileImageUrl = profileImageUrl;
         }
     }
 

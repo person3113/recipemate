@@ -1,5 +1,7 @@
+// java
 package com.recipemate.domain.post.repository;
 
+import com.recipemate.domain.comment.entity.Comment;
 import com.recipemate.domain.post.entity.Post;
 import com.recipemate.global.common.PostCategory;
 import org.springframework.data.domain.Page;
@@ -28,16 +30,36 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 카테고리별 조회 - 삭제되지 않은 게시글만
     Page<Post> findByCategoryAndDeletedAtIsNull(PostCategory category, Pageable pageable);
 
-    // 키워드 검색 (제목 + 내용) - 삭제되지 않은 게시글만
-    @Query("SELECT p FROM Post p WHERE p.deletedAt IS NULL " +
-            "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Post> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+    // 키워드 검색 - 제목, 내용, 댓글 내용 포함 (삭제되지 않은 댓글만)
+    @Query("""
+           SELECT DISTINCT p
+           FROM Post p
+           LEFT JOIN Comment c ON c.post = p
+           WHERE p.deletedAt IS NULL
+             AND (c IS NULL OR c.deletedAt IS NULL)
+             AND (
+                  LOWER(p.title)   LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(c.content) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             )
+           """)
+    Page<Post> searchByKeywordIncludingComments(@Param("keyword") String keyword,
+                                                Pageable pageable);
 
-    // 카테고리 + 키워드 검색 - 삭제되지 않은 게시글만
-    @Query("SELECT p FROM Post p WHERE p.category = :category AND p.deletedAt IS NULL " +
-            "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    // 카테고리 + 키워드 검색 - 제목, 내용, 댓글 내용 포함 (삭제되지 않은 댓글만)
+    @Query("""
+           SELECT DISTINCT p
+           FROM Post p
+           LEFT JOIN Comment c ON c.post = p
+           WHERE p.category = :category
+             AND p.deletedAt IS NULL
+             AND (c IS NULL OR c.deletedAt IS NULL)
+             AND (
+                  LOWER(p.title)   LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               OR LOWER(c.content) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             )
+           """)
     Page<Post> searchByCategoryAndKeyword(@Param("category") PostCategory category,
                                           @Param("keyword") String keyword,
                                           Pageable pageable);

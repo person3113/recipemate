@@ -99,6 +99,13 @@
                                 </h6>
                             </div>
                             <div class="list-group list-group-flush">
+                                <a th:href="@{/direct-messages/contacts}" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-envelope-fill text-primary"></i>
+                                    <span class="ms-2">쪽지함</span>
+                                    <span th:if="${unreadMessageCount > 0}"
+                                          class="badge bg-danger rounded-pill float-end"
+                                          th:text="${unreadMessageCount}">0</span>
+                                </a>
                                 <a th:href="@{/users/me/bookmarks}" class="list-group-item list-group-item-action">
                                     <i class="bi bi-heart text-danger"></i>
                                     <span class="ms-2">내 찜 목록</span>

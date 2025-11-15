@@ -176,6 +176,7 @@ public class NotificationService {
             case REVIEW_GROUP_BUY -> actorName + "님이 공구 후기를 작성했습니다.";
             case GROUP_BUY_DEADLINE -> "찜한 공구가 곧 마감됩니다.";
             case GROUP_BUY_COMPLETED -> "참여한 공구가 목표 인원을 달성했습니다.";
+            case DIRECT_MESSAGE -> actorName + "님이 쪽지를 보냈습니다.";
         };
     }
 
@@ -192,6 +193,7 @@ public class NotificationService {
             case POST -> "/community-posts/" + entityId;
             case COMMENT -> "/comments/" + entityId;
             case REVIEW -> "/reviews/" + entityId;
+            case DIRECT_MESSAGE -> "/direct-messages/conversation/" + entityId;
             case RECIPE -> "/recipes/" + entityId;
         };
     }

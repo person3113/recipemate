@@ -5,5 +5,6 @@ public enum EntityType {
     POST,
     COMMENT,
     REVIEW,
-    RECIPE
+    RECIPE,
+    DIRECT_MESSAGE
 }

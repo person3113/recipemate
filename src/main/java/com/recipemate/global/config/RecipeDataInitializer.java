@@ -51,7 +51,7 @@ public class RecipeDataInitializer implements ApplicationRunner {
             log.info("Syncing FoodSafety recipes...");
             int foodSafetyCount = recipeSyncService.syncFoodSafetyRecipes();
             log.info("FoodSafety sync completed: {} recipes", foodSafetyCount);
-            
+
             // TheMealDB 랜덤 레시피 100개 동기화
             log.info("Syncing TheMealDB random recipes...");
             int mealDbCount = recipeSyncService.syncMealDbRandomRecipes(100);
@@ -59,7 +59,6 @@ public class RecipeDataInitializer implements ApplicationRunner {
             
             int totalCount = foodSafetyCount + mealDbCount;
             log.info("Initial recipe data synchronization completed: total {} recipes loaded", totalCount);
-            
         } catch (Exception e) {
             log.error("Failed to initialize recipe data", e);
             // 초기화 실패해도 애플리케이션은 계속 실행

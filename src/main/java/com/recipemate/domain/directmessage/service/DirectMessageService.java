@@ -40,17 +40,14 @@ public class DirectMessageService {
         DirectMessage message = DirectMessage.create(sender, recipient, content);
         DirectMessage saved = directMessageRepository.save(message);
 
-        // TODO: 알림 기능 활성화 (데이터베이스 제약조건 수정 후)
-        // 현재는 H2 DB의 notifications 테이블 ENUM 제약조건에 DIRECT_MESSAGE가 없어서 주석 처리
-        /*
+        // 수신자에게 알림 전송
         notificationService.createNotification(
             recipientId,
             NotificationType.DIRECT_MESSAGE,
             senderId,
-            senderId,  // entityId를 발신자 ID로 설정
+            senderId,  // entityId를 발신자 ID로 설정하여 알림 클릭 시 해당 발신자와의 대화로 이동
             EntityType.DIRECT_MESSAGE
         );
-        */
 
         return DirectMessageResponse.from(saved);
     }

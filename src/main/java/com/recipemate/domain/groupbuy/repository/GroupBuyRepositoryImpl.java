@@ -98,9 +98,9 @@ public class GroupBuyRepositoryImpl implements GroupBuyRepositoryCustom {
             case "deadline" -> new OrderSpecifier<>(sortOrder, groupBuy.deadline);
             case "participants" -> new OrderSpecifier<>(sortOrder, groupBuy.currentHeadcount);
             case "price" -> {
-                // 1인당 가격 = totalPrice / targetHeadcount
+                // 1인당 가격 = targetAmount / targetHeadcount
                 NumberExpression<Double> pricePerPerson = 
-                    groupBuy.totalPrice.doubleValue().divide(groupBuy.targetHeadcount.doubleValue());
+                    groupBuy.targetAmount.doubleValue().divide(groupBuy.targetHeadcount.doubleValue());
                 yield new OrderSpecifier<>(sortOrder, pricePerPerson);
             }
             default -> new OrderSpecifier<>(sortOrder, groupBuy.createdAt);
@@ -188,7 +188,7 @@ public class GroupBuyRepositoryImpl implements GroupBuyRepositoryCustom {
             case "participants" -> new OrderSpecifier<>(sortOrder, groupBuy.currentHeadcount);
             case "price" -> {
                 NumberExpression<Double> pricePerPerson = 
-                    groupBuy.totalPrice.doubleValue().divide(groupBuy.targetHeadcount.doubleValue());
+                    groupBuy.targetAmount.doubleValue().divide(groupBuy.targetHeadcount.doubleValue());
                 yield new OrderSpecifier<>(sortOrder, pricePerPerson);
             }
             default -> new OrderSpecifier<>(sortOrder, groupBuy.createdAt);

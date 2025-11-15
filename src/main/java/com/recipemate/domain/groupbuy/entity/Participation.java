@@ -1,8 +1,10 @@
 package com.recipemate.domain.groupbuy.entity;
 
+import com.recipemate.domain.user.entity.Address;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.global.common.BaseEntity;
 import com.recipemate.global.common.DeliveryMethod;
+import com.recipemate.global.common.ParticipationStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import jakarta.persistence.*;
@@ -49,26 +51,45 @@ public class Participation extends BaseEntity {
     @Column(nullable = false, length = 20)
     private DeliveryMethod selectedDeliveryMethod;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id", foreignKey = @ForeignKey(name = "fk_participation_address"))
+    private Address address;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ParticipationStatus status;
+
+    @Column(nullable = false)
+    private Integer totalPayment;
+
     @Column(nullable = false)
     private LocalDateTime participatedAt;
 
     //== 생성 메서드 ==//
-    public static Participation create(User user, GroupBuy groupBuy, Integer quantity, DeliveryMethod selectedDeliveryMethod) {
-        validateCreateArgs(groupBuy, quantity, selectedDeliveryMethod);
+    public static Participation create(User user, GroupBuy groupBuy, Integer quantity, DeliveryMethod selectedDeliveryMethod, Address address, Integer totalPayment) {
+        validateCreateArgs(groupBuy, quantity, selectedDeliveryMethod, address);
         
         return Participation.builder()
             .user(user)
             .groupBuy(groupBuy)
             .quantity(quantity)
             .selectedDeliveryMethod(selectedDeliveryMethod)
+            .address(address)
+            .status(ParticipationStatus.PAYMENT_COMPLETED)
+            .totalPayment(totalPayment)
             .participatedAt(LocalDateTime.now())
             .build();
     }
 
-    private static void validateCreateArgs(GroupBuy groupBuy, Integer quantity, DeliveryMethod selectedDeliveryMethod) {
+    private static void validateCreateArgs(GroupBuy groupBuy, Integer quantity, DeliveryMethod selectedDeliveryMethod, Address address) {
         // BOTH는 선택 불가 (DIRECT 또는 PARCEL만 선택 가능)
         if (selectedDeliveryMethod == DeliveryMethod.BOTH) {
             throw new CustomException(ErrorCode.INVALID_SELECTED_DELIVERY_METHOD);
+        }
+
+        // 택배 선택 시 배송지 필수
+        if (selectedDeliveryMethod == DeliveryMethod.PARCEL && address == null) {
+            throw new CustomException(ErrorCode.ADDRESS_REQUIRED_FOR_PARCEL);
         }
 
         // 수량 검증
@@ -106,6 +127,17 @@ public class Participation extends BaseEntity {
         }
         validateDeliveryMethodCompatibility(this.groupBuy.getDeliveryMethod(), deliveryMethod);
         this.selectedDeliveryMethod = deliveryMethod;
+    }
+
+    public void updateAddress(Address address) {
+        if (this.selectedDeliveryMethod == DeliveryMethod.PARCEL && address == null) {
+            throw new CustomException(ErrorCode.ADDRESS_REQUIRED_FOR_PARCEL);
+        }
+        this.address = address;
+    }
+
+    public void cancel() {
+        this.status = ParticipationStatus.CANCELLED;
     }
 
     //== 편의 메서드 (템플릿용) ==//

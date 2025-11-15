@@ -269,7 +269,7 @@ public class RecipeService {
                             .content(gb.getContent())
                             .ingredients(gb.getIngredients())
                             .category(gb.getCategory())
-                            .totalPrice(gb.getTotalPrice())
+                            .targetAmount(gb.getTargetAmount())
                             .targetHeadcount(gb.getTargetHeadcount())
                             .currentHeadcount(gb.getCurrentHeadcount())
                             .deadline(gb.getDeadline())

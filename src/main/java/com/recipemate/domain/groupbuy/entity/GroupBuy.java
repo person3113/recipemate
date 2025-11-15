@@ -60,7 +60,11 @@ public class GroupBuy extends BaseEntity {
     private GroupBuyCategory category;
 
     @Column(nullable = false)
-    private Integer totalPrice;
+    private Integer targetAmount;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer currentAmount = 0;
 
     @Column(nullable = false)
     private Integer targetHeadcount;
@@ -112,18 +116,19 @@ public class GroupBuy extends BaseEntity {
 
     //== 생성 메서드 ==//
     public static GroupBuy createGeneral(
-        User host, String title, String content, String ingredients, GroupBuyCategory category, Integer totalPrice,
+        User host, String title, String content, String ingredients, GroupBuyCategory category, Integer targetAmount,
         Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
         String meetupLocation, Integer parcelFee, boolean isParticipantListPublic
     ) {
-        validateCreateArgs(totalPrice, targetHeadcount, deadline);
+        validateCreateArgs(targetAmount, targetHeadcount, deadline);
         return GroupBuy.builder()
             .host(host)
             .title(title)
             .content(content)
-            .ingredients(ingredients) // 일반 공구도 재료 저장
+            .ingredients(ingredients)
             .category(category)
-            .totalPrice(totalPrice)
+            .targetAmount(targetAmount)
+            .currentAmount(0)
             .targetHeadcount(targetHeadcount)
             .currentHeadcount(0)
             .deadline(deadline)
@@ -136,19 +141,20 @@ public class GroupBuy extends BaseEntity {
     }
 
     public static GroupBuy createRecipeBased(
-        User host, String title, String content, String ingredients, GroupBuyCategory category, Integer totalPrice,
+        User host, String title, String content, String ingredients, GroupBuyCategory category, Integer targetAmount,
         Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
         String meetupLocation, Integer parcelFee, boolean isParticipantListPublic,
         String recipeApiId, String recipeName, String recipeImageUrl
     ) {
-        validateCreateArgs(totalPrice, targetHeadcount, deadline);
+        validateCreateArgs(targetAmount, targetHeadcount, deadline);
         return GroupBuy.builder()
             .host(host)
             .title(title)
             .content(content)
-            .ingredients(ingredients) // 레시피 기반 공구는 재료 목록 별도 저장
+            .ingredients(ingredients)
             .category(category)
-            .totalPrice(totalPrice)
+            .targetAmount(targetAmount)
+            .currentAmount(0)
             .targetHeadcount(targetHeadcount)
             .currentHeadcount(0)
             .deadline(deadline)
@@ -163,21 +169,21 @@ public class GroupBuy extends BaseEntity {
             .build();
     }
 
-    private static void validateCreateArgs(Integer totalPrice, Integer targetHeadcount, LocalDateTime deadline) {
+    private static void validateCreateArgs(Integer targetAmount, Integer targetHeadcount, LocalDateTime deadline) {
         if (deadline == null || !deadline.isAfter(LocalDateTime.now())) {
             throw new CustomException(ErrorCode.INVALID_DEADLINE);
         }
         if (targetHeadcount == null || targetHeadcount < 2) {
             throw new CustomException(ErrorCode.INVALID_TARGET_HEADCOUNT);
         }
-        if (totalPrice == null || totalPrice < 0) {
+        if (targetAmount == null || targetAmount < 0) {
             throw new CustomException(ErrorCode.INVALID_TOTAL_PRICE);
         }
     }
 
     //== 수정 메서드 ==//
     public void update(
-        String title, String content, GroupBuyCategory category, Integer totalPrice,
+        String title, String content, GroupBuyCategory category, Integer targetAmount,
         Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
         String meetupLocation, Integer parcelFee, boolean isParticipantListPublic
     ) {
@@ -191,7 +197,7 @@ public class GroupBuy extends BaseEntity {
         this.title = title;
         this.content = content;
         this.category = category;
-        this.totalPrice = totalPrice;
+        this.targetAmount = targetAmount;
         this.targetHeadcount = targetHeadcount;
         this.deadline = deadline;
         this.deliveryMethod = deliveryMethod;
@@ -210,7 +216,7 @@ public class GroupBuy extends BaseEntity {
     //== 비즈니스 로직 ==//
 
 
-    public Participation addParticipant(User participant, int quantity, DeliveryMethod selectedDeliveryMethod) {
+    public Participation addParticipant(User participant, int quantity, DeliveryMethod selectedDeliveryMethod, com.recipemate.domain.user.entity.Address address, Integer totalPayment) {
         // 1. 목표 인원 도달 여부 검증
         if (isTargetReached()) {
             throw new CustomException(ErrorCode.MAX_PARTICIPANTS_EXCEEDED);
@@ -225,17 +231,36 @@ public class GroupBuy extends BaseEntity {
             participant,
             this,
             quantity,
-            selectedDeliveryMethod
+            selectedDeliveryMethod,
+            address,
+            totalPayment
         );
 
-        // 4. 참여자 추가 및 상태 변경
+        // 4. 참여자 추가, 금액 증가 및 상태 변경
         this.participations.add(newParticipation);
         increaseParticipant();
+        
+        // current_amount에는 택배비를 제외한 순수 재료 비용만 누적
+        // (목표 금액 달성 여부는 재료 비용 기준으로 판단)
+        Integer itemAmount = calculateItemAmount(quantity, selectedDeliveryMethod, totalPayment);
+        increaseCurrentAmount(itemAmount);
+        
         if (isTargetReached()) {
             close();
         }
 
         return newParticipation;
+    }
+    
+    /**
+     * 총 결제 금액에서 택배비를 제외한 순수 재료 비용 계산
+     */
+    private Integer calculateItemAmount(int quantity, DeliveryMethod selectedDeliveryMethod, Integer totalPayment) {
+        // 택배 선택 시 택배비 제외, 직거래 선택 시 전액 반영
+        if (selectedDeliveryMethod == DeliveryMethod.PARCEL && this.parcelFee != null && this.parcelFee > 0) {
+            return totalPayment - this.parcelFee;
+        }
+        return totalPayment;
     }
 
     public void cancelParticipation(Participation participation) {
@@ -283,8 +308,36 @@ public class GroupBuy extends BaseEntity {
         this.currentHeadcount--;
     }
 
+    public void increaseCurrentAmount(Integer amount) {
+        if (amount == null || amount <= 0) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        this.currentAmount += amount;
+    }
+
+    public void decreaseCurrentAmount(Integer amount) {
+        if (amount == null || amount <= 0) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        if (this.currentAmount - amount < 0) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        this.currentAmount -= amount;
+    }
+
     public boolean isTargetReached() {
         return this.currentHeadcount >= this.targetHeadcount;
+    }
+
+    public boolean isTargetAmountReached() {
+        return this.currentAmount >= this.targetAmount;
+    }
+
+    public int getAchievementRate() {
+        if (this.targetAmount == 0) {
+            return 0;
+        }
+        return (int) ((double) this.currentAmount / this.targetAmount * 100);
     }
 
     /**

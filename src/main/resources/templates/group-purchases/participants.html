@@ -88,6 +88,7 @@
                                         <th scope="col">참여일</th>
                                         <th scope="col">수령 방법</th>
                                         <th scope="col">수량</th>
+                                        <th scope="col">배송지 정보</th>
                                         <th scope="col">액션</th>
                                     </tr>
                                 </thead>
@@ -115,6 +116,25 @@
                                         </td>
                                         <td>
                                             <span class="fw-bold" th:text="${participant.quantity} + '개'">1개</span>
+                                        </td>
+                                        <td>
+                                            <!-- 택배 선택 시 배송지 정보 표시 -->
+                                            <div th:if="${participant.selectedDeliveryMethod.name() == 'PARCEL' and participant.fullAddress != null}">
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-info" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#addressModal"
+                                                        th:data-address-name="${participant.addressName}"
+                                                        th:data-recipient-name="${participant.recipientName}"
+                                                        th:data-recipient-phone="${participant.recipientPhoneNumber}"
+                                                        th:data-full-address="${participant.fullAddress}"
+                                                        title="배송지 정보 보기">
+                                                    <i class="bi bi-geo-alt"></i> 배송지 확인
+                                                </button>
+                                            </div>
+                                            <span th:if="${participant.selectedDeliveryMethod.name() == 'DIRECT'}" class="text-muted small">
+                                                <i class="bi bi-dash"></i> 해당없음
+                                            </span>
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group" th:if="${participant.userId != currentUserId}">
@@ -158,6 +178,38 @@
     
     <div th:replace="~{fragments/footer :: footer}"></div>
     
+    <!-- 배송지 정보 모달 -->
+    <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addressModalLabel">
+                        <i class="bi bi-geo-alt-fill text-primary"></i> 배송지 정보
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">주소 별칭</dt>
+                        <dd class="col-sm-8" id="modalAddressName">-</dd>
+                        
+                        <dt class="col-sm-4">수령인</dt>
+                        <dd class="col-sm-8" id="modalRecipientName">-</dd>
+                        
+                        <dt class="col-sm-4">연락처</dt>
+                        <dd class="col-sm-8" id="modalRecipientPhone">-</dd>
+                        
+                        <dt class="col-sm-4">주소</dt>
+                        <dd class="col-sm-8" id="modalFullAddress">-</dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- 강제 탈퇴 확인 모달 -->
     <div class="modal fade" id="removeModal" tabindex="-1" aria-labelledby="removeModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -190,6 +242,30 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- 배송지 정보 모달 JavaScript -->
+    <script th:inline="javascript">
+        const addressModal = document.getElementById('addressModal');
+        const modalAddressName = document.getElementById('modalAddressName');
+        const modalRecipientName = document.getElementById('modalRecipientName');
+        const modalRecipientPhone = document.getElementById('modalRecipientPhone');
+        const modalFullAddress = document.getElementById('modalFullAddress');
+        
+        addressModal.addEventListener('show.bs.modal', function (event) {
+            // 버튼에서 데이터 가져오기
+            const button = event.relatedTarget;
+            const addressName = button.getAttribute('data-address-name');
+            const recipientName = button.getAttribute('data-recipient-name');
+            const recipientPhone = button.getAttribute('data-recipient-phone');
+            const fullAddress = button.getAttribute('data-full-address');
+            
+            // 모달 내용 업데이트
+            modalAddressName.textContent = addressName || '-';
+            modalRecipientName.textContent = recipientName || '-';
+            modalRecipientPhone.textContent = recipientPhone || '-';
+            modalFullAddress.textContent = fullAddress || '-';
+        });
+    </script>
     
     <!-- 강제 탈퇴 모달 JavaScript -->
     <script th:inline="javascript">

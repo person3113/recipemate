@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <!-- Address Options Fragment for htmx (for group buy participate form) -->
+    <div th:fragment="address-options">
+        <option value="" disabled selected>배송지를 선택하세요</option>
+        <option th:each="address : ${addresses}" 
+                th:value="${address.id}"
+                th:text="${address.addressName + ' (' + address.recipientName + ', ' + address.city + ')'}"
+                th:selected="${address.isDefault}">
+            집 (홍길동, 서울특별시)
+        </option>
+    </div>
+</body>
+</html>

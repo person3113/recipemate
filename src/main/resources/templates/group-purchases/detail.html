@@ -306,14 +306,24 @@
                     <div class="card-body">
                         <div class="mb-3">
                             <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted">총 금액</span>
-                                <span class="fs-4 fw-bold text-primary" th:text="${#numbers.formatInteger(groupBuy.totalPrice, 0, 'COMMA')} + '원'">10,000원</span>
+                                <span class="text-muted">목표 금액</span>
+                                <span class="fs-4 fw-bold text-primary" th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')} + '원'">10,000원</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">현재 금액</span>
+                                <span class="fs-5 fw-semibold text-success" th:text="${groupBuy.currentAmount != null ? #numbers.formatInteger(groupBuy.currentAmount, 0, 'COMMA') : '0'} + '원'">0원</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded mb-2">
+                                <span class="text-muted small">
+                                    <i class="bi bi-percent"></i> 달성률
+                                </span>
+                                <span class="fw-semibold text-info" th:text="${groupBuy.currentAmount != null and groupBuy.targetAmount > 0 ? #numbers.formatInteger((groupBuy.currentAmount * 100 / groupBuy.targetAmount), 0) : '0'} + '%'">0%</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
                                 <span class="text-muted small">
                                     <i class="bi bi-calculator"></i> 1인당 예상 가격
                                 </span>
-                                <span class="fw-semibold text-success" th:text="${#numbers.formatInteger(groupBuy.totalPrice / groupBuy.targetHeadcount, 0, 'COMMA')} + '원'">1,000원</span>
+                                <span class="fw-semibold text-success" th:text="${#numbers.formatInteger(groupBuy.targetAmount / groupBuy.targetHeadcount, 0, 'COMMA')} + '원'">1,000원</span>
                             </div>
                         </div>
                         
@@ -432,19 +442,76 @@
                     <h5 class="modal-title">공동구매 참여</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="post" th:action="@{/group-purchases/{id}/participate(id=${groupBuy.id})}">
+                <form method="post" th:action="@{/group-purchases/{id}/participate(id=${groupBuy.id})}" id="participateForm">
                     <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                     <div class="modal-body">
+                        <!-- Current Points Display -->
+                        <div sec:authorize="isAuthenticated()" class="alert alert-info mb-3">
+                            <i class="bi bi-wallet2"></i> 
+                            <span>보유 포인트: </span>
+                            <span class="fw-bold" sec:authentication="principal.user.points" th:text="${#numbers.formatInteger(#authentication.principal.user.points, 0, 'COMMA')} + 'P'">0P</span>
+                            <a th:href="@{/users/me/points/charge}" class="btn btn-sm btn-outline-primary ms-2">
+                                <i class="bi bi-plus-circle"></i> 충전
+                            </a>
+                        </div>
+                        
                         <div class="mb-3">
                             <label for="quantity" class="form-label">수량</label>
-                            <input type="number" id="quantity" name="quantity" class="form-control" min="1" value="1" required>
+                            <input type="number" id="quantity" name="quantity" class="form-control" min="1" value="1" required onchange="calculateTotalPayment()">
+                            <small class="form-text text-muted">
+                                1인당 예상 가격: <span th:text="${#numbers.formatInteger(groupBuy.targetAmount / groupBuy.targetHeadcount, 0, 'COMMA')} + '원'">1,000원</span>
+                            </small>
                         </div>
+                        
                         <div class="mb-3">
                             <label for="deliveryMethod" class="form-label">배송 방법</label>
-                            <select id="deliveryMethod" name="deliveryMethod" class="form-select" required>
-                                <option value="DIRECT">직거래</option>
-                                <option value="PARCEL">택배</option>
+                            <select id="deliveryMethod" name="deliveryMethod" class="form-select" required onchange="toggleAddressSelection(); calculateTotalPayment();">
+                                <option value="" disabled selected>배송 방법을 선택하세요</option>
+                                <option th:if="${groupBuy.deliveryMethod.name() == 'DIRECT' or groupBuy.deliveryMethod.name() == 'BOTH'}" value="DIRECT">직거래</option>
+                                <option th:if="${groupBuy.deliveryMethod.name() == 'PARCEL' or groupBuy.deliveryMethod.name() == 'BOTH'}" value="PARCEL">택배</option>
                             </select>
+                        </div>
+                        
+                        <!-- Address Selection (only for PARCEL) -->
+                        <div class="mb-3" id="addressSelectionDiv" style="display: none;">
+                            <label for="addressId" class="form-label">배송지 선택</label>
+                            <div class="input-group">
+                                <select id="addressId" name="addressId" class="form-select"
+                                        hx-get th:hx-get="@{/users/me/addresses/fragments/options}"
+                                        hx-trigger="load"
+                                        hx-swap="innerHTML">
+                                    <option value="">배송지를 불러오는 중...</option>
+                                </select>
+                                <a th:href="@{/users/me/addresses}" class="btn btn-outline-secondary" target="_blank">
+                                    <i class="bi bi-plus-circle"></i> 추가
+                                </a>
+                            </div>
+                            <small class="form-text text-muted">
+                                배송지가 없으면 추가 버튼을 눌러 등록해주세요.
+                            </small>
+                        </div>
+                        
+                        <!-- Total Payment Calculation -->
+                        <div class="mb-3">
+                            <label class="form-label">결제 금액</label>
+                            <input type="hidden" id="totalPayment" name="totalPayment" required>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>상품 금액</span>
+                                        <span id="itemPrice">0원</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2" id="parcelFeeRow" style="display: none;">
+                                        <span>택배비</span>
+                                        <span id="parcelFeeDisplay" th:text="${groupBuy.parcelFee != null ? #numbers.formatInteger(groupBuy.parcelFee, 0, 'COMMA') : '0'} + '원'">0원</span>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between">
+                                        <strong>총 결제 금액</strong>
+                                        <strong class="text-primary fs-5" id="totalPaymentDisplay">0원</strong>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -455,6 +522,88 @@
             </div>
         </div>
     </div>
+    
+    <script sec:authorize="isAuthenticated()" th:inline="javascript">
+        /*<![CDATA[*/
+        // Group buy data for calculation
+        const pricePerPerson = /*[[${groupBuy.targetAmount / groupBuy.targetHeadcount}]]*/ 1000;
+        const parcelFee = /*[[${groupBuy.parcelFee}]]*/ 0;
+        const userPoints = /*[[${#authentication.principal.user.points}]]*/ 0;
+        
+        // Toggle address selection based on delivery method
+        function toggleAddressSelection() {
+            const deliveryMethod = document.getElementById('deliveryMethod').value;
+            const addressDiv = document.getElementById('addressSelectionDiv');
+            const addressSelect = document.getElementById('addressId');
+            
+            if (deliveryMethod === 'PARCEL') {
+                addressDiv.style.display = 'block';
+                addressSelect.required = true;
+            } else {
+                addressDiv.style.display = 'none';
+                addressSelect.required = false;
+                addressSelect.value = '';
+            }
+        }
+        
+        // Calculate total payment
+        function calculateTotalPayment() {
+            const quantity = parseInt(document.getElementById('quantity').value) || 0;
+            const deliveryMethod = document.getElementById('deliveryMethod').value;
+            
+            if (quantity <= 0) {
+                return;
+            }
+            
+            // Calculate item price
+            const itemPrice = Math.floor(pricePerPerson * quantity);
+            document.getElementById('itemPrice').textContent = itemPrice.toLocaleString('ko-KR') + '원';
+            
+            // Calculate total with parcel fee if applicable
+            let totalPayment = itemPrice;
+            const parcelFeeRow = document.getElementById('parcelFeeRow');
+            
+            if (deliveryMethod === 'PARCEL' && parcelFee > 0) {
+                totalPayment += parcelFee;
+                parcelFeeRow.style.display = 'flex';
+            } else {
+                parcelFeeRow.style.display = 'none';
+            }
+            
+            // Update display
+            document.getElementById('totalPaymentDisplay').textContent = totalPayment.toLocaleString('ko-KR') + '원';
+            document.getElementById('totalPayment').value = totalPayment;
+        }
+        
+        // Validate form before submission
+        document.getElementById('participateForm').addEventListener('submit', function(e) {
+            const totalPayment = parseInt(document.getElementById('totalPayment').value) || 0;
+            const deliveryMethod = document.getElementById('deliveryMethod').value;
+            const addressId = document.getElementById('addressId').value;
+            
+            // Check if user has enough points
+            if (totalPayment > userPoints) {
+                e.preventDefault();
+                alert('포인트가 부족합니다. 현재 보유: ' + userPoints.toLocaleString('ko-KR') + 'P, 필요: ' + totalPayment.toLocaleString('ko-KR') + 'P');
+                return false;
+            }
+            
+            // Check if address is selected for PARCEL delivery
+            if (deliveryMethod === 'PARCEL' && !addressId) {
+                e.preventDefault();
+                alert('배송지를 선택해주세요.');
+                return false;
+            }
+            
+            return true;
+        });
+        
+        // Initialize calculation when modal opens
+        document.getElementById('participateModal').addEventListener('shown.bs.modal', function() {
+            calculateTotalPayment();
+        });
+        /*]]>*/
+    </script>
     
     <!-- Cancel Modal -->
     <div sec:authorize="isAuthenticated()" class="modal fade" id="cancelModal" tabindex="-1">

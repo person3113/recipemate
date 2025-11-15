@@ -25,7 +25,10 @@ import com.recipemate.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +52,7 @@ public class UserService {
     private final CommentRepository commentRepository;
     private final PostLikeRepository postLikeRepository;
     private final BadgeRepository badgeRepository;
+    private final CustomUserDetailsService customUserDetailsService;
 
     @Transactional
     public UserResponse signup(SignupRequest request) {
@@ -295,5 +299,23 @@ public class UserService {
                 badgeTypes, 
                 hostedGroupBuysDto
         );
+    }
+
+    /**
+     * Security Context 갱신
+     * 포인트 충전 등 사용자 정보가 변경되었을 때 세션의 인증 정보를 갱신
+     */
+    @Transactional(readOnly = true)
+    public void refreshAuthentication(String email) {
+        UserDetails updatedUserDetails = customUserDetailsService.loadUserByUsername(email);
+        
+        Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+        Authentication newAuth = new UsernamePasswordAuthenticationToken(
+            updatedUserDetails,
+            currentAuth.getCredentials(),
+            updatedUserDetails.getAuthorities()
+        );
+        
+        SecurityContextHolder.getContext().setAuthentication(newAuth);
     }
 }

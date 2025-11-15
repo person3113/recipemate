@@ -218,6 +218,61 @@ public class UserController {
     }
 
     /**
+     * 포인트 충전 페이지 렌더링
+     * GET /users/me/points/charge
+     */
+    @GetMapping("/me/points/charge")
+    public String pointChargePage(
+            @AuthenticationPrincipal UserDetails userDetails,
+            Model model) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        model.addAttribute("currentPoints", user.getPoints());
+        return "user/point-charge";
+    }
+
+    /**
+     * 포인트 충전 처리
+     * POST /users/me/points/charge
+     */
+    @PostMapping("/me/points/charge")
+    public String chargePoints(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam Integer amount,
+            RedirectAttributes redirectAttributes) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        // 최소 충전 금액 검증
+        if (amount < 1000) {
+            redirectAttributes.addFlashAttribute("error", "최소 충전 금액은 1,000포인트입니다.");
+            return "redirect:/users/me/points/charge";
+        }
+        
+        // 최대 충전 금액 검증
+        if (amount > 1000000) {
+            redirectAttributes.addFlashAttribute("error", "최대 충전 금액은 1,000,000포인트입니다.");
+            return "redirect:/users/me/points/charge";
+        }
+        
+        try {
+            pointService.chargePoints(user.getId(), amount, "포인트 충전");
+            
+            // Security Context 갱신: 포인트가 변경되었으므로 세션의 인증 정보를 갱신
+            userService.refreshAuthentication(userDetails.getUsername());
+            
+            redirectAttributes.addFlashAttribute("message", 
+                String.format("%,d포인트가 충전되었습니다.", amount));
+        } catch (CustomException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/users/me/points/charge";
+        }
+        
+        return "redirect:/users/me/points";
+    }
+
+    /**
      * 내가 만든 공구 목록 페이지 렌더링
      * GET /users/me/group-purchases
      */

@@ -103,9 +103,25 @@
                                 
                                 <!-- Participation Info -->
                                 <div class="mb-3">
-                                    <small class="text-muted">
+                                    <small class="text-muted d-block mb-1">
                                         <i class="bi bi-calendar"></i> 
                                         참여일: <span th:text="${#temporals.format(participation.createdAt, 'yyyy-MM-dd')}">2024-01-01</span>
+                                    </small>
+                                    <small class="text-muted d-block mb-1">
+                                        <i class="bi bi-basket3"></i> 
+                                        수량: <span th:text="${participation.quantity} + '개'">1개</span>
+                                    </small>
+                                    <small class="text-muted d-block mb-1">
+                                        <i class="bi bi-truck"></i> 
+                                        배송: <span th:text="${participation.selectedDeliveryMethod == 'DIRECT' ? '직거래' : '택배'}">직거래</span>
+                                    </small>
+                                    <small class="text-muted d-block mb-1">
+                                        <i class="bi bi-wallet2"></i> 
+                                        결제: <span th:text="${participation.totalPayment != null ? #numbers.formatInteger(participation.totalPayment, 0, 'COMMA') : '미정'} + 'P'">0P</span>
+                                    </small>
+                                    <small th:if="${participation.address != null and participation.address.addressName != null and !#strings.isEmpty(participation.address.addressName)}" class="text-muted d-block">
+                                        <i class="bi bi-geo-alt"></i> 
+                                        배송지: <span th:text="${participation.address.addressName}">주소명</span>
                                     </small>
                                 </div>
                                 

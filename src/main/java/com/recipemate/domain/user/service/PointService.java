@@ -91,6 +91,40 @@ public class PointService {
     }
 
     /**
+     * 포인트 충전
+     */
+    public void chargePoints(Long userId, int amount, String description) {
+        if (amount <= 0) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        user.earnPoints(amount);
+
+        PointHistory history = PointHistory.create(user, amount, description, PointType.CHARGE);
+        pointHistoryRepository.save(history);
+    }
+
+    /**
+     * 포인트 환불
+     */
+    public void refundPoints(Long userId, int amount, String description) {
+        if (amount <= 0) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        user.earnPoints(amount);
+
+        PointHistory history = PointHistory.create(user, amount, description, PointType.REFUND);
+        pointHistoryRepository.save(history);
+    }
+
+    /**
      * 포인트 내역 조회
      */
     @Transactional(readOnly = true)

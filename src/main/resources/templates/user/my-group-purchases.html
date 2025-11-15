@@ -98,7 +98,13 @@
                                                 <i class="bi bi-tag"></i> 카테고리: <span th:text="${groupBuy.category}">육류</span>
                                             </div>
                                             <div class="col-sm-6">
-                                                <i class="bi bi-cash"></i> 가격: <span class="text-primary fw-bold" th:text="${#numbers.formatInteger(groupBuy.totalPrice, 0, 'COMMA')} + '원'">10,000원</span>
+                                                <i class="bi bi-bullseye"></i> 목표: <span class="text-primary fw-bold" th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')} + '원'">10,000원</span>
+                                            </div>
+                                            <div class="col-sm-6 mt-2">
+                                                <i class="bi bi-cash-stack"></i> 현재: <span class="text-success fw-bold" th:text="${groupBuy.currentAmount != null ? #numbers.formatInteger(groupBuy.currentAmount, 0, 'COMMA') : '0'} + '원'">0원</span>
+                                            </div>
+                                            <div class="col-sm-6 mt-2">
+                                                <i class="bi bi-percent"></i> 달성률: <span th:text="${groupBuy.currentAmount != null and groupBuy.targetAmount > 0 ? #numbers.formatInteger((groupBuy.currentAmount * 100 / groupBuy.targetAmount), 0) : '0'} + '%'">0%</span>
                                             </div>
                                             <div class="col-sm-6 mt-2">
                                                 <i class="bi bi-calendar"></i> 생성일: <span th:text="${#temporals.format(groupBuy.createdAt, 'yyyy-MM-dd')}">2024-01-01</span>

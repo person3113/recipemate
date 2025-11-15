@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포인트 충전 - RecipeMate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-5">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <!-- Page Header -->
+                <div class="mb-4">
+                    <h1 class="display-6 fw-bold">
+                        <i class="bi bi-coin text-warning"></i> 포인트 충전
+                    </h1>
+                    <p class="text-muted">공동구매 참여에 필요한 포인트를 충전하세요.</p>
+                </div>
+
+                <!-- Current Points Card -->
+                <div class="card shadow-sm mb-4 border-warning">
+                    <div class="card-body text-center py-4">
+                        <h5 class="text-muted mb-2">현재 보유 포인트</h5>
+                        <h2 class="display-4 text-warning fw-bold mb-0">
+                            <i class="bi bi-coin"></i>
+                            <span th:text="${#numbers.formatInteger(currentPoints, 0, 'COMMA')}">0</span>P
+                        </h2>
+                    </div>
+                </div>
+
+                <!-- Success/Error Messages -->
+                <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span th:text="${message}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Charge Form -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <form th:action="@{/users/me/points/charge}" method="post">
+                            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                            <div class="mb-4">
+                                <label for="amount" class="form-label">
+                                    <i class="bi bi-wallet2"></i> 충전 금액 <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" 
+                                       class="form-control form-control-lg" 
+                                       id="amount" 
+                                       name="amount"
+                                       placeholder="충전할 포인트를 입력하세요" 
+                                       required
+                                       min="1000"
+                                       max="1000000"
+                                       step="1000">
+                                <div class="form-text">최소 1,000P ~ 최대 1,000,000P까지 충전 가능합니다.</div>
+                            </div>
+
+                            <!-- Quick Amount Buttons -->
+                            <div class="mb-4">
+                                <label class="form-label">빠른 충전</label>
+                                <div class="d-grid gap-2 d-md-flex">
+                                    <button type="button" class="btn btn-outline-primary flex-grow-1" onclick="setAmount(1000)">
+                                        +1,000P
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary flex-grow-1" onclick="setAmount(5000)">
+                                        +5,000P
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary flex-grow-1" onclick="setAmount(10000)">
+                                        +10,000P
+                                    </button>
+                                </div>
+                                <div class="d-grid gap-2 d-md-flex mt-2">
+                                    <button type="button" class="btn btn-outline-primary flex-grow-1" onclick="setAmount(50000)">
+                                        +50,000P
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary flex-grow-1" onclick="setAmount(100000)">
+                                        +100,000P
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary flex-grow-1" onclick="setAmount(500000)">
+                                        +500,000P
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Submit Buttons -->
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-warning btn-lg flex-grow-1">
+                                    <i class="bi bi-credit-card"></i> 충전하기
+                                </button>
+                                <a th:href="@{/users/me/points}" class="btn btn-outline-secondary btn-lg">
+                                    <i class="bi bi-x-circle"></i> 취소
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Info Card -->
+                <div class="card shadow-sm mt-4 bg-light">
+                    <div class="card-body">
+                        <h6 class="mb-3">
+                            <i class="bi bi-info-circle text-primary"></i> 포인트 충전 안내
+                        </h6>
+                        <ul class="mb-0 small">
+                            <li>포인트는 공동구매 참여 시 결제 수단으로 사용됩니다.</li>
+                            <li>충전된 포인트는 즉시 사용 가능합니다.</li>
+                            <li>최소 충전 금액은 1,000P이며, 최대 1,000,000P까지 충전할 수 있습니다.</li>
+                            <li>참여 취소 시 사용한 포인트는 전액 환불됩니다.</li>
+                            <li>포인트는 현금으로 환불되지 않습니다.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Alternative Ways to Earn Points -->
+                <div class="card shadow-sm mt-4 bg-info bg-opacity-10">
+                    <div class="card-body">
+                        <h6 class="mb-3">
+                            <i class="bi bi-gift text-info"></i> 포인트 획득 방법
+                        </h6>
+                        <p class="mb-2 small">충전 외에도 다양한 활동으로 포인트를 획득할 수 있습니다:</p>
+                        <ul class="mb-0 small">
+                            <li>공동구매 생성: 100P</li>
+                            <li>공동구매 참여: 50P</li>
+                            <li>후기 작성: 30P</li>
+                            <li>댓글 작성: 10P</li>
+                            <li>출석 체크: 5P</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Back Button -->
+                <div class="mt-4 text-center">
+                    <a th:href="@{/users/me/points}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 포인트 내역으로 돌아가기
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function setAmount(amount) {
+            document.getElementById('amount').value = amount;
+        }
+    </script>
+</body>
+</html>

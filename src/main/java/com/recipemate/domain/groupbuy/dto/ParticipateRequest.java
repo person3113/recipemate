@@ -21,4 +21,11 @@ public class ParticipateRequest {
     @NotNull(message = "수량은 필수입니다")
     @Min(value = 1, message = "수량은 1 이상이어야 합니다")
     private Integer quantity;
+
+    // 택배 선택 시 필수
+    private Long addressId;
+
+    @NotNull(message = "결제 금액은 필수입니다")
+    @Min(value = 1, message = "결제 금액은 1 이상이어야 합니다")
+    private Integer totalPayment;
 }

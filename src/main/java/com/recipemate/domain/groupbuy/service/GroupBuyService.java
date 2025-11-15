@@ -72,7 +72,7 @@ public class GroupBuyService {
                 request.getContent(),
                 request.getIngredients(), // 재료 목록 별도 전달
                 request.getCategory(),
-                request.getTotalPrice(),
+                request.getTargetAmount(),
                 request.getTargetHeadcount(),
                 request.getDeadline(),
                 request.getDeliveryMethod(),
@@ -90,7 +90,7 @@ public class GroupBuyService {
                 request.getContent(),
                 request.getIngredientsJson(), // 일반 공구도 재료 JSON 전달
                 request.getCategory(),
-                request.getTotalPrice(),
+                request.getTargetAmount(),
                 request.getTargetHeadcount(),
                 request.getDeadline(),
                 request.getDeliveryMethod(),
@@ -173,7 +173,7 @@ public class GroupBuyService {
             .content(request.getContent())
             .ingredients(ingredientsJson) // 재료는 JSON 형식으로 별도 필드에 저장
             .category(request.getCategory())
-            .totalPrice(request.getTotalPrice())
+            .targetAmount(request.getTargetAmount())
             .targetHeadcount(request.getTargetHeadcount())
             .deadline(request.getDeadline())
             .deliveryMethod(request.getDeliveryMethod())
@@ -396,7 +396,7 @@ public class GroupBuyService {
             request.getTitle(),
             request.getContent(),
             request.getCategory(),
-            request.getTotalPrice(),
+            request.getTargetAmount(),
             request.getTargetHeadcount(),
             request.getDeadline(),
             request.getDeliveryMethod(),
@@ -565,7 +565,8 @@ public class GroupBuyService {
             .content(groupBuy.getContent())
             .ingredients(groupBuy.getIngredients())
             .category(groupBuy.getCategory())
-            .totalPrice(groupBuy.getTotalPrice())
+            .targetAmount(groupBuy.getTargetAmount())
+            .currentAmount(groupBuy.getCurrentAmount())
             .targetHeadcount(groupBuy.getTargetHeadcount())
             .currentHeadcount(groupBuy.getCurrentHeadcount())
             .deadline(groupBuy.getDeadline())
@@ -602,7 +603,8 @@ public class GroupBuyService {
             .content(groupBuy.getContent())
             .ingredients(groupBuy.getIngredients())
             .category(groupBuy.getCategory())
-            .totalPrice(groupBuy.getTotalPrice())
+            .targetAmount(groupBuy.getTargetAmount())
+            .currentAmount(groupBuy.getCurrentAmount())
             .targetHeadcount(groupBuy.getTargetHeadcount())
             .currentHeadcount(groupBuy.getCurrentHeadcount())
             .deadline(groupBuy.getDeadline())
@@ -640,7 +642,8 @@ public class GroupBuyService {
             .content(groupBuy.getContent())
             .ingredients(groupBuy.getIngredients())
             .category(groupBuy.getCategory())
-            .totalPrice(groupBuy.getTotalPrice())
+            .targetAmount(groupBuy.getTargetAmount())
+            .currentAmount(groupBuy.getCurrentAmount())
             .targetHeadcount(groupBuy.getTargetHeadcount())
             .currentHeadcount(groupBuy.getCurrentHeadcount())
             .deadline(groupBuy.getDeadline())
@@ -679,7 +682,7 @@ public class GroupBuyService {
         if (request.getCategory() == null) {
             throw new CustomException(ErrorCode.INVALID_CATEGORY);
         }
-        if (request.getTotalPrice() == null) {
+        if (request.getTargetAmount() == null) {
             throw new CustomException(ErrorCode.INVALID_TOTAL_PRICE);
         }
         if (request.getTargetHeadcount() == null) {

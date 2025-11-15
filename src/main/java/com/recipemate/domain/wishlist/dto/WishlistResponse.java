@@ -23,7 +23,7 @@ public class WishlistResponse {
     private Long groupBuyId;
     private String title;
     private GroupBuyCategory category;
-    private Integer totalPrice;
+    private Integer targetAmount;
     private Integer targetHeadcount;
     private Integer currentHeadcount;
     private LocalDateTime deadline;
@@ -49,7 +49,7 @@ public class WishlistResponse {
                 .groupBuyId(groupBuy.getId())
                 .title(groupBuy.getTitle())
                 .category(groupBuy.getCategory())
-                .totalPrice(groupBuy.getTotalPrice())
+                .targetAmount(groupBuy.getTargetAmount())
                 .targetHeadcount(groupBuy.getTargetHeadcount())
                 .currentHeadcount(groupBuy.getCurrentHeadcount())
                 .deadline(groupBuy.getDeadline())

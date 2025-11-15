@@ -187,10 +187,10 @@
                         <div class="mb-2">
                             <div class="d-flex justify-content-between align-items-center">
                                 <span class="text-primary fw-bold">
-                                    총 <span th:text="${#numbers.formatInteger(groupBuy.totalPrice, 0, 'COMMA')}"></span>원
+                                    총 <span th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')}"></span>원
                                 </span>
                                 <span class="text-success fw-bold">
-                                    1인당 <span th:text="${#numbers.formatInteger(groupBuy.totalPrice / groupBuy.targetHeadcount, 0, 'COMMA')}"></span>원
+                                    1인당 <span th:text="${#numbers.formatInteger(groupBuy.targetAmount / groupBuy.targetHeadcount, 0, 'COMMA')}"></span>원
                                 </span>
                             </div>
                         </div>

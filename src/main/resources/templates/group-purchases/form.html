@@ -204,15 +204,15 @@
                             </div>
                             
                             <div class="row">
-                                <!-- Total Price -->
+                                <!-- Target Amount -->
                                 <div class="col-md-6 mb-4">
-                                    <label for="totalPrice" class="form-label fw-semibold">
-                                        총 가격 <span class="text-danger">*</span>
+                                    <label for="targetAmount" class="form-label fw-semibold">
+                                        목표 금액 <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group">
                                         <input type="number" 
-                                               id="totalPrice" 
-                                               th:field="*{totalPrice}"
+                                               id="targetAmount" 
+                                               th:field="*{targetAmount}"
                                                class="form-control" 
                                                min="0" 
                                                step="1000"
@@ -464,7 +464,7 @@
     <!-- Price Per Person Calculator -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const totalPriceInput = document.getElementById('totalPrice');
+            const targetAmountInput = document.getElementById('targetAmount');
             const targetHeadcountInput = document.getElementById('targetHeadcount');
             const pricePerPersonAlert = document.getElementById('pricePerPersonAlert');
             const pricePerPersonDisplay = document.getElementById('pricePerPerson');
@@ -478,11 +478,11 @@
             
             // 1인당 가격 계산
             function calculatePricePerPerson() {
-                const totalPrice = parseInt(totalPriceInput.value) || 0;
+                const targetAmount = parseInt(targetAmountInput.value) || 0;
                 const targetHeadcount = parseInt(targetHeadcountInput.value) || 0;
                 
-                if (totalPrice > 0 && targetHeadcount > 0) {
-                    const pricePerPerson = Math.ceil(totalPrice / targetHeadcount);
+                if (targetAmount > 0 && targetHeadcount > 0) {
+                    const pricePerPerson = Math.ceil(targetAmount / targetHeadcount);
                     pricePerPersonDisplay.textContent = pricePerPerson.toLocaleString('ko-KR') + '원';
                     pricePerPersonAlert.style.display = 'block';
                 } else {
@@ -491,7 +491,7 @@
             }
             
             // 입력값 변경 시 자동 계산
-            totalPriceInput.addEventListener('input', calculatePricePerPerson);
+            targetAmountInput.addEventListener('input', calculatePricePerPerson);
             targetHeadcountInput.addEventListener('input', calculatePricePerPerson);
             
             // 페이지 로드 시 초기 계산 (수정 모드인 경우)

@@ -130,7 +130,7 @@
                             </div>
                             
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-primary fw-bold fs-5" th:text="${#numbers.formatInteger(groupBuy.totalPrice, 0, 'COMMA')} + '원'">10,000원</span>
+                                <span class="text-primary fw-bold fs-5" th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')} + '원'">10,000원</span>
                                 <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" class="btn btn-primary btn-sm">
                                     자세히 보기
                                 </a>

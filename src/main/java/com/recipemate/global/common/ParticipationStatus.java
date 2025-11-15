@@ -5,11 +5,9 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum PointType {
-    EARN("적립", "포인트 적립"),
-    USE("사용", "포인트 사용"),
-    CHARGE("충전", "포인트 충전"),
-    REFUND("환불", "포인트 환불");
+public enum ParticipationStatus {
+    PAYMENT_COMPLETED("결제완료", "결제가 완료된 상태"),
+    CANCELLED("취소됨", "참여가 취소된 상태");
 
     private final String displayName;
     private final String description;

@@ -95,18 +95,26 @@
                                                   class="badge bg-success">
                                                 <i class="bi bi-plus-circle"></i> 적립
                                             </span>
-                                            <span th:unless="${history.type == T(com.recipemate.global.common.PointType).EARN}" 
+                                            <span th:if="${history.type == T(com.recipemate.global.common.PointType).CHARGE}" 
+                                                  class="badge bg-primary">
+                                                <i class="bi bi-wallet2"></i> 충전
+                                            </span>
+                                            <span th:if="${history.type == T(com.recipemate.global.common.PointType).REFUND}" 
+                                                  class="badge bg-info">
+                                                <i class="bi bi-arrow-counterclockwise"></i> 환불
+                                            </span>
+                                            <span th:if="${history.type == T(com.recipemate.global.common.PointType).USE}" 
                                                   class="badge bg-danger">
                                                 <i class="bi bi-dash-circle"></i> 사용
                                             </span>
                                         </td>
                                         <td th:text="${history.description}">내용</td>
                                         <td class="text-end">
-                                            <span th:if="${history.type == T(com.recipemate.global.common.PointType).EARN}" 
+                                            <span th:if="${history.type == T(com.recipemate.global.common.PointType).EARN || history.type == T(com.recipemate.global.common.PointType).CHARGE || history.type == T(com.recipemate.global.common.PointType).REFUND}" 
                                                   class="text-success fw-bold">
                                                 +<span th:text="${#numbers.formatInteger(history.amount, 0, 'COMMA')}">100</span>P
                                             </span>
-                                            <span th:unless="${history.type == T(com.recipemate.global.common.PointType).EARN}" 
+                                            <span th:if="${history.type == T(com.recipemate.global.common.PointType).USE}" 
                                                   class="text-danger fw-bold">
                                                 -<span th:text="${#numbers.formatInteger(history.amount, 0, 'COMMA')}">50</span>P
                                             </span>

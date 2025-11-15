@@ -230,7 +230,7 @@ public class SearchService {
         // 1인당 가격 계산
         int pricePerPerson = 0;
         if (groupBuyResponse.getTargetHeadcount() > 0) {
-            pricePerPerson = groupBuyResponse.getTotalPrice() / groupBuyResponse.getTargetHeadcount();
+            pricePerPerson = groupBuyResponse.getTargetAmount() / groupBuyResponse.getTargetHeadcount();
         }
         
         return SearchResultResponse.builder()
@@ -283,7 +283,7 @@ public class SearchService {
         // 1인당 가격 계산
         int pricePerPerson = 0;
         if (groupBuy.getTargetHeadcount() > 0) {
-            pricePerPerson = groupBuy.getTotalPrice() / groupBuy.getTargetHeadcount();
+            pricePerPerson = groupBuy.getTargetAmount() / groupBuy.getTargetHeadcount();
         }
         
         return SearchResultResponse.builder()

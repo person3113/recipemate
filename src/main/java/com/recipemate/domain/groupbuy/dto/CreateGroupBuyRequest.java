@@ -34,7 +34,7 @@ public class CreateGroupBuyRequest {
 
     @NotNull(message = "총 금액은 필수입니다")
     @Min(value = 0, message = "총 금액은 0원 이상이어야 합니다")
-    private Integer totalPrice;
+    private Integer targetAmount;
 
     @NotNull(message = "목표 인원은 필수입니다")
     @Min(value = 2, message = "목표 인원은 2명 이상이어야 합니다")

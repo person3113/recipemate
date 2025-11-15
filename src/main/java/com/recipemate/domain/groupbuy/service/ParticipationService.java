@@ -6,8 +6,12 @@ import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.Participation;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
+import com.recipemate.domain.user.entity.Address;
 import com.recipemate.domain.user.entity.User;
+import com.recipemate.domain.user.repository.AddressRepository;
 import com.recipemate.domain.user.repository.UserRepository;
+import com.recipemate.domain.user.service.PointService;
+import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.event.GroupBuyCompletedEvent;
 import com.recipemate.global.event.ParticipationCancelledEvent;
@@ -38,6 +42,8 @@ public class ParticipationService {
     private final ParticipationRepository participationRepository;
     private final GroupBuyRepository groupBuyRepository;
     private final UserRepository userRepository;
+    private final AddressRepository addressRepository;
+    private final PointService pointService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -55,25 +61,41 @@ public class ParticipationService {
         GroupBuy groupBuy = groupBuyRepository.findByIdWithHost(groupBuyId)
             .orElseThrow(() -> new CustomException(ErrorCode.GROUP_BUY_NOT_FOUND));
 
-        // 2. 중복 참여 체크 (Repository 의존성이 필요한 유일한 비즈니스 검증)
+        // 2. 중복 참여 체크
         if (participationRepository.existsByUserIdAndGroupBuyId(userId, groupBuyId)) {
             throw new CustomException(ErrorCode.ALREADY_PARTICIPATED);
         }
 
-        // 3. 도메인 엔티티에 참여 위임
+        // 3. 배송지 검증 (택배 선택 시)
+        Address address = null;
+        if (request.getSelectedDeliveryMethod() == DeliveryMethod.PARCEL) {
+            if (request.getAddressId() == null) {
+                throw new CustomException(ErrorCode.ADDRESS_REQUIRED_FOR_PARCEL);
+            }
+            address = addressRepository.findByUserIdAndAddressId(userId, request.getAddressId())
+                .orElseThrow(() -> new CustomException(ErrorCode.ADDRESS_NOT_FOUND));
+        }
+
+        // 4. 포인트 결제 처리
+        pointService.usePoints(userId, request.getTotalPayment(), 
+            String.format("공동구매 참여 (공구 ID: %d)", groupBuyId));
+
+        // 5. 도메인 엔티티에 참여 위임
         Participation participation = groupBuy.addParticipant(
             user,
             request.getQuantity(),
-            request.getSelectedDeliveryMethod()
+            request.getSelectedDeliveryMethod(),
+            address,
+            request.getTotalPayment()
         );
 
-        // 4. 참여 정보 저장
+        // 6. 참여 정보 저장
         participationRepository.save(participation);
 
-        // 5. 참여 생성 관련 이벤트 발행 (알림, 포인트, 뱃지 등)
+        // 7. 참여 생성 관련 이벤트 발행 (알림, 포인트, 뱃지 등)
         eventPublisher.publishEvent(new ParticipationCreatedEvent(userId, groupBuyId));
         
-        // 6. 목표 인원 달성 시 알림 이벤트 발행
+        // 8. 목표 인원 달성 시 알림 이벤트 발행
         if (groupBuy.getCurrentHeadcount() >= groupBuy.getTargetHeadcount()) {
             eventPublisher.publishEvent(new GroupBuyCompletedEvent(groupBuyId));
         }
@@ -96,7 +118,15 @@ public class ParticipationService {
         // 2. 도메인 엔티티에 참여 취소 위임
         groupBuy.cancelParticipation(participation);
 
-        // 3. 참여 취소 관련 이벤트 발행 (알림 등)
+        // 3. 포인트 환불 처리 (전액 환불: 재료비 + 택배비)
+        pointService.refundPoints(userId, participation.getTotalPayment(),
+            String.format("공동구매 참여 취소 (공구 ID: %d)", groupBuyId));
+
+        // 4. 공구 금액 차감 (택배비 제외한 재료비만 차감)
+        Integer itemAmount = calculateItemAmountFromParticipation(groupBuy, participation);
+        groupBuy.decreaseCurrentAmount(itemAmount);
+
+        // 5. 참여 취소 관련 이벤트 발행 (알림 등)
         eventPublisher.publishEvent(new ParticipationCancelledEvent(userId, groupBuyId));
     }
 
@@ -127,9 +157,33 @@ public class ParticipationService {
         // 4. 강제 탈퇴 (마감일 제한 없음)
         groupBuy.forceRemoveParticipant(participation);
 
-        // 5. 강제 탈퇴 이벤트 발행 (알림 등)
+        // 5. 포인트 환불 처리
+        pointService.refundPoints(participantUserId, participation.getTotalPayment(),
+            String.format("공동구매 강제 탈퇴 (공구 ID: %d)", groupBuyId));
+
+        // 6. 공구 금액 차감 (택배비 제외한 재료비만 차감)
+        Integer itemAmount = calculateItemAmountFromParticipation(groupBuy, participation);
+        groupBuy.decreaseCurrentAmount(itemAmount);
+
+        // 7. 강제 탈퇴 이벤트 발행 (알림 등)
         eventPublisher.publishEvent(new ParticipationCancelledEvent(participantUserId, groupBuyId));
         log.info("강제 탈퇴 완료 - hostId: {}, groupBuyId: {}, participantUserId: {}", hostId, groupBuyId, participantUserId);
+    }
+
+    /**
+     * 참여 정보로부터 재료비(item amount)만 계산합니다.
+     * 택배 배송인 경우 총 결제금액에서 택배비를 제외한 금액을 반환합니다.
+     * 
+     * @param groupBuy 공동구매 엔티티
+     * @param participation 참여 정보
+     * @return 재료비만 포함된 금액 (택배비 제외)
+     */
+    private Integer calculateItemAmountFromParticipation(GroupBuy groupBuy, Participation participation) {
+        if (participation.getSelectedDeliveryMethod() == DeliveryMethod.PARCEL 
+            && groupBuy.getParcelFee() != null && groupBuy.getParcelFee() > 0) {
+            return participation.getTotalPayment() - groupBuy.getParcelFee();
+        }
+        return participation.getTotalPayment();
     }
 
     @Recover

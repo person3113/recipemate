@@ -240,7 +240,7 @@ public class GroupBuyController {
         formData.setTitle(groupBuy.getTitle());
         formData.setContent(groupBuy.getContent());
         formData.setCategory(groupBuy.getCategory());
-        formData.setTotalPrice(groupBuy.getTotalPrice());
+        formData.setTargetAmount(groupBuy.getTargetAmount());
         formData.setTargetHeadcount(groupBuy.getTargetHeadcount());
         formData.setDeadline(groupBuy.getDeadline());
         formData.setDeliveryMethod(groupBuy.getDeliveryMethod());
@@ -567,6 +567,8 @@ public class GroupBuyController {
         @AuthenticationPrincipal UserDetails userDetails,
         @RequestParam Integer quantity,
         @RequestParam DeliveryMethod deliveryMethod,
+        @RequestParam(required = false) Long addressId,
+        @RequestParam Integer totalPayment,
         RedirectAttributes redirectAttributes
     ) {
         User user = userRepository.findByEmail(userDetails.getUsername())
@@ -576,6 +578,8 @@ public class GroupBuyController {
             ParticipateRequest request = ParticipateRequest.builder()
                 .selectedDeliveryMethod(deliveryMethod)
                 .quantity(quantity)
+                .addressId(addressId)
+                .totalPayment(totalPayment)
                 .build();
             participationService.participate(user.getId(), purchaseId, request);
             redirectAttributes.addFlashAttribute("successMessage", "공동구매에 성공적으로 참여했습니다.");

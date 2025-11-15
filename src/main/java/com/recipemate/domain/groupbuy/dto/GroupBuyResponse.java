@@ -20,7 +20,8 @@ public class GroupBuyResponse {
     private String content;
     private String ingredients; // 재료 목록 (별도 필드)
     private GroupBuyCategory category;
-    private Integer totalPrice;
+    private Integer targetAmount;
+    private Integer currentAmount;
     private Integer targetHeadcount;
     private Integer currentHeadcount;
     private LocalDateTime deadline;
@@ -64,7 +65,8 @@ public class GroupBuyResponse {
                 .content(groupBuy.getContent())
                 .ingredients(groupBuy.getIngredients()) // 재료 목록 추가
                 .category(groupBuy.getCategory())
-                .totalPrice(groupBuy.getTotalPrice())
+                .targetAmount(groupBuy.getTargetAmount())
+                .currentAmount(groupBuy.getCurrentAmount())
                 .targetHeadcount(groupBuy.getTargetHeadcount())
                 .currentHeadcount(groupBuy.getCurrentHeadcount())
                 .deadline(groupBuy.getDeadline())
@@ -99,7 +101,8 @@ public class GroupBuyResponse {
                 .content(groupBuy.getContent())
                 .ingredients(groupBuy.getIngredients())
                 .category(groupBuy.getCategory())
-                .totalPrice(groupBuy.getTotalPrice())
+                .targetAmount(groupBuy.getTargetAmount())
+                .currentAmount(groupBuy.getCurrentAmount())
                 .targetHeadcount(groupBuy.getTargetHeadcount())
                 .currentHeadcount(groupBuy.getCurrentHeadcount())
                 .deadline(groupBuy.getDeadline())

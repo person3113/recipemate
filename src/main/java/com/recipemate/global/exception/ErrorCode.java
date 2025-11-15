@@ -36,6 +36,10 @@ public enum ErrorCode {
     NO_PARTICIPANTS(HttpStatus.BAD_REQUEST, "GROUP-023", "참여 인원이 0명입니다."),
     IMAGE_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "GROUP-024", "이미지는 최대 3장까지만 업로드할 수 있습니다."),
     CANNOT_MODIFY_GROUP_BUY(HttpStatus.BAD_REQUEST, "GROUP-025", "마감 또는 마감 임박 상태의 공동구매는 수정할 수 없습니다."),
+    ADDRESS_REQUIRED_FOR_PARCEL(HttpStatus.BAD_REQUEST, "GROUP-026", "택배 수령 방법을 선택한 경우 배송지는 필수입니다."),
+    
+    ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "ADDRESS-001", "배송지를 찾을 수 없습니다."),
+    UNAUTHORIZED_ADDRESS_ACCESS(HttpStatus.FORBIDDEN, "ADDRESS-002", "배송지 접근 권한이 없습니다."),
     
     RECIPE_NOT_FOUND(HttpStatus.NOT_FOUND, "RECIPE-001", "레시피를 찾을 수 없습니다."),
     

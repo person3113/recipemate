@@ -62,6 +62,12 @@ public enum ErrorCode {
     
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION-001", "알림을 찾을 수 없습니다."),
     
+    DIRECT_MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "DM-001", "쪽지를 찾을 수 없습니다."),
+    CANNOT_SEND_MESSAGE_TO_SELF(HttpStatus.BAD_REQUEST, "DM-002", "자신에게는 쪽지를 보낼 수 없습니다."),
+    EMPTY_CONTENT(HttpStatus.BAD_REQUEST, "DM-003", "메시지 내용은 필수입니다."),
+    CONTENT_TOO_LONG(HttpStatus.BAD_REQUEST, "DM-004", "메시지는 최대 1000자까지 입력 가능합니다."),
+    UNAUTHORIZED_MESSAGE_ACCESS(HttpStatus.FORBIDDEN, "DM-005", "쪽지 접근 권한이 없습니다."),
+
     UNAUTHORIZED(HttpStatus.FORBIDDEN, "COMMON-004", "권한이 없습니다."),
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "COMMON-001", "입력값이 올바르지 않습니다."),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "COMMON-003", "입력값이 유효하지 않습니다."),

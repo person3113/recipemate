@@ -2,6 +2,7 @@ package com.recipemate.domain.user.controller;
 
 import com.recipemate.domain.badge.dto.BadgeResponse;
 import com.recipemate.domain.badge.service.BadgeService;
+import com.recipemate.domain.directmessage.service.DirectMessageService;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.Participation;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
@@ -54,6 +55,7 @@ public class UserController {
     private final WishlistService wishlistService;
     private final RecipeWishlistService recipeWishlistService;
     private final NotificationService notificationService;
+    private final DirectMessageService directMessageService;
     private final UserRepository userRepository;
     private final BadgeService badgeService;
     private final PointService pointService;
@@ -71,8 +73,13 @@ public class UserController {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         UserResponse userResponse = userService.getMyProfile(userDetails.getUsername());
+
+        // 안 읽은 쪽지 개수 조회
+        long unreadMessageCount = directMessageService.getUnreadCount(user.getId());
+
         model.addAttribute("user", userResponse);
         model.addAttribute("currentPoints", user.getPoints());
+        model.addAttribute("unreadMessageCount", unreadMessageCount);
         return "user/my-page";
     }
 

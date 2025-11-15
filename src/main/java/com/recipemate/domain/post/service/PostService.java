@@ -175,10 +175,24 @@ public class PostService {
             unless = "#result.isEmpty()"
     )
     public Page<PostResponse> getPostList(PostCategory category, String keyword, Pageable pageable) {
-        // QueryDSL 커스텀 메서드 호출로 통합
-        Page<PostWithCountsDto> postsWithCounts = postRepository.findAllWithCountsDynamic(category, keyword, pageable);
+        Page<PostWithCountsDto> postsWithCounts;
+        String trimmedKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
 
-        // DTO 변환
+        if (category != null && trimmedKeyword != null) {
+            // 카테고리 + 키워드(댓글 포함) 검색
+            postsWithCounts = postRepository.searchByCategoryAndKeywordWithCounts(category, trimmedKeyword, pageable);
+        } else if (category != null) {
+            // 카테고리만 필터링
+            postsWithCounts = postRepository.findByCategoryWithCounts(category, pageable);
+        } else if (trimmedKeyword != null) {
+            // 키워드만 검색(댓글 포함)
+            postsWithCounts = postRepository.searchByKeywordWithCounts(trimmedKeyword, pageable);
+        } else {
+            // 전체 목록 조회
+            postsWithCounts = postRepository.findAllWithCounts(pageable);
+        }
+
+        // DTO 변환 (from develop branch)
         return postsWithCounts.map(dto -> {
             Post post = dto.getPost();
             return PostResponse.builder()

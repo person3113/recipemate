@@ -1,5 +1,6 @@
 package com.recipemate.domain.post.repository;
 
+import com.recipemate.domain.comment.entity.Comment;
 import com.recipemate.domain.post.dto.PostWithCountsDto;
 import com.recipemate.domain.post.entity.Post;
 import com.recipemate.domain.user.entity.User;
@@ -26,7 +27,7 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
     @Query("SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
             "p, " +
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
-            "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
+            "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p AND c.deletedAt IS NULL)) " +
             "FROM Post p " +
             "LEFT JOIN FETCH p.author " +
             "WHERE p.deletedAt IS NULL")
@@ -35,39 +36,57 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
     @Query("SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
             "p, " +
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
-            "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
+            "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p AND c.deletedAt IS NULL)) " +
             "FROM Post p " +
             "LEFT JOIN FETCH p.author " +
             "WHERE p.category = :category AND p.deletedAt IS NULL")
     Page<PostWithCountsDto> findByCategoryWithCounts(@Param("category") PostCategory category, Pageable pageable);
 
-    @Query("SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
+    @Query(value = "SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
             "p, " +
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
-            "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
+            "(SELECT COUNT(c2.id) FROM Comment c2 WHERE c2.post = p AND c2.deletedAt IS NULL)) " +
             "FROM Post p " +
             "LEFT JOIN FETCH p.author " +
+            "LEFT JOIN Comment c ON c.post = p AND c.deletedAt IS NULL " +
             "WHERE p.deletedAt IS NULL " +
             "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+            "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR (c.id IS NOT NULL AND LOWER(c.content) LIKE LOWER(CONCAT('%', :keyword, '%')))) " +
+            "GROUP BY p.id, p.author",
+            countQuery = "SELECT COUNT(DISTINCT p.id) FROM Post p " +
+                    "LEFT JOIN Comment c ON c.post = p AND c.deletedAt IS NULL " +
+                    "WHERE p.deletedAt IS NULL " +
+                    "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                    "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                    "OR (c.id IS NOT NULL AND LOWER(c.content) LIKE LOWER(CONCAT('%', :keyword, '%'))))")
     Page<PostWithCountsDto> searchByKeywordWithCounts(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
+    @Query(value = "SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
             "p, " +
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
-            "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
+            "(SELECT COUNT(c2.id) FROM Comment c2 WHERE c2.post = p AND c2.deletedAt IS NULL)) " +
             "FROM Post p " +
             "LEFT JOIN FETCH p.author " +
+            "LEFT JOIN Comment c ON c.post = p AND c.deletedAt IS NULL " +
             "WHERE p.category = :category AND p.deletedAt IS NULL " +
             "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+            "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR (c.id IS NOT NULL AND LOWER(c.content) LIKE LOWER(CONCAT('%', :keyword, '%')))) " +
+            "GROUP BY p.id, p.author",
+            countQuery = "SELECT COUNT(DISTINCT p.id) FROM Post p " +
+                    "LEFT JOIN Comment c ON c.post = p AND c.deletedAt IS NULL " +
+                    "WHERE p.category = :category AND p.deletedAt IS NULL " +
+                    "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                    "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+                    "OR (c.id IS NOT NULL AND LOWER(c.content) LIKE LOWER(CONCAT('%', :keyword, '%'))))")
     Page<PostWithCountsDto> searchByCategoryAndKeywordWithCounts(@Param("category") PostCategory category,
                                                                @Param("keyword") String keyword,
                                                                Pageable pageable);
 
     @Query("SELECT new com.recipemate.domain.user.dto.MyPostDto(" +
             "p.id, p.title, p.createdAt, p.viewCount, " +
-            "(SELECT COUNT(c) FROM Comment c WHERE c.post = p), " +
+            "(SELECT COUNT(c) FROM Comment c WHERE c.post = p AND c.deletedAt IS NULL), " +
             "(SELECT COUNT(pl) FROM PostLike pl WHERE pl.post = p)) " +
             "FROM Post p " +
             "WHERE p.author = :user AND p.deletedAt IS NULL")
@@ -85,7 +104,7 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
     @Query("SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
             "p, " +
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
-            "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p)) " +
+            "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p AND c.deletedAt IS NULL)) " +
             "FROM Post p " +
             "LEFT JOIN FETCH p.author " +
             "WHERE p.id IN :postIds AND p.deletedAt IS NULL")
@@ -97,9 +116,12 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
      * @param keyword 검색 키워드
      * @return 검색 결과 개수
      */
-    @Query("SELECT COUNT(p) FROM Post p " +
+    @Query("SELECT COUNT(DISTINCT p) FROM Post p " +
+            "LEFT JOIN Comment c ON c.post = p AND c.deletedAt IS NULL " +
             "WHERE p.deletedAt IS NULL " +
             "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+            "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR (c.id IS NOT NULL AND LOWER(c.content) LIKE LOWER(CONCAT('%', :keyword, '%'))))")
     long countByKeyword(@Param("keyword") String keyword);
 }
+

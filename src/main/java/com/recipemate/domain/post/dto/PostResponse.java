@@ -8,6 +8,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Builder
@@ -28,6 +31,8 @@ public class PostResponse {
     private long likeCount;
     private long commentCount;
     private boolean isLiked;
+    @Builder.Default
+    private List<String> imageUrls = new ArrayList<>();
 
     public static PostResponse from(Post post) {
         return PostResponse.builder()
@@ -44,6 +49,10 @@ public class PostResponse {
                 .likeCount(0)
                 .commentCount(0)
                 .isLiked(false)
+                .imageUrls(post.getImages().stream()
+                        .map(img -> img.getImageUrl())
+                        .collect(Collectors.toList()))
                 .build();
     }
 }
+

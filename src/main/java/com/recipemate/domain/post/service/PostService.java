@@ -7,6 +7,8 @@ import com.recipemate.domain.post.dto.PostResponse;
 import com.recipemate.domain.post.dto.PostWithCountsDto;
 import com.recipemate.domain.post.dto.UpdatePostRequest;
 import com.recipemate.domain.post.entity.Post;
+import com.recipemate.domain.post.entity.PostImage;
+import com.recipemate.domain.post.repository.PostImageRepository;
 import com.recipemate.domain.post.repository.PostRepository;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
@@ -14,6 +16,7 @@ import com.recipemate.global.common.PostCategory;
 import com.recipemate.global.config.CacheConfig;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
+import com.recipemate.global.util.ImageUploadUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -22,6 +25,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +39,8 @@ public class PostService {
     private final UserRepository userRepository;
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
+    private final PostImageRepository postImageRepository;
+    private final ImageUploadUtil imageUploadUtil;
 
     @Transactional
     @CacheEvict(value = CacheConfig.VIEW_COUNTS_CACHE, allEntries = true)
@@ -49,7 +57,22 @@ public class PostService {
                 .build();
 
         Post savedPost = postRepository.save(post);
-        log.debug("Post created and cache evicted");
+        
+        // 이미지 업로드 및 저장
+        if (request.getImageFiles() != null && !request.getImageFiles().isEmpty()) {
+            List<String> imageUrls = imageUploadUtil.uploadImages(request.getImageFiles());
+            for (int i = 0; i < imageUrls.size(); i++) {
+                PostImage postImage = PostImage.builder()
+                        .post(savedPost)
+                        .imageUrl(imageUrls.get(i))
+                        .displayOrder(i)
+                        .build();
+                postImageRepository.save(postImage);
+            }
+        }
+        
+        log.debug("Post created with {} images and cache evicted", 
+                request.getImageFiles() != null ? request.getImageFiles().size() : 0);
         return PostResponse.from(savedPost);
     }
 
@@ -120,6 +143,7 @@ public class PostService {
                 .likeCount(likeCount)
                 .commentCount(commentCount)
                 .isLiked(isLiked)
+                .imageUrls(response.getImageUrls())
                 .build();
     }
 
@@ -138,6 +162,51 @@ public class PostService {
         }
 
         post.update(request.getTitle(), request.getContent(), request.getCategory());
+        
+        // 이미지 삭제 처리
+        if (request.getDeletedImages() != null && !request.getDeletedImages().isEmpty()) {
+            imageUploadUtil.deleteImages(request.getDeletedImages());
+            
+            List<PostImage> existingImages = postImageRepository.findByPostOrderByDisplayOrderAsc(post);
+            List<PostImage> imagesToDelete = existingImages.stream()
+                    .filter(img -> request.getDeletedImages().contains(img.getImageUrl()))
+                    .collect(Collectors.toList());
+            
+            postImageRepository.deleteAll(imagesToDelete);
+        }
+        
+        // 새 이미지 추가
+        if (request.getImageFiles() != null && !request.getImageFiles().isEmpty()) {
+            List<String> newImageUrls = imageUploadUtil.uploadImages(request.getImageFiles());
+            
+            List<PostImage> existingImages = postImageRepository.findByPostOrderByDisplayOrderAsc(post);
+            int startOrder = existingImages.size();
+            
+            for (int i = 0; i < newImageUrls.size(); i++) {
+                PostImage postImage = PostImage.builder()
+                        .post(post)
+                        .imageUrl(newImageUrls.get(i))
+                        .displayOrder(startOrder + i)
+                        .build();
+                postImageRepository.save(postImage);
+            }
+        }
+        
+        // displayOrder 재정렬
+        List<PostImage> allImages = postImageRepository.findByPostOrderByDisplayOrderAsc(post);
+        for (int i = 0; i < allImages.size(); i++) {
+            PostImage img = allImages.get(i);
+            if (img.getDisplayOrder() != i) {
+                PostImage updatedImage = PostImage.builder()
+                        .id(img.getId())
+                        .post(img.getPost())
+                        .imageUrl(img.getImageUrl())
+                        .displayOrder(i)
+                        .build();
+                postImageRepository.save(updatedImage);
+            }
+        }
+        
         log.debug("Post updated and cache evicted");
         return PostResponse.from(post);
     }
@@ -156,8 +225,17 @@ public class PostService {
             throw new CustomException(ErrorCode.UNAUTHORIZED_POST_ACCESS);
         }
 
+        // 이미지 삭제 (Cloudinary에서)
+        List<PostImage> images = postImageRepository.findByPostOrderByDisplayOrderAsc(post);
+        if (!images.isEmpty()) {
+            List<String> imageUrls = images.stream()
+                    .map(PostImage::getImageUrl)
+                    .collect(Collectors.toList());
+            imageUploadUtil.deleteImages(imageUrls);
+        }
+        
         post.delete();
-        log.debug("Post deleted and cache evicted");
+        log.debug("Post deleted with {} images and cache evicted", images.size());
     }
 
     /**
@@ -209,6 +287,9 @@ public class PostService {
                     .likeCount(dto.getLikeCount())
                     .commentCount(dto.getCommentCount())
                     .isLiked(false) // 목록에서는 '좋아요' 여부 확인 불가
+                    .imageUrls(post.getImages().stream()
+                            .map(PostImage::getImageUrl)
+                            .collect(Collectors.toList()))
                     .build();
         });
     }

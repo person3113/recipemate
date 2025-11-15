@@ -11,6 +11,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "posts", indexes = {
         @Index(name = "idx_post_category_created_at", columnList = "category, created_at"),
@@ -45,6 +48,11 @@ public class Post extends BaseEntity {
     @Builder.Default
     @Column(nullable = false)
     private Integer viewCount = 0;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("displayOrder asc")
+    private List<PostImage> images = new ArrayList<>();
 
     //== 비즈니스 로직 ==//
     public void increaseViewCount() {

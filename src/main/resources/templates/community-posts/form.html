@@ -41,9 +41,11 @@
                 <!-- Post Form Card -->
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
-                        <form method="post" 
+                        <form id="postForm" 
+                              method="post" 
                               th:action="${post != null ? '/community-posts/' + post.id : '/community-posts'}"
-                              th:object="${formData}">
+                              th:object="${formData}"
+                              enctype="multipart/form-data">
                             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             
                             <!-- Category -->
@@ -101,6 +103,48 @@
                                 </div>
                             </div>
                             
+                            <!-- Existing Images (수정 모드인 경우) -->
+                            <div th:if="${post != null and post.imageUrls != null and !post.imageUrls.isEmpty()}" class="mb-4">
+                                <label class="form-label fw-semibold">
+                                    기존 이미지 <span class="text-muted small">(삭제할 이미지를 선택하세요)</span>
+                                </label>
+                                <div id="existingImagesContainer" class="row g-2">
+                                    <div th:each="imageUrl, stat : ${post.imageUrls}" class="col-md-4">
+                                        <div class="card existing-image-card" th:data-url="${imageUrl}">
+                                            <img th:src="${imageUrl}" class="card-img-top" alt="게시글 이미지" style="height: 150px; object-fit: cover;">
+                                            <div class="card-body p-2 text-center">
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-danger delete-existing-image-btn"
+                                                        th:data-url="${imageUrl}"
+                                                        onclick="markImageForDeletion(this, this.dataset.url)">
+                                                    <i class="bi bi-trash"></i> 삭제
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Hidden input for deleted images -->
+                                <input type="hidden" id="deletedImagesInput" name="deletedImages" value="">
+                            </div>
+                            
+                            <!-- Image Upload -->
+                            <div class="mb-4">
+                                <label for="imageFiles" class="form-label fw-semibold">
+                                    <span th:text="${post != null ? '새 이미지 추가' : '이미지 업로드'}">이미지 업로드</span>
+                                    <span class="text-muted small">(선택, 최대 3장, 각 5MB)</span>
+                                </label>
+                                <input type="file" 
+                                       id="imageFiles" 
+                                       name="imageFiles"
+                                       class="form-control" 
+                                       multiple 
+                                       accept="image/jpeg,image/png">
+                                <div class="form-text">
+                                    <i class="bi bi-image"></i> JPG, PNG 형식만 업로드 가능하며, 각 파일은 5MB 이하여야 합니다.
+                                </div>
+                                <div id="imagePreviewContainer" class="mt-3 row g-2"></div>
+                            </div>
+                            
                             <!-- Form Actions -->
                             <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-primary px-4">
@@ -138,5 +182,226 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Existing Image Deletion Script -->
+    <script>
+        // 기존 이미지 삭제 마크 (전역 함수로 선언)
+        let deletedImagesArray = [];
+        
+        function markImageForDeletion(button, imageUrl) {
+            // 삭제할 이미지 URL을 배열에 추가
+            if (!deletedImagesArray.includes(imageUrl)) {
+                deletedImagesArray.push(imageUrl);
+            }
+            
+            // Hidden input에 배열을 다중 값으로 추가
+            const deletedImagesInput = document.getElementById('deletedImagesInput');
+            const form = document.getElementById('postForm');
+            
+            // 기존 hidden input 제거
+            const existingInputs = form.querySelectorAll('input[name="deletedImages"]');
+            existingInputs.forEach(input => input.remove());
+            
+            // 각 URL을 개별 hidden input으로 추가
+            deletedImagesArray.forEach(url => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'deletedImages';
+                input.value = url;
+                form.appendChild(input);
+            });
+            
+            // UI에서 카드 제거
+            const card = button.closest('.existing-image-card');
+            if (card) {
+                card.style.opacity = '0.5';
+                button.disabled = true;
+                button.innerHTML = '<i class="bi bi-check"></i> 삭제 예정';
+                button.classList.remove('btn-danger');
+                button.classList.add('btn-secondary');
+            }
+        }
+    </script>
+    
+    <!-- Image Upload and Validation Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const imageFilesInput = document.getElementById('imageFiles');
+            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            
+            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+            const MAX_IMAGE_COUNT = 3;
+            let selectedFiles = [];
+            
+            // 이미지 압축 함수
+            async function compressImage(file, maxWidth = 1024, quality = 0.8) {
+                return new Promise((resolve, reject) => {
+                    // 이미 작은 이미지는 압축하지 않음
+                    if (file.size < 500 * 1024) { // 500KB 미만
+                        resolve(file);
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+                            
+                            // 최대 너비 제한
+                            if (width > maxWidth) {
+                                height = (height * maxWidth) / width;
+                                width = maxWidth;
+                            }
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            
+                            // Blob으로 변환 (JPEG, 품질 80%)
+                            canvas.toBlob((blob) => {
+                                if (blob) {
+                                    const compressedFile = new File([blob], file.name, {
+                                        type: 'image/jpeg',
+                                        lastModified: Date.now()
+                                    });
+                                    console.log(`Image compressed: ${file.name} (${(file.size / 1024).toFixed(1)}KB → ${(blob.size / 1024).toFixed(1)}KB)`);
+                                    resolve(compressedFile);
+                                } else {
+                                    reject(new Error('Failed to compress image'));
+                                }
+                            }, 'image/jpeg', quality);
+                        };
+                        img.onerror = () => reject(new Error('Failed to load image'));
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = () => reject(new Error('Failed to read file'));
+                    reader.readAsDataURL(file);
+                });
+            }
+            
+            // 이미지 파일 검증 및 미리보기
+            if (imageFilesInput && imagePreviewContainer) {
+                imageFilesInput.addEventListener('change', async function(e) {
+                    const files = Array.from(e.target.files);
+                    
+                    // 기존 이미지 개수 계산 (삭제 표시되지 않은 것만)
+                    const existingImageCards = document.querySelectorAll('.existing-image-card');
+                    const existingCount = Array.from(existingImageCards).filter(card => {
+                        return card.style.opacity !== '0.5';
+                    }).length;
+                    
+                    // 총 이미지 개수 검증 (기존 + 새 이미지 <= 3)
+                    if (existingCount + files.length > MAX_IMAGE_COUNT) {
+                        alert(`총 이미지는 최대 ${MAX_IMAGE_COUNT}장까지 가능합니다. (현재 ${existingCount}개 존재, ${files.length}개 추가 시도)`);
+                        e.target.value = '';
+                        return;
+                    }
+                    
+                    // 파일 개수 검증 (새 이미지만)
+                    if (files.length > MAX_IMAGE_COUNT) {
+                        alert(`이미지는 최대 ${MAX_IMAGE_COUNT}장까지 업로드할 수 있습니다.`);
+                        e.target.value = '';
+                        return;
+                    }
+                    
+                    // 파일 크기 및 형식 검증
+                    for (let file of files) {
+                        if (file.size > MAX_FILE_SIZE) {
+                            alert(`${file.name}의 크기가 5MB를 초과합니다. 5MB 이하의 이미지만 업로드 가능합니다.`);
+                            e.target.value = '';
+                            imagePreviewContainer.innerHTML = '';
+                            selectedFiles = [];
+                            return;
+                        }
+                        
+                        if (!['image/jpeg', 'image/png'].includes(file.type)) {
+                            alert(`${file.name}은(는) JPG 또는 PNG 형식이 아닙니다.`);
+                            e.target.value = '';
+                            imagePreviewContainer.innerHTML = '';
+                            selectedFiles = [];
+                            return;
+                        }
+                    }
+                    
+                    // 이미지 압축 (비동기)
+                    const compressedFiles = [];
+                    for (const file of files) {
+                        if (file.type.startsWith('image/')) {
+                            try {
+                                const compressed = await compressImage(file);
+                                compressedFiles.push(compressed);
+                            } catch (error) {
+                                console.error('Image compression failed:', error);
+                                compressedFiles.push(file); // 압축 실패 시 원본 사용
+                            }
+                        } else {
+                            compressedFiles.push(file);
+                        }
+                    }
+                    
+                    // DataTransfer를 사용해 압축된 파일로 교체
+                    const dataTransfer = new DataTransfer();
+                    compressedFiles.forEach(file => dataTransfer.items.add(file));
+                    e.target.files = dataTransfer.files;
+                    
+                    // 유효한 파일들 저장 (압축된 파일)
+                    selectedFiles = compressedFiles;
+                    
+                    // 미리보기 생성
+                    renderImagePreviews();
+                });
+                
+                // 이미지 미리보기 렌더링 함수
+                function renderImagePreviews() {
+                    imagePreviewContainer.innerHTML = '';
+                    selectedFiles.forEach((file, index) => {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const previewCol = document.createElement('div');
+                            previewCol.className = 'col-md-4';
+                            previewCol.innerHTML = `
+                                <div class="card">
+                                    <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;">
+                                    <div class="card-body p-2">
+                                        <p class="small mb-1 text-truncate">${file.name}</p>
+                                        <p class="small text-muted mb-2">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                        <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-image-btn" data-index="${index}">
+                                            <i class="bi bi-trash"></i> 삭제
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            imagePreviewContainer.appendChild(previewCol);
+                            
+                            // 삭제 버튼 이벤트 리스너
+                            previewCol.querySelector('.remove-image-btn').addEventListener('click', function() {
+                                const indexToRemove = parseInt(this.dataset.index);
+                                removeImage(indexToRemove);
+                            });
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                }
+                
+                // 이미지 삭제 함수
+                function removeImage(indexToRemove) {
+                    selectedFiles = selectedFiles.filter((_, index) => index !== indexToRemove);
+                    
+                    // FileList를 DataTransfer로 재구성
+                    const dataTransfer = new DataTransfer();
+                    selectedFiles.forEach(file => dataTransfer.items.add(file));
+                    imageFilesInput.files = dataTransfer.files;
+                    
+                    // 미리보기 업데이트
+                    renderImagePreviews();
+                }
+            }
+        });
+    </script>
 </body>
 </html>

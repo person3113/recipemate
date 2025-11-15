@@ -9,6 +9,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -27,4 +31,8 @@ public class CreatePostRequest {
 
     @NotNull(message = "카테고리는 필수입니다")
     private PostCategory category;
+    
+    @Builder.Default
+    private List<MultipartFile> imageFiles = new ArrayList<>();
 }
+

@@ -189,12 +189,20 @@ public class PostController {
             return "community-posts/form";
         }
         
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        
-        PostResponse response = postService.createPost(user.getId(), request);
-        redirectAttributes.addFlashAttribute("successMessage", "게시글이 성공적으로 작성되었습니다.");
-        return "redirect:/community-posts/" + response.getId();
+        try {
+            User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            
+            PostResponse response = postService.createPost(user.getId(), request);
+            redirectAttributes.addFlashAttribute("successMessage", "게시글이 성공적으로 작성되었습니다.");
+            return "redirect:/community-posts/" + response.getId();
+        } catch (IllegalArgumentException e) {
+            // 이미지 업로드 오류 처리
+            model.addAttribute("formData", request);
+            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("categories", PostCategory.values());
+            return "community-posts/form";
+        }
     }
 
     /**
@@ -223,12 +231,22 @@ public class PostController {
             return "community-posts/form";
         }
         
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        
-        postService.updatePost(user.getId(), postId, request);
-        redirectAttributes.addFlashAttribute("successMessage", "게시글이 성공적으로 수정되었습니다.");
-        return "redirect:/community-posts/" + postId;
+        try {
+            User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            
+            postService.updatePost(user.getId(), postId, request);
+            redirectAttributes.addFlashAttribute("successMessage", "게시글이 성공적으로 수정되었습니다.");
+            return "redirect:/community-posts/" + postId;
+        } catch (IllegalArgumentException e) {
+            // 이미지 업로드 오류 처리
+            model.addAttribute("formData", request);
+            model.addAttribute("errorMessage", e.getMessage());
+            PostResponse post = postService.getPostDetail(postId);
+            model.addAttribute("post", post);
+            model.addAttribute("categories", PostCategory.values());
+            return "community-posts/form";
+        }
     }
 
     /**

@@ -67,6 +67,28 @@
             </div>
             
             <div class="card-body p-4">
+                <!-- Images -->
+                <div th:if="${post.imageUrls != null and !post.imageUrls.isEmpty()}" class="mb-4">
+                    <div id="carouselImages" class="carousel slide" data-bs-ride="carousel">
+                        <div class="carousel-inner rounded">
+                            <div th:each="imageUrl, iterStat : ${post.imageUrls}" 
+                                class="carousel-item" 
+                                th:classappend="${iterStat.first} ? 'active'">
+                                <img th:src="${imageUrl}" class="d-block w-100" alt="게시글 이미지" style="max-height: 500px; object-fit: contain; background-color: #f8f9fa;">
+                            </div>
+                        </div>
+                        <!-- Only show controls if there are multiple images -->
+                        <div th:if="${#lists.size(post.imageUrls) > 1}">
+                            <button class="carousel-control-prev" type="button" data-bs-target="#carouselImages" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon"></span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#carouselImages" data-bs-slide="next">
+                                <span class="carousel-control-next-icon"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="post-content" style="min-height: 200px; white-space: pre-wrap;" th:text="${post.content}">
                     게시글 내용
                 </div>

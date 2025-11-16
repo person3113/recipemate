@@ -1,5 +1,6 @@
 package com.recipemate.domain.user.controller;
 
+import com.recipemate.domain.badge.dto.BadgeChallengeResponse;
 import com.recipemate.domain.badge.dto.BadgeResponse;
 import com.recipemate.domain.badge.service.BadgeService;
 import com.recipemate.domain.directmessage.service.DirectMessageService;
@@ -45,6 +46,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/users")
@@ -161,7 +163,7 @@ public class UserController {
     }
 
     /**
-     * 내 배지 목록 페이지 렌더링
+     * 내 배지 목록 및 도전과제 페이지 렌더링
      * GET /users/me/badges
      */
     @GetMapping("/me/badges")
@@ -169,8 +171,19 @@ public class UserController {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
-        List<BadgeResponse> badges = badgeService.getUserBadges(user.getId());
-        model.addAttribute("badges", badges);
+        List<BadgeChallengeResponse> badgeChallenges = badgeService.getBadgeChallenges(user.getId());
+        
+        List<BadgeChallengeResponse> acquiredBadges = badgeChallenges.stream()
+                .filter(BadgeChallengeResponse::isAcquired)
+                .collect(Collectors.toList());
+
+        List<BadgeChallengeResponse> challenges = badgeChallenges.stream()
+                .filter(b -> !b.isAcquired())
+                .collect(Collectors.toList());
+
+        model.addAttribute("acquiredBadges", acquiredBadges);
+        model.addAttribute("challenges", challenges);
+        
         return "user/badges";
     }
 

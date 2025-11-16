@@ -3,10 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 배지 목록 - RecipeMate</title>
+    <title>배지 도전과제 - RecipeMate</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        .badge-card { 
+            border: 1px solid #ddd; 
+            border-radius: 12px; 
+            padding: 20px; 
+            transition: all 0.3s ease;
+        }
+        .badge-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .badge-card.acquired { 
+            background: linear-gradient(135deg, #e0f7fa 0%, #e1f5fe 100%);
+            border-color: #0288d1;
+        }
+        .badge-card.challenge {
+            background-color: #f8f9fa;
+        }
+        .progress-bar-container { 
+            background-color: #e0e0e0; 
+            border-radius: 10px; 
+            overflow: hidden;
+            height: 24px;
+        }
+        .progress-bar-fill { 
+            background: linear-gradient(90deg, #42a5f5 0%, #1e88e5 100%);
+            height: 100%; 
+            color: white; 
+            text-align: center;
+            line-height: 24px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: width 0.3s ease;
+        }
+        .badge-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+        .badge-icon.acquired {
+            color: #ffd700;
+            text-shadow: 0 2px 4px rgba(255,215,0,0.3);
+        }
+        .badge-icon.locked {
+            color: #9e9e9e;
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -19,9 +65,9 @@
                 <!-- Page Header -->
                 <div class="mb-4">
                     <h1 class="display-6 fw-bold">
-                        <i class="bi bi-trophy-fill text-warning"></i> 내 배지 목록
+                        <i class="bi bi-trophy-fill text-warning"></i> 배지 도전과제
                     </h1>
-                    <p class="text-muted">활동하면서 획득한 배지들을 확인하세요!</p>
+                    <p class="text-muted">활동하면서 배지를 획득하고 도전과제를 완성해보세요!</p>
                 </div>
 
                 <!-- Messages -->
@@ -37,57 +83,85 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
 
-                <!-- Badge List -->
-                <div th:if="${badges != null and !badges.isEmpty()}" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                    <div th:each="badge : ${badges}" class="col">
-                        <div class="card h-100 shadow-sm card-hover">
-                            <div class="card-body text-center">
-                                <!-- Badge Icon -->
-                                <div class="mb-3">
-                                    <i class="bi bi-trophy-fill text-warning" style="font-size: 4rem;"></i>
-                                </div>
-                                
-                                <!-- Badge Name -->
-                                <h5 class="card-title fw-bold" th:text="${badge.displayName}">배지 이름</h5>
-                                
-                                <!-- Badge Description -->
-                                <p class="card-text text-muted" th:text="${badge.description}">배지 설명</p>
-                                
-                                <!-- Acquired Date -->
-                                <div class="mt-3 pt-3 border-top">
-                                    <small class="text-muted">
-                                        <i class="bi bi-calendar-check"></i>
-                                        획득일: <span th:text="${#temporals.format(badge.acquiredAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</span>
-                                    </small>
+                <!-- 획득한 배지 섹션 -->
+                <div class="mb-5">
+                    <h2 class="h4 fw-bold mb-3">
+                        <i class="bi bi-award-fill text-primary"></i> 획득한 배지
+                    </h2>
+                    
+                    <div th:if="${acquiredBadges != null and !acquiredBadges.isEmpty()}" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        <div th:each="badge : ${acquiredBadges}" class="col">
+                            <div class="badge-card acquired h-100">
+                                <div class="text-center">
+                                    <div class="badge-icon acquired">
+                                        <i class="bi bi-trophy-fill"></i>
+                                    </div>
+                                    <h5 class="card-title fw-bold mb-2" th:text="${badge.displayName}">배지 이름</h5>
+                                    <p class="text-muted mb-3" th:text="${badge.description}">배지 설명</p>
+                                    <div class="d-flex justify-content-center align-items-center">
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle-fill"></i> 획득 완료
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    
+                    <div th:if="${acquiredBadges == null or acquiredBadges.isEmpty()}" class="card text-center py-4 shadow-sm">
+                        <div class="card-body">
+                            <i class="bi bi-trophy display-4 text-muted"></i>
+                            <p class="mt-3 mb-0 text-muted">아직 획득한 배지가 없습니다. 도전과제를 확인해보세요!</p>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Empty State -->
-                <div th:if="${badges == null or badges.isEmpty()}" class="card text-center py-5 shadow-sm">
-                    <div class="card-body">
-                        <i class="bi bi-trophy display-1 text-muted"></i>
-                        <h3 class="mt-4 mb-3">아직 획득한 배지가 없습니다</h3>
-                        <p class="text-muted mb-4">
-                            공구에 참여하고, 후기를 작성하여<br>
-                            다양한 배지를 획득해보세요!
-                        </p>
-                        <div class="d-flex gap-2 justify-content-center">
-                            <a href="/group-purchases" class="btn btn-primary">
-                                <i class="bi bi-cart"></i> 공동구매 둘러보기
-                            </a>
-                            <a href="/community-posts" class="btn btn-outline-primary">
-                                <i class="bi bi-chat-dots"></i> 커뮤니티 보기
-                            </a>
+                <hr class="my-5">
+
+                <!-- 도전과제 섹션 -->
+                <div>
+                    <h2 class="h4 fw-bold mb-3">
+                        <i class="bi bi-target text-info"></i> 도전과제
+                    </h2>
+                    
+                    <div th:if="${challenges != null and !challenges.isEmpty()}" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        <div th:each="challenge : ${challenges}" class="col">
+                            <div class="badge-card challenge h-100">
+                                <div class="text-center">
+                                    <div class="badge-icon locked">
+                                        <i class="bi bi-trophy"></i>
+                                    </div>
+                                    <h5 class="card-title fw-bold mb-2" th:text="${challenge.displayName}">도전과제 이름</h5>
+                                    <p class="text-muted mb-3" th:text="${challenge.description}">도전과제 설명</p>
+                                    
+                                    <!-- 진행률 표시 -->
+                                    <div class="mb-2">
+                                        <small class="text-muted">진행률</small>
+                                    </div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar-fill" 
+                                             th:style="'width: ' + (${challenge.currentCount} * 100.0 / ${challenge.goalCount}) + '%;'"
+                                             th:text="${challenge.progress}">
+                                            0/1
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div th:if="${challenges == null or challenges.isEmpty()}" class="card text-center py-4 shadow-sm">
+                        <div class="card-body">
+                            <i class="bi bi-check-all display-4 text-success"></i>
+                            <h4 class="mt-3 mb-2">축하합니다!</h4>
+                            <p class="text-muted mb-0">모든 배지를 획득하셨습니다!</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Back Button -->
-                <div class="mt-4 text-center">
-                    <a th:href="@{/users/me}" class="btn btn-outline-secondary">
+                <div class="mt-5 text-center">
+                    <a th:href="@{/users/me}" class="btn btn-outline-secondary btn-lg">
                         <i class="bi bi-arrow-left"></i> 마이페이지로 돌아가기
                     </a>
                 </div>
@@ -101,3 +175,4 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

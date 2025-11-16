@@ -12,6 +12,8 @@ import com.recipemate.global.event.ParticipationCreatedEvent;
 import com.recipemate.global.event.ReviewCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
@@ -26,6 +28,7 @@ public class BadgeEventListener {
     private final ReviewRepository reviewRepository;
 
     @TransactionalEventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleGroupBuyCreatedEvent(GroupBuyCreatedEvent event) {
         long groupBuyCount = groupBuyRepository.countByHostIdAndStatus(event.getUserId(), GroupBuyStatus.RECRUITING);
         if (groupBuyCount == 1) {
@@ -34,6 +37,7 @@ public class BadgeEventListener {
     }
 
     @TransactionalEventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleParticipationCreatedEvent(ParticipationCreatedEvent event) {
         long count = participationRepository.countByUserId(event.getUserId());
         if (count >= 10) {
@@ -42,6 +46,7 @@ public class BadgeEventListener {
     }
 
     @TransactionalEventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleReviewCreatedEvent(ReviewCreatedEvent event) {
         // 후기 작성자에게 REVIEWER 배지 확인 및 수여
         long reviewCount = reviewRepository.countByReviewerId(event.getReviewerId());

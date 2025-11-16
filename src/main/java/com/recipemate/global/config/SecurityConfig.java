@@ -52,7 +52,8 @@ public class SecurityConfig {
                             "/auth/signup/**",       // Signup API
                             "/auth/logout",          // Logout API
                             "/auth/check-email",     // Email validation (htmx)
-                            "/auth/check-nickname"   // Nickname validation (htmx)
+                            "/auth/check-nickname",  // Nickname validation (htmx)
+                            "/auth/password/**"      // Password reset (all endpoints)
                         ).permitAll()
                         
                         // Public pages (anyone can view)

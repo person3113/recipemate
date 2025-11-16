@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -396,5 +397,24 @@ public class UserService {
         }
 
         userRepository.deleteById(user.getId());
+    }
+
+    /**
+     * 이메일과 전화번호로 사용자 확인 (비밀번호 찾기용)
+     */
+    public Optional<User> verifyUserByEmailAndPhoneNumber(String email, String phoneNumber) {
+        return userRepository.findByEmailAndPhoneNumber(email, phoneNumber);
+    }
+
+    /**
+     * 비밀번호 재설정 (비밀번호 찾기용)
+     */
+    @Transactional
+    public void resetPassword(String email, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        user.changePassword(encodedPassword);
     }
 }

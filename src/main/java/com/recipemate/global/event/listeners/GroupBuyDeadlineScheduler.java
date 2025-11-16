@@ -1,8 +1,8 @@
 package com.recipemate.global.event.listeners;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
-import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.event.GroupBuyDeadlineEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

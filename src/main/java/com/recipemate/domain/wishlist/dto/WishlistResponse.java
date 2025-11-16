@@ -1,10 +1,10 @@
 package com.recipemate.domain.wishlist.dto;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.wishlist.entity.Wishlist;
 import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyCategory;
-import com.recipemate.global.common.GroupBuyStatus;
 import lombok.*;
 
 import java.time.LocalDateTime;

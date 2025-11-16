@@ -1,5 +1,6 @@
 package com.recipemate.domain.search.service;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.GroupBuyImage;
@@ -11,7 +12,6 @@ import com.recipemate.domain.recipe.dto.RecipeListResponse;
 import com.recipemate.domain.recipe.service.RecipeService;
 import com.recipemate.domain.search.dto.SearchResultResponse;
 import com.recipemate.domain.search.dto.UnifiedSearchResponse;
-import com.recipemate.global.common.GroupBuyStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

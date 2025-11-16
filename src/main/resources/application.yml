@@ -3,14 +3,12 @@ spring:
     name: RecipeMate
   profiles:
     active: dev
-    # 개발 환경에서 application-dev.local.yml 자동 로드
     include: dev.local
   servlet:
     multipart:
       enabled: true
-      max-file-size: 5MB      # 개별 파일 최대 크기
-      max-request-size: 15MB  # 전체 요청 최대 크기 (3장 × 5MB)
-      # 폼 필드 개수 제한 (재료가 많은 레시피 대응)
+      max-file-size: 5MB
+      max-request-size: 15MB
       file-size-threshold: 0
 
 # 식품안전나라 API 설정
@@ -26,32 +24,27 @@ cloudinary:
 
 # 레시피 동기화 설정
 recipe:
-  # 초기 데이터 로드 활성화 여부
   init:
     enabled: ${RECIPE_INIT_ENABLED:false}
-    # 강제 초기화 (DB에 데이터가 있어도 재로드)
     force: ${RECIPE_INIT_FORCE:false}
-  # 스케줄링 동기화 활성화 여부
   sync:
     enabled: ${RECIPE_SYNC_ENABLED:false}
-    # 전체 동기화 스케줄 (기본: 매주 일요일 새벽 3시)
     cron: ${RECIPE_SYNC_CRON:0 0 3 * * SUN}
-    # TheMealDB 시간별 동기화
     mealdb:
       hourly:
         enabled: ${RECIPE_MEALDB_HOURLY_ENABLED:false}
       cron: ${RECIPE_MEALDB_CRON:0 0 * * * *}
 
 ---
+
 spring:
   config:
     activate:
       on-profile: dev
   cache:
-    type: none  # Disable cache for dev environment
+    type: none
   datasource:
     driver-class-name: org.h2.Driver
-    # File-based H2: 데이터 영속성 보장, PostgreSQL 호환 모드
     url: jdbc:h2:file:./data/recipemate;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
     password:
@@ -66,33 +59,28 @@ spring:
       path: /h2-console
   jpa:
     hibernate:
-      # update: 데이터 보존하면서 스키마 업데이트
       ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
-        # N+1 문제 해결을 위한 Batch Size 설정
         default_batch_fetch_size: 100
-        # 배치 처리 최적화
         order_inserts: true
         order_updates: true
         batch_versioned_data: true
   thymeleaf:
     cache: false
 
-# 로컬 개발 환경 레시피 설정
 recipe:
   init:
-    # 로컬에서는 기본적으로 초기화 활성화 (데이터 없을 때만 실행)
     enabled: true
     force: false
   sync:
-    # 로컬에서는 스케줄링 비활성화 (필요 시 수동 실행)
     enabled: false
 
 ---
+
 spring:
   config:
     activate:
@@ -100,7 +88,7 @@ spring:
   cache:
     type: redis
     redis:
-      time-to-live: 3600000  # 1 hour in milliseconds
+      time-to-live: 3600000
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/recipemate
@@ -119,27 +107,20 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        # N+1 문제 해결을 위한 Batch Size 설정
         default_batch_fetch_size: 100
-        # 배치 처리 최적화
         order_inserts: true
         order_updates: true
         batch_versioned_data: true
   thymeleaf:
     cache: true
 
-# 운영 환경 레시피 설정
 recipe:
   init:
-    # 운영에서는 기본적으로 초기화 비활성화 (배포 시에만 환경변수로 활성화)
     enabled: ${RECIPE_INIT_ENABLED:false}
     force: false
   sync:
-    # 운영에서는 주 1회 동기화 활성화
     enabled: ${RECIPE_SYNC_ENABLED:true}
-    # 매주 일요일 새벽 3시
     cron: "0 0 3 * * SUN"
     mealdb:
       hourly:
         enabled: false
-

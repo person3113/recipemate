@@ -1,5 +1,6 @@
 package com.recipemate.domain.notification.service;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.notification.dto.NotificationResponse;
 import com.recipemate.domain.notification.entity.Notification;
@@ -8,7 +9,6 @@ import com.recipemate.domain.post.entity.Post;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.EntityType;
-import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.common.NotificationType;
 import com.recipemate.global.common.PostCategory;
 import com.recipemate.global.exception.CustomException;
@@ -30,7 +30,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;

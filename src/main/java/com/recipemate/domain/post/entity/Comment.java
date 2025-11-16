@@ -5,7 +5,7 @@ import com.recipemate.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Entity
+@Entity(name="PostComment")
 @Table(name = "comments")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

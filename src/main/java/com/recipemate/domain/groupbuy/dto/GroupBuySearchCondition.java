@@ -1,7 +1,7 @@
 package com.recipemate.domain.groupbuy.dto;
 
-import com.recipemate.global.common.GroupBuyCategory;
 import com.recipemate.global.common.GroupBuyStatus;
+import com.recipemate.global.common.GroupBuyCategory;
 import lombok.*;
 
 @Getter

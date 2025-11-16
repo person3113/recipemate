@@ -25,6 +25,7 @@ import java.util.List;
 @SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 public class Post extends BaseEntity {
 
     @Id
@@ -74,4 +75,3 @@ public class Post extends BaseEntity {
         return comments.size();
     }
 }
-

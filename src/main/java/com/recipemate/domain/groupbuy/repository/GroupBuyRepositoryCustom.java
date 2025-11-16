@@ -1,8 +1,8 @@
 package com.recipemate.domain.groupbuy.repository;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
-import com.recipemate.global.common.GroupBuyStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

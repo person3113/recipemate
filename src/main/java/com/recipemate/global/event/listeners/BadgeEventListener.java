@@ -1,12 +1,12 @@
 package com.recipemate.global.event.listeners;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.domain.badge.service.BadgeService;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
 import com.recipemate.domain.review.entity.Review;
 import com.recipemate.domain.review.repository.ReviewRepository;
 import com.recipemate.global.common.BadgeType;
-import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.event.GroupBuyCreatedEvent;
 import com.recipemate.global.event.ParticipationCreatedEvent;
 import com.recipemate.global.event.ReviewCreatedEvent;

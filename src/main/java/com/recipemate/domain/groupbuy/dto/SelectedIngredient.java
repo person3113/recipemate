@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
+import java.time.LocalDate;
+
 /**
  * 레시피 기반 공구 생성 시 사용자가 선택한 재료 정보
  */

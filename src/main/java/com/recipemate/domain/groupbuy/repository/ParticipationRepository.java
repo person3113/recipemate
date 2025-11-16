@@ -1,7 +1,7 @@
 package com.recipemate.domain.groupbuy.repository;
 
-import com.recipemate.domain.groupbuy.entity.Participation;
 import com.recipemate.global.common.GroupBuyStatus;
+import com.recipemate.domain.groupbuy.entity.Participation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,9 +1,9 @@
 package com.recipemate.domain.review.entity;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.global.common.BaseEntity;
-import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import jakarta.persistence.*;

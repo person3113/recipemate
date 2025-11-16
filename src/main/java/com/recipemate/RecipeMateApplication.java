@@ -12,8 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class RecipeMateApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(RecipeMateApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(RecipeMateApplication.class, args);
+    }
 }

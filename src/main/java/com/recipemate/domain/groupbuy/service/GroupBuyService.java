@@ -1,5 +1,6 @@
 package com.recipemate.domain.groupbuy.service;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.domain.groupbuy.dto.CreateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
@@ -10,7 +11,6 @@ import com.recipemate.domain.groupbuy.repository.GroupBuyImageRepository;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
-import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.config.CacheConfig;
 import com.recipemate.global.event.GroupBuyCreatedEvent;
 import com.recipemate.global.exception.CustomException;

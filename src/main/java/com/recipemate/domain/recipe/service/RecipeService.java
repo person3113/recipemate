@@ -1,5 +1,6 @@
 package com.recipemate.domain.recipe.service;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
@@ -7,31 +8,24 @@ import com.recipemate.domain.recipe.client.FoodSafetyClient;
 import com.recipemate.domain.recipe.client.TheMealDBClient;
 import com.recipemate.domain.recipe.dto.*;
 import com.recipemate.domain.recipe.entity.Recipe;
-import com.recipemate.domain.recipe.entity.RecipeIngredient;
 import com.recipemate.domain.recipe.entity.RecipeSource;
-import com.recipemate.domain.recipe.entity.RecipeStep;
 import com.recipemate.domain.recipe.repository.RecipeIngredientRepository;
 import com.recipemate.domain.recipe.repository.RecipeRepository;
-import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.config.CacheConfig;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 

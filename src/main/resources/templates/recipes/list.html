@@ -136,60 +136,80 @@
                         </div>
                     </div>
                 </div>
-                
                 <!-- Pagination -->
                 <nav th:if="${recipes.totalCount > pageSize}" aria-label="Recipe pagination" class="mt-4">
                     <ul class="pagination justify-content-center">
-                        <!-- Total pages calculation -->
+
                         <th:block th:with="totalPages=${(recipes.totalCount + pageSize - 1) / pageSize}">
-                            <!-- Previous Button -->
+
+                            <!-- Previous -->
                             <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                                <a class="page-link" 
-                                   th:href="@{/recipes(keyword=${keyword},category=${category},ingredients=${ingredients},sort=${sort},direction=${direction},page=${currentPage - 1},size=${pageSize})}"
-                                   aria-label="Previous">
-                                    <span aria-hidden="true">&laquo;</span>
+                                <a class="page-link"
+                                   th:href="@{/recipes(
+                       keyword=${keyword},
+                       category=${category},
+                       ingredients=${ingredients},
+                       sort=${sort},
+                       direction=${direction},
+                       page=${currentPage - 1},
+                       size=${pageSize}
+                   )}">
+                                    &laquo;
                                 </a>
                             </li>
-                            
-                            <!-- Page Numbers (show max 10 pages) -->
-                            <th:block th:with="startPage=${currentPage - 4 < 0 ? 0 : currentPage - 4}, 
-                                              endPage=${startPage + 9 >= totalPages ? totalPages - 1 : startPage + 9}">
-                                <li th:each="i : ${#numbers.sequence(startPage, endPage)}" 
-                                    class="page-item" 
+
+                            <!-- Page Numbers -->
+                            <th:block th:with="
+                startPage=${currentPage - 4 < 0 ? 0 : currentPage - 4},
+                endPage=${startPage + 9 >= totalPages ? totalPages - 1 : startPage + 9}
+            ">
+                                <li th:each="i : ${#numbers.sequence(startPage, endPage)}"
+                                    class="page-item"
                                     th:classappend="${i == currentPage} ? 'active'">
-                                    <a class="page-link" 
-                                       th:href="@{/recipes(keyword=${keyword},category=${category},ingredients=${ingredients},sort=${sort},direction=${direction},page=${i},size=${pageSize})}"
+                                    <a class="page-link"
+                                       th:href="@{/recipes(
+                           keyword=${keyword},
+                           category=${category},
+                           ingredients=${ingredients},
+                           sort=${sort},
+                           direction=${direction},
+                           page=${i},
+                           size=${pageSize}
+                       )}"
                                        th:text="${i + 1}"></a>
                                 </li>
                             </th:block>
-                            
-                            <!-- Next Button -->
+
+                            <!-- Next -->
                             <li class="page-item" th:classappend="${currentPage >= totalPages - 1} ? 'disabled'">
-                                <a class="page-link" 
-                                   th:href="@{/recipes(keyword=${keyword},category=${category},ingredients=${ingredients},sort=${sort},direction=${direction},page=${currentPage + 1},size=${pageSize})}"
-                                   aria-label="Next">
-                                    <span aria-hidden="true">&raquo;</span>
+                                <a class="page-link"
+                                   th:href="@{/recipes(
+                       keyword=${keyword},
+                       category=${category},
+                       ingredients=${ingredients},
+                       sort=${sort},
+                       direction=${direction},
+                       page=${currentPage + 1},
+                       size=${pageSize}
+                   )}">
+                                    &raquo;
                                 </a>
                             </li>
+
                         </th:block>
+
                     </ul>
-                    
+
                     <!-- Page Info -->
                     <div class="text-center text-muted small">
                         <th:block th:with="totalPages=${(recipes.totalCount + pageSize - 1) / pageSize}">
-                            페이지 <strong th:text="${currentPage + 1}"></strong> / <strong th:text="${totalPages}"></strong>
+                            페이지 <strong th:text="${currentPage + 1}"></strong> /
+                            <strong th:text="${totalPages}"></strong>
                             (총 <strong th:text="${recipes.totalCount}"></strong>개)
                         </th:block>
                     </div>
+
                 </nav>
-            </div>
-        </div>
-        
-        <div th:if="${recipes == null}" class="alert alert-secondary text-center">
-            <i class="bi bi-search" style="font-size: 2rem;"></i>
-            <p class="mt-2 mb-0">검색어를 입력하여 레시피를 찾아보세요.</p>
-        </div>
-    </main>
     
     <!-- Footer Fragment -->
     <div th:replace="~{fragments/footer :: footer}"></div>

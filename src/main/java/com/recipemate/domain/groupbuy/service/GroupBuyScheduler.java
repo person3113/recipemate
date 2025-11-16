@@ -1,5 +1,6 @@
 package com.recipemate.domain.groupbuy.service;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.notification.entity.Notification;
@@ -7,7 +8,6 @@ import com.recipemate.domain.notification.repository.NotificationRepository;
 import com.recipemate.domain.wishlist.entity.Wishlist;
 import com.recipemate.domain.wishlist.repository.WishlistRepository;
 import com.recipemate.global.common.EntityType;
-import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.common.NotificationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

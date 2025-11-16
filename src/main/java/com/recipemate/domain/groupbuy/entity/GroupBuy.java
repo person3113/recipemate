@@ -1,5 +1,6 @@
 package com.recipemate.domain.groupbuy.entity;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.global.common.BaseEntity;
 import com.recipemate.global.common.DeliveryMethod;
@@ -313,5 +314,12 @@ public class GroupBuy extends BaseEntity {
 
     public Boolean getParticipantListPublic() {
         return isParticipantListPublic;
+    }
+
+    public boolean isDeletable() {
+        return this.getCurrentHeadcount() == 0
+                && (this.getStatus() == GroupBuyStatus.CLOSED
+                || this.getStatus() == GroupBuyStatus.COMPLETED
+                || this.getStatus() == GroupBuyStatus.CANCELLED);
     }
 }

@@ -54,7 +54,22 @@
                         </div>
                         
                         <h1 class="fw-bold mb-4" th:text="${groupBuy.title}">공동구매 제목</h1>
-                        
+                        <!-- Delete Button (if deletable) -->
+                        <div class="mb-4" sec:authorize="isAuthenticated()">
+                            <div th:if="${groupBuy.deletable}">
+                                <form th:action="@{|/group-purchases/${groupBuy.id}/delete|}" method="post">
+                                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <button type="submit" class="btn btn-danger w-100">
+                                        <i class="bi bi-trash"></i> 공동구매 삭제하기
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div th:unless="${groupBuy.deletable}">
+                                <p class="text-muted small">※ 현재 상태에서는 삭제할 수 없습니다.</p>
+                            </div>
+                        </div>
+
                         <!-- Progress Bar -->
                         <div class="mb-4">
                             <div class="d-flex justify-content-between text-sm mb-2">

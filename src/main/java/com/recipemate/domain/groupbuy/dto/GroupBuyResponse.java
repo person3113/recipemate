@@ -1,9 +1,9 @@
 package com.recipemate.domain.groupbuy.dto;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyCategory;
-import com.recipemate.global.common.GroupBuyStatus;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -46,7 +46,9 @@ public class GroupBuyResponse {
     // 타임스탬프
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
+
+    private boolean deletable;
+
     // 정적 팩토리 메서드
     public static GroupBuyResponse from(GroupBuy groupBuy, List<String> imageUrls) {
         return GroupBuyResponse.builder()
@@ -73,6 +75,7 @@ public class GroupBuyResponse {
                 .imageUrls(imageUrls)
                 .createdAt(groupBuy.getCreatedAt())
                 .updatedAt(groupBuy.getUpdatedAt())
+                .deletable(groupBuy.isDeletable())
                 .build();
     }
 }

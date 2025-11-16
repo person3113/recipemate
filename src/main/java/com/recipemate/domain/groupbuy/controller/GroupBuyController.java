@@ -1,5 +1,6 @@
 package com.recipemate.domain.groupbuy.controller;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.recipemate.domain.groupbuy.dto.CreateGroupBuyRequest;
@@ -13,10 +14,8 @@ import com.recipemate.domain.groupbuy.service.ParticipationService;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.domain.wishlist.service.WishlistService;
-import com.recipemate.global.common.ApiResponse;
 import com.recipemate.global.common.DeliveryMethod;
 import com.recipemate.global.common.GroupBuyCategory;
-import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import jakarta.validation.Valid;
@@ -24,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -521,4 +519,5 @@ public class GroupBuyController {
     // @GetMapping("/search-fragment") - 검색 결과 HTML 조각 (리스트 아이템들)
     // @GetMapping("/{purchaseId}/participants-fragment") - 참여자 목록 HTML 조각
     // @PostMapping("/{purchaseId}/participate-fragment") - 참여 폼 처리 후 HTML 조각 반환
+
 }

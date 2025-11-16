@@ -8,7 +8,6 @@ import com.recipemate.domain.groupbuy.repository.GroupBuyRepository;
 import com.recipemate.domain.groupbuy.repository.ParticipationRepository;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
-import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.event.GroupBuyCompletedEvent;
 import com.recipemate.global.event.ParticipationCancelledEvent;
 import com.recipemate.global.event.ParticipationCreatedEvent;
@@ -24,8 +23,6 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 

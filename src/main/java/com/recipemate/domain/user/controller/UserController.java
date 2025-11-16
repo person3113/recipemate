@@ -1,5 +1,6 @@
 package com.recipemate.domain.user.controller;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.domain.badge.dto.BadgeResponse;
 import com.recipemate.domain.badge.service.BadgeService;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
@@ -18,7 +19,6 @@ import com.recipemate.domain.user.service.PointService;
 import com.recipemate.domain.user.service.UserService;
 import com.recipemate.domain.wishlist.dto.WishlistResponse;
 import com.recipemate.domain.wishlist.service.WishlistService;
-import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import jakarta.validation.Valid;

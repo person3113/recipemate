@@ -1,5 +1,6 @@
 package com.recipemate.domain.groupbuy.repository;
 
+import com.recipemate.global.common.GroupBuyStatus;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
@@ -9,7 +10,6 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.recipemate.domain.groupbuy.dto.GroupBuySearchCondition;
 import com.recipemate.domain.groupbuy.entity.GroupBuy;
 import com.recipemate.domain.groupbuy.entity.QGroupBuy;
-import com.recipemate.global.common.GroupBuyStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;

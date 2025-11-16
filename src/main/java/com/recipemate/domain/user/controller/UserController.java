@@ -39,6 +39,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -98,8 +99,12 @@ public class UserController {
      */
     @GetMapping("/me/settings")
     public String mySettingsPage(@AuthenticationPrincipal UserDetails userDetails, Model model) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         UserResponse userResponse = userService.getMyProfile(userDetails.getUsername());
         model.addAttribute("user", userResponse);
+        model.addAttribute("commentNotification", user.getCommentNotification());
+        model.addAttribute("groupPurchaseNotification", user.getGroupPurchaseNotification());
         return "user/settings";
     }
 
@@ -129,6 +134,45 @@ public class UserController {
         userService.changePassword(userDetails.getUsername(), request);
         redirectAttributes.addFlashAttribute("message", "비밀번호가 변경되었습니다.");
         return "redirect:/users/me/settings";
+    }
+
+    /**
+     * 알림 설정 변경 처리
+     * POST /users/me/notifications
+     */
+    @PostMapping("/me/notifications")
+    public String updateNotificationSettings(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam Boolean commentNotification,
+            @RequestParam Boolean groupPurchaseNotification,
+            RedirectAttributes redirectAttributes) {
+        userService.updateNotificationSettings(
+            userDetails.getUsername(), 
+            commentNotification, 
+            groupPurchaseNotification
+        );
+        redirectAttributes.addFlashAttribute("message", "알림 설정이 변경되었습니다.");
+        return "redirect:/users/me/settings";
+    }
+
+    /**
+     * 계정 탈퇴 처리
+     * POST /users/me/delete
+     */
+    @PostMapping("/me/delete")
+    public String deleteAccount(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam String password,
+            RedirectAttributes redirectAttributes) {
+        try {
+            userService.deleteAccount(userDetails.getUsername(), password);
+            SecurityContextHolder.clearContext();
+            redirectAttributes.addFlashAttribute("message", "회원 탈퇴가 완료되었습니다.");
+            return "redirect:/";
+        } catch (CustomException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/users/me/settings";
+        }
     }
     
     /**

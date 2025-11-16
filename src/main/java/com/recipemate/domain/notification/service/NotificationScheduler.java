@@ -22,7 +22,7 @@ public class NotificationScheduler {
     private final NotificationRepository notificationRepository;
 
     /**
-     * 30일 이상 지난 읽은 알림을 자동으로 삭제하는 배치 작업
+     * 30일 이상 지난 읽은 알림을 자동으로 소프트 삭제하는 배치 작업
      * 매일 새벽 2시에 실행
      */
     @Scheduled(cron = "0 0 2 * * *")
@@ -43,12 +43,12 @@ public class NotificationScheduler {
                 return;
             }
 
-            // 알림 삭제
-            notificationRepository.deleteAll(oldReadNotifications);
+            // 알림 소프트 삭제
+            oldReadNotifications.forEach(Notification::softDelete);
 
-            log.info("Successfully deleted {} old read notifications", oldReadNotifications.size());
+            log.info("Successfully soft deleted {} old read notifications", oldReadNotifications.size());
         } catch (Exception e) {
-            log.error("Failed to delete old read notifications", e);
+            log.error("Failed to soft delete old read notifications", e);
             throw e;
         }
     }

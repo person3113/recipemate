@@ -11,12 +11,16 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.SQLDelete;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users", indexes = {
         @Index(name = "idx_user_email", columnList = "email"),
         @Index(name = "idx_user_nickname", columnList = "nickname")
 })
+@SQLDelete(sql = "UPDATE users SET deleted_at = NOW() WHERE id = ?")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -56,32 +60,40 @@ public class User extends BaseEntity {
     @Column(nullable = false, length = 20)
     private UserRole role;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean commentNotification = true;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean groupPurchaseNotification = true;
+
     public static User create(String email, String encodedPassword, String nickname, String phoneNumber) {
-        return new User(
-                null,
-                email,
-                encodedPassword,
-                nickname,
-                phoneNumber,
-                null,
-                36.5,
-                0,
-                UserRole.USER
-        );
+        return User.builder()
+                .email(email)
+                .password(encodedPassword)
+                .nickname(nickname)
+                .phoneNumber(phoneNumber)
+                .mannerTemperature(36.5)
+                .points(0)
+                .role(UserRole.USER)
+                .commentNotification(true)
+                .groupPurchaseNotification(true)
+                .build();
     }
 
     public static User createAdmin(String email, String encodedPassword, String nickname, String phoneNumber) {
-        return new User(
-                null,
-                email,
-                encodedPassword,
-                nickname,
-                phoneNumber,
-                null,
-                36.5,
-                0,
-                UserRole.ADMIN
-        );
+        return User.builder()
+                .email(email)
+                .password(encodedPassword)
+                .nickname(nickname)
+                .phoneNumber(phoneNumber)
+                .mannerTemperature(36.5)
+                .points(0)
+                .role(UserRole.ADMIN)
+                .commentNotification(true)
+                .groupPurchaseNotification(true)
+                .build();
     }
 
     public void updateMannerTemperature(double delta) {
@@ -116,5 +128,10 @@ public class User extends BaseEntity {
         }
         this.points -= amount;
         return true;
+    }
+
+    public void updateNotificationSettings(Boolean commentNotification, Boolean groupPurchaseNotification) {
+        this.commentNotification = commentNotification;
+        this.groupPurchaseNotification = groupPurchaseNotification;
     }
 }

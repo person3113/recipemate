@@ -36,6 +36,12 @@
                     <span th:text="${error}"></span>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
+                
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
 
                 <!-- Profile Edit Form -->
                 <div class="card shadow-sm mb-4">
@@ -158,30 +164,222 @@
                 </div>
 
                 <!-- Additional Settings (Future) -->
-                <div class="card shadow-sm">
+                <div class="card shadow-sm mb-4">
                     <div class="card-header bg-white">
                         <h5 class="mb-0">
-                            <i class="bi bi-sliders"></i> 기타 설정
+                            <i class="bi bi-bell"></i> 알림 설정
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="text-muted">
-                            <p><i class="bi bi-info-circle"></i> 향후 다음 기능이 추가될 예정입니다:</p>
-                            <ul>
-                                <li>알림 설정</li>
-                                <li>개인정보 공개 설정</li>
-                                <li>계정 탈퇴</li>
-                            </ul>
+                        <!-- CSRF 토큰 (JavaScript에서 사용) -->
+                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       role="switch" 
+                                       id="commentNotification"
+                                       th:checked="${commentNotification}">
+                                <label class="form-check-label" for="commentNotification">
+                                    <i class="bi bi-chat-dots"></i> 댓글 알림
+                                </label>
+                                <div class="form-text">내 게시글에 댓글이 달리면 알림을 받습니다.</div>
+                            </div>
                         </div>
+                        
+                        <div class="mb-0">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       role="switch" 
+                                       id="groupPurchaseNotification"
+                                       th:checked="${groupPurchaseNotification}">
+                                <label class="form-check-label" for="groupPurchaseNotification">
+                                    <i class="bi bi-cart"></i> 공구 알림
+                                </label>
+                                <div class="form-text">참여 중인 공구의 상태 변경 시 알림을 받습니다.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Deletion -->
+                <div class="card shadow-sm border-danger">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0 text-danger">
+                            <i class="bi bi-exclamation-triangle"></i> 계정 탈퇴
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">계정을 탈퇴하면 모든 정보가 삭제되며 복구할 수 없습니다.</p>
+                        <ul class="text-muted small">
+                            <li>진행 중인 공동구매가 있는 경우 탈퇴할 수 없습니다.</li>
+                            <li>작성한 게시글과 댓글은 "탈퇴한 사용자"로 표시됩니다.</li>
+                            <li>탈퇴 후 같은 이메일로 재가입할 수 없습니다.</li>
+                        </ul>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                            <i class="bi bi-person-x"></i> 회원 탈퇴
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
+    <!-- Delete Account Modal -->
+    <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteAccountModalLabel">
+                        <i class="bi bi-exclamation-triangle"></i> 정말로 탈퇴하시겠습니까?
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/users/me/delete}" method="post" onsubmit="return confirmDelete()">
+                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <div class="modal-body">
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                            <strong>경고:</strong> 이 작업은 되돌릴 수 없습니다.
+                        </div>
+                        <div class="mb-3">
+                            <label for="deletePassword" class="form-label fw-semibold">
+                                비밀번호 확인
+                            </label>
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="deletePassword" 
+                                   name="password" 
+                                   placeholder="현재 비밀번호를 입력하세요" 
+                                   required>
+                            <div class="form-text">계정 탈퇴를 위해 현재 비밀번호를 입력해주세요.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> 취소
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-check-circle"></i> 탈퇴하기
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <div th:replace="~{fragments/footer :: footer}"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function confirmDelete() {
+            return confirm('정말로 회원 탈퇴를 진행하시겠습니까? 이 작업은 되돌릴 수 없습니다.');
+        }
+
+        // 알림 설정 토글 비동기 처리
+        function toggleNotification(settingType, checkbox) {
+            // 토글 애니메이션 시작 (로딩 상태)
+            checkbox.disabled = true;
+            
+            // CSRF 토큰 가져오기
+            const csrfToken = document.querySelector('input[name="_csrf"]').value;
+            
+            // FormData 생성
+            const formData = new FormData();
+            formData.append('settingType', settingType);
+            
+            // 현재 상태 가져오기 (토글된 상태)
+            const commentNotification = settingType === 'comment' ? checkbox.checked : document.getElementById('commentNotification').checked;
+            const groupPurchaseNotification = settingType === 'group' ? checkbox.checked : document.getElementById('groupPurchaseNotification').checked;
+            
+            formData.append('commentNotification', commentNotification);
+            formData.append('groupPurchaseNotification', groupPurchaseNotification);
+            
+            // 비동기 요청
+            fetch('/users/me/notifications', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    // 성공 피드백
+                    showToast('알림 설정이 변경되었습니다.', 'success');
+                } else {
+                    // 실패 시 원복
+                    checkbox.checked = !checkbox.checked;
+                    showToast('알림 설정 변경에 실패했습니다.', 'danger');
+                }
+            })
+            .catch(error => {
+                // 에러 발생 시 원복
+                checkbox.checked = !checkbox.checked;
+                showToast('서버 오류가 발생했습니다.', 'danger');
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                // 로딩 상태 해제
+                checkbox.disabled = false;
+            });
+        }
+        
+        // 토스트 알림 표시 함수
+        function showToast(message, type) {
+            // 기존 토스트 제거
+            const existingToast = document.getElementById('notificationToast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            // 새 토스트 생성
+            const toastHTML = `
+                <div id="notificationToast" class="toast-container position-fixed end-0 p-3" style="top: 80px; z-index: 1050;">
+                    <div class="toast show" role="alert">
+                        <div class="toast-header bg-${type} text-white">
+                            <i class="bi bi-${type === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill'} me-2"></i>
+                            <strong class="me-auto">알림</strong>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                        </div>
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', toastHTML);
+            
+            // 3초 후 자동 제거
+            setTimeout(() => {
+                const toast = document.getElementById('notificationToast');
+                if (toast) {
+                    toast.remove();
+                }
+            }, 3000);
+        }
+        
+        // 체크박스 이벤트 리스너 등록
+        document.addEventListener('DOMContentLoaded', function() {
+            const commentCheckbox = document.getElementById('commentNotification');
+            const groupCheckbox = document.getElementById('groupPurchaseNotification');
+            
+            // 기존 onchange 제거 후 새로운 이벤트 리스너 등록
+            commentCheckbox.removeAttribute('onchange');
+            groupCheckbox.removeAttribute('onchange');
+            
+            commentCheckbox.addEventListener('change', function() {
+                toggleNotification('comment', this);
+            });
+            
+            groupCheckbox.addEventListener('change', function() {
+                toggleNotification('group', this);
+            });
+        });
+    </script>
 </body>
 </html>

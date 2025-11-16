@@ -71,9 +71,10 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
      */
     @Query("SELECT p FROM Participation p " +
            "JOIN FETCH p.groupBuy gb " +
-           "JOIN FETCH gb.host " +
+           "JOIN FETCH gb.host h " +
            "WHERE p.user.id = :userId " +
            "AND (:statuses IS NULL OR gb.status IN :statuses) " +
+           "AND (h.deletedAt IS NULL OR h.deletedAt IS NOT NULL) " +
            "ORDER BY p.participatedAt DESC")
     Page<Participation> findByUserIdWithGroupBuyAndHost(
             @Param("userId") Long userId,

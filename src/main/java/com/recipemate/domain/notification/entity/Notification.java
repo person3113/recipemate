@@ -78,4 +78,11 @@ public class Notification extends BaseEntity {
     public void markAsRead() {
         this.isRead = true;
     }
+
+    /**
+     * 소프트 삭제
+     */
+    public void softDelete() {
+        this.delete();
+    }
 }

@@ -20,7 +20,7 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
 
     List<Post> findByAuthorId(Long authorId);
 
-    @Query("SELECT p FROM Post p LEFT JOIN FETCH p.author WHERE p.id = :id")
+    @Query("SELECT p FROM Post p LEFT JOIN FETCH p.author a WHERE p.id = :id AND (a.deletedAt IS NULL OR a.deletedAt IS NOT NULL)")
     Optional<Post> findByIdWithAuthor(@Param("id") Long id);
 
     // N+1 문제를 해결하기 위해 게시글과 함께 좋아요 수, 댓글 수를 함께 조회
@@ -29,8 +29,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
             "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p AND c.deletedAt IS NULL)) " +
             "FROM Post p " +
-            "LEFT JOIN FETCH p.author " +
-            "WHERE p.deletedAt IS NULL")
+            "LEFT JOIN FETCH p.author a " +
+            "WHERE p.deletedAt IS NULL AND (a.deletedAt IS NULL OR a.deletedAt IS NOT NULL)")
     Page<PostWithCountsDto> findAllWithCounts(Pageable pageable);
 
     @Query("SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
@@ -38,8 +38,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
             "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p AND c.deletedAt IS NULL)) " +
             "FROM Post p " +
-            "LEFT JOIN FETCH p.author " +
-            "WHERE p.category = :category AND p.deletedAt IS NULL")
+            "LEFT JOIN FETCH p.author a " +
+            "WHERE p.category = :category AND p.deletedAt IS NULL AND (a.deletedAt IS NULL OR a.deletedAt IS NOT NULL)")
     Page<PostWithCountsDto> findByCategoryWithCounts(@Param("category") PostCategory category, Pageable pageable);
 
     @Query(value = "SELECT new com.recipemate.domain.post.dto.PostWithCountsDto(" +
@@ -47,9 +47,10 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
             "(SELECT COUNT(c2.id) FROM Comment c2 WHERE c2.post = p AND c2.deletedAt IS NULL)) " +
             "FROM Post p " +
-            "LEFT JOIN FETCH p.author " +
+            "LEFT JOIN FETCH p.author a " +
             "LEFT JOIN Comment c ON c.post = p AND c.deletedAt IS NULL " +
             "WHERE p.deletedAt IS NULL " +
+            "AND (a.deletedAt IS NULL OR a.deletedAt IS NOT NULL) " +
             "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR (c.id IS NOT NULL AND LOWER(c.content) LIKE LOWER(CONCAT('%', :keyword, '%')))) " +
@@ -67,9 +68,10 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
             "(SELECT COUNT(c2.id) FROM Comment c2 WHERE c2.post = p AND c2.deletedAt IS NULL)) " +
             "FROM Post p " +
-            "LEFT JOIN FETCH p.author " +
+            "LEFT JOIN FETCH p.author a " +
             "LEFT JOIN Comment c ON c.post = p AND c.deletedAt IS NULL " +
             "WHERE p.category = :category AND p.deletedAt IS NULL " +
+            "AND (a.deletedAt IS NULL OR a.deletedAt IS NOT NULL) " +
             "AND (LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR (c.id IS NOT NULL AND LOWER(c.content) LIKE LOWER(CONCAT('%', :keyword, '%')))) " +
@@ -106,8 +108,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
             "(SELECT COUNT(pl.id) FROM PostLike pl WHERE pl.post = p), " +
             "(SELECT COUNT(c.id) FROM Comment c WHERE c.post = p AND c.deletedAt IS NULL)) " +
             "FROM Post p " +
-            "LEFT JOIN FETCH p.author " +
-            "WHERE p.id IN :postIds AND p.deletedAt IS NULL")
+            "LEFT JOIN FETCH p.author a " +
+            "WHERE p.id IN :postIds AND p.deletedAt IS NULL AND (a.deletedAt IS NULL OR a.deletedAt IS NOT NULL)")
     List<PostWithCountsDto> findAllWithCountsByIdIn(@Param("postIds") List<Long> postIds);
     
     /**

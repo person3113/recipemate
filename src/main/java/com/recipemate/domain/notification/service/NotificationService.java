@@ -45,6 +45,11 @@ public class NotificationService {
         User recipient = userRepository.findById(recipientId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        // 사용자 알림 설정 확인
+        if (!shouldCreateNotification(recipient, type)) {
+            return;
+        }
+
         // 행동자 조회 (시스템 알림의 경우 null)
         User actor = null;
         if (actorId != null) {
@@ -70,6 +75,23 @@ public class NotificationService {
         );
 
         notificationRepository.save(notification);
+    }
+
+    /**
+     * 알림 타입과 사용자 설정에 따라 알림 생성 여부 결정
+     */
+    private boolean shouldCreateNotification(User recipient, NotificationType type) {
+        return switch (type) {
+            // 댓글 관련 알림 - commentNotification 설정 확인
+            case COMMENT_POST, REPLY_COMMENT, COMMENT_GROUP_BUY -> recipient.getCommentNotification();
+            
+            // 공구 관련 알림 - groupPurchaseNotification 설정 확인
+            case JOIN_GROUP_BUY, CANCEL_PARTICIPATION, GROUP_BUY_DEADLINE, 
+                 GROUP_BUY_COMPLETED, REVIEW_GROUP_BUY -> recipient.getGroupPurchaseNotification();
+            
+            // 쪽지는 항상 알림 생성
+            case DIRECT_MESSAGE -> true;
+        };
     }
 
     /**
@@ -132,7 +154,7 @@ public class NotificationService {
     }
 
     /**
-     * 개별 알림 삭제
+     * 개별 알림 삭제 (소프트 삭제)
      */
     public void deleteNotification(Long userId, Long notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
@@ -143,14 +165,16 @@ public class NotificationService {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
 
-        notificationRepository.delete(notification);
+        // 소프트 삭제
+        notification.softDelete();
     }
 
     /**
-     * 전체 알림 삭제
+     * 전체 알림 삭제 (소프트 삭제)
      */
     public void deleteAllNotifications(Long userId) {
-        notificationRepository.deleteByUserId(userId);
+        List<Notification> notifications = notificationRepository.findActiveNotificationsByUserId(userId);
+        notifications.forEach(Notification::softDelete);
     }
 
     /**

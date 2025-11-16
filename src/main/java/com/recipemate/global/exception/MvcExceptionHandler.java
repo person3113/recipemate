@@ -56,11 +56,13 @@ public class MvcExceptionHandler {
             HttpServletRequest request,
             RedirectAttributes redirectAttributes
     ) {
-        // 첫 번째 에러 메시지 추출
+        // 첫 번째 에러 메시지 추출 (필드명을 한글로 변환)
         String errorMessage = e.getBindingResult().getAllErrors().stream()
                 .map(error -> {
                     if (error instanceof FieldError) {
-                        return ((FieldError) error).getField() + ": " + error.getDefaultMessage();
+                        FieldError fieldError = (FieldError) error;
+                        String fieldName = translateFieldName(fieldError.getField());
+                        return fieldName + ": " + error.getDefaultMessage();
                     }
                     return error.getDefaultMessage();
                 })
@@ -77,6 +79,24 @@ public class MvcExceptionHandler {
 
         // GET 요청인 경우: 에러 페이지 렌더링
         return createErrorView(HttpStatus.BAD_REQUEST, errorMessage);
+    }
+
+    /**
+     * 필드명을 한글로 변환
+     */
+    private String translateFieldName(String fieldName) {
+        switch (fieldName) {
+            case "nickname": return "닉네임";
+            case "phoneNumber": return "전화번호";
+            case "currentPassword": return "현재 비밀번호";
+            case "newPassword": return "새 비밀번호";
+            case "confirmPassword": return "비밀번호 확인";
+            case "email": return "이메일";
+            case "password": return "비밀번호";
+            case "title": return "제목";
+            case "content": return "내용";
+            default: return fieldName;
+        }
     }
 
     /**
@@ -145,14 +165,24 @@ public class MvcExceptionHandler {
             return "/auth/login";
         }
 
-        // /users/me/password
-        if (path.contains("/users/me/password")) {
-            return "/users/me";
+        // /users/me/notifications (알림 설정)
+        if (path.contains("/users/me/notifications")) {
+            return "/users/me/settings";
         }
 
-        // /users/me
+        // /users/me/password (비밀번호 변경)
+        if (path.contains("/users/me/password")) {
+            return "/users/me/settings";
+        }
+
+        // /users/me/delete (계정 탈퇴)
+        if (path.contains("/users/me/delete")) {
+            return "/users/me/settings";
+        }
+
+        // /users/me (프로필 수정 - POST /users/me)
         if (path.contains("/users/me")) {
-            return "/users/me";
+            return "/users/me/settings";
         }
 
         // /group-purchases/{purchaseId}/... 패턴

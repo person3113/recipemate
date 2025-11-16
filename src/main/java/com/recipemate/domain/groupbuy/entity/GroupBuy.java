@@ -52,7 +52,7 @@ public class GroupBuy extends BaseEntity {
     @Column(nullable = false, length = 2000)
     private String content;
     
-    @Column(length = 1000)
+    @Column(columnDefinition = "TEXT")
     private String ingredients; // 구조화된 재료 목록 (별도 저장)
 
     @Enumerated(EnumType.STRING)

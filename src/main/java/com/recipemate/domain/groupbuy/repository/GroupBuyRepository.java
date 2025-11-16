@@ -64,13 +64,13 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSp
 
     boolean existsByHostIdAndRecipeApiIdAndStatus(Long hostId, String recipeApiId, GroupBuyStatus status);
 
-    @Query("SELECT DISTINCT g FROM GroupBuy g LEFT JOIN FETCH g.host WHERE g.id = :id")
+    @Query("SELECT DISTINCT g FROM GroupBuy g LEFT JOIN FETCH g.host h WHERE g.id = :id AND (h.deletedAt IS NULL OR h.deletedAt IS NOT NULL)")
     Optional<GroupBuy> findByIdWithHost(@Param("id") Long id);
 
     @Query("SELECT DISTINCT g FROM GroupBuy g LEFT JOIN FETCH g.images WHERE g.id = :id")
     Optional<GroupBuy> findByIdWithImages(@Param("id") Long id);
 
-    @Query("SELECT g FROM GroupBuy g LEFT JOIN FETCH g.host WHERE g.id = :id")
+    @Query("SELECT g FROM GroupBuy g LEFT JOIN FETCH g.host h WHERE g.id = :id AND (h.deletedAt IS NULL OR h.deletedAt IS NOT NULL)")
     Optional<GroupBuy> findByIdWithHostAndImages(@Param("id") Long id);
 
     // 배치 작업용 쿼리 메서드
@@ -87,4 +87,7 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSp
     List<GroupBuy> findByDeadlineBetweenAndStatusIn(@Param("start") LocalDateTime start,
                                                      @Param("end") LocalDateTime end,
                                                      @Param("statuses") List<GroupBuyStatus> statuses);
+
+    @Query("SELECT CASE WHEN COUNT(g) > 0 THEN true ELSE false END FROM GroupBuy g WHERE g.host.id = :hostId AND g.status IN :statuses AND g.deletedAt IS NULL")
+    boolean existsByHostIdAndStatusInAndNotDeleted(@Param("hostId") Long hostId, @Param("statuses") List<GroupBuyStatus> statuses);
 }

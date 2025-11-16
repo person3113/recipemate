@@ -342,4 +342,44 @@ public class UserService {
         
         SecurityContextHolder.getContext().setAuthentication(newAuth);
     }
+
+    /**
+     * 알림 설정 업데이트
+     */
+    @Transactional
+    public void updateNotificationSettings(String email, Boolean commentNotification, Boolean groupPurchaseNotification) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        user.updateNotificationSettings(commentNotification, groupPurchaseNotification);
+    }
+
+    /**
+     * 계정 탈퇴
+     */
+    @Transactional
+    public void deleteAccount(String email, String password) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new CustomException(ErrorCode.INVALID_PASSWORD);
+        }
+
+        List<GroupBuyStatus> activeStatuses = Arrays.asList(
+            GroupBuyStatus.RECRUITING,
+            GroupBuyStatus.IMMINENT
+        );
+        
+        boolean hasActiveGroupBuys = groupBuyRepository.existsByHostIdAndStatusInAndNotDeleted(
+            user.getId(), 
+            activeStatuses
+        );
+        
+        if (hasActiveGroupBuys) {
+            throw new CustomException(ErrorCode.CANNOT_DELETE_USER_WITH_ACTIVE_GROUP_BUYS);
+        }
+
+        userRepository.deleteById(user.getId());
+    }
 }

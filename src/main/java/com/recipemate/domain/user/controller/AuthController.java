@@ -94,6 +94,40 @@ public class AuthController {
         return "redirect:/auth/login";
     }
     
+    /**
+     * 이메일 중복 확인 (htmx용)
+     * POST /auth/check-email
+     */
+    @PostMapping("/check-email")
+    public String checkEmail(@RequestParam("email") String email, Model model) {
+        try {
+            userService.validateEmailAvailability(email);
+            model.addAttribute("available", true);
+            model.addAttribute("message", "사용 가능한 이메일입니다.");
+        } catch (CustomException e) {
+            model.addAttribute("available", false);
+            model.addAttribute("message", e.getMessage());
+        }
+        return "auth/fragments/validation-message";
+    }
+    
+    /**
+     * 닉네임 중복 확인 (htmx용)
+     * POST /auth/check-nickname
+     */
+    @PostMapping("/check-nickname")
+    public String checkNickname(@RequestParam("nickname") String nickname, Model model) {
+        try {
+            userService.validateNicknameAvailability(nickname);
+            model.addAttribute("available", true);
+            model.addAttribute("message", "사용 가능한 닉네임입니다.");
+        } catch (CustomException e) {
+            model.addAttribute("available", false);
+            model.addAttribute("message", e.getMessage());
+        }
+        return "auth/fragments/validation-message";
+    }
+    
     // ========== htmx용 HTML Fragment 엔드포인트 (향후 추가) ==========
     // TODO: htmx 통합 시 아래 엔드포인트 구현
     // @PostMapping("/signup-fragment") - 회원가입 폼 처리 후 HTML 조각 반환 (인라인 검증 등)

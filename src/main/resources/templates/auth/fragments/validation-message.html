@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <!-- Validation Message Fragment -->
+    <div th:if="${available}" class="text-success small mt-1">
+        <i class="bi bi-check-circle-fill"></i>
+        <span th:text="${message}">사용 가능합니다.</span>
+    </div>
+    <div th:unless="${available}" class="text-danger small mt-1">
+        <i class="bi bi-x-circle-fill"></i>
+        <span th:text="${message}">사용할 수 없습니다.</span>
+    </div>
+</body>
+</html>

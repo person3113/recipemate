@@ -41,7 +41,7 @@ public class AdminUserInitializer implements ApplicationRunner {
     }
 
     private void createAdminUser() {
-        if (userRepository.existsByEmail(ADMIN_EMAIL)) {
+        if (userRepository.existsByEmailIncludingDeleted(ADMIN_EMAIL)) {
             log.info("어드민 계정이 이미 존재합니다: {}", ADMIN_EMAIL);
             return;
         }
@@ -68,7 +68,7 @@ public class AdminUserInitializer implements ApplicationRunner {
     }
 
     private void createTestUser(String email, String password, String nickname, String phone) {
-        if (userRepository.existsByEmail(email)) {
+        if (userRepository.existsByEmailIncludingDeleted(email)) {
             log.info("테스트 계정이 이미 존재합니다: {}", email);
             return;
         }

@@ -59,13 +59,8 @@ public class UserService {
 
     @Transactional
     public UserResponse signup(SignupRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
-        }
-
-        if (userRepository.existsByNickname(request.getNickname())) {
-            throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
-        }
+        validateEmailAvailability(request.getEmail());
+        validateNicknameAvailability(request.getNickname());
 
         String encodedPassword = passwordEncoder.encode(request.getPassword());
 
@@ -79,6 +74,26 @@ public class UserService {
         User savedUser = userRepository.save(user);
 
         return UserResponse.from(savedUser);
+    }
+
+    public void validateEmailAvailability(String email) {
+        userRepository.findByEmailIncludingDeleted(email).ifPresent(user -> {
+            if (user.getDeletedAt() != null) {
+                throw new CustomException(ErrorCode.EMAIL_USED_BY_DELETED_ACCOUNT);
+            } else {
+                throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
+            }
+        });
+    }
+
+    public void validateNicknameAvailability(String nickname) {
+        userRepository.findByNicknameIncludingDeleted(nickname).ifPresent(user -> {
+            if (user.getDeletedAt() != null) {
+                throw new CustomException(ErrorCode.NICKNAME_USED_BY_DELETED_ACCOUNT);
+            } else {
+                throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
+            }
+        });
     }
 
     public UserResponse getMyProfile(String email) {

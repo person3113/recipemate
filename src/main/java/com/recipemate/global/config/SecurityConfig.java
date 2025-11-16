@@ -46,11 +46,13 @@ public class SecurityConfig {
                         
                         // Auth pages and API endpoints
                         .requestMatchers(
-                            "/auth/login",        // Login page
-                            "/auth/signup",       // Signup page
-                            "/auth/login/**",     // Login API
-                            "/auth/signup/**",    // Signup API
-                            "/auth/logout"        // Logout API
+                            "/auth/login",           // Login page
+                            "/auth/signup",          // Signup page
+                            "/auth/login/**",        // Login API
+                            "/auth/signup/**",       // Signup API
+                            "/auth/logout",          // Logout API
+                            "/auth/check-email",     // Email validation (htmx)
+                            "/auth/check-nickname"   // Nickname validation (htmx)
                         ).permitAll()
                         
                         // Public pages (anyone can view)

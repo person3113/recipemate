@@ -15,47 +15,61 @@ import java.util.Optional;
 
 public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSpecificationExecutor<GroupBuy>, GroupBuyRepositoryCustom {
 
-    Page<GroupBuy> findByStatusOrderByDeadlineAsc(GroupBuyStatus status, Pageable pageable);
+    @Query(value = "SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.status = :status ORDER BY g.deadline ASC",
+           countQuery = "SELECT count(g) FROM GroupBuy g WHERE g.status = :status")
+    Page<GroupBuy> findByStatusOrderByDeadlineAsc(@Param("status") GroupBuyStatus status, Pageable pageable);
 
-    Page<GroupBuy> findByStatus(GroupBuyStatus status, Pageable pageable);
+    @Query(value = "SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.status = :status",
+           countQuery = "SELECT count(g) FROM GroupBuy g WHERE g.status = :status")
+    Page<GroupBuy> findByStatus(@Param("status") GroupBuyStatus status, Pageable pageable);
 
-    Page<GroupBuy> findByHostId(Long hostId, Pageable pageable);
+    @Query(value = "SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.host.id = :hostId",
+           countQuery = "SELECT count(g) FROM GroupBuy g WHERE g.host.id = :hostId")
+    Page<GroupBuy> findByHostId(@Param("hostId") Long hostId, Pageable pageable);
     
-    @Query("SELECT g FROM GroupBuy g WHERE g.host.id = :hostId AND g.deletedAt IS NULL ORDER BY g.createdAt DESC")
+    @Query(value = "SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.host.id = :hostId AND g.deletedAt IS NULL ORDER BY g.createdAt DESC",
+           countQuery = "SELECT count(g) FROM GroupBuy g WHERE g.host.id = :hostId AND g.deletedAt IS NULL")
     Page<GroupBuy> findByHostIdAndNotDeleted(@Param("hostId") Long hostId, Pageable pageable);
 
-    List<GroupBuy> findByRecipeApiId(String recipeApiId);
+    @Query("SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.recipeApiId = :recipeApiId")
+    List<GroupBuy> findByRecipeApiId(@Param("recipeApiId") String recipeApiId);
     
-    @Query("SELECT g FROM GroupBuy g WHERE g.recipeApiId = :recipeApiId AND g.deletedAt IS NULL")
+    @Query("SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.recipeApiId = :recipeApiId AND g.deletedAt IS NULL")
     List<GroupBuy> findByRecipeApiIdAndNotDeleted(@Param("recipeApiId") String recipeApiId);
 
-    @Query("SELECT g FROM GroupBuy g WHERE g.category = :category AND g.status = :status ORDER BY g.createdAt DESC")
+    @Query(value = "SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.category = :category AND g.status = :status ORDER BY g.createdAt DESC",
+           countQuery = "SELECT count(g) FROM GroupBuy g WHERE g.category = :category AND g.status = :status")
     Page<GroupBuy> findByCategoryAndStatus(@Param("category") com.recipemate.global.common.GroupBuyCategory category, 
                                            @Param("status") GroupBuyStatus status, 
                                            Pageable pageable);
 
-    @Query("SELECT g FROM GroupBuy g WHERE g.status = :status AND g.deadline BETWEEN :start AND :end ORDER BY g.deadline ASC")
+    @Query("SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.status = :status AND g.deadline BETWEEN :start AND :end ORDER BY g.deadline ASC")
     List<GroupBuy> findImminentGroupBuys(@Param("status") GroupBuyStatus status,
                                          @Param("start") LocalDateTime start,
                                          @Param("end") LocalDateTime end);
 
-    @Query("SELECT g FROM GroupBuy g WHERE g.recipeApiId IS NOT NULL AND g.status = :status ORDER BY g.createdAt DESC")
+    @Query(value = "SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.recipeApiId IS NOT NULL AND g.status = :status ORDER BY g.createdAt DESC",
+           countQuery = "SELECT count(g) FROM GroupBuy g WHERE g.recipeApiId IS NOT NULL AND g.status = :status")
     Page<GroupBuy> findRecipeBasedGroupBuys(@Param("status") GroupBuyStatus status, Pageable pageable);
 
-    @Query("SELECT g FROM GroupBuy g WHERE (g.title LIKE %:keyword% OR g.content LIKE %:keyword%) AND g.status = :status ORDER BY g.createdAt DESC")
+    @Query(value = "SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE (g.title LIKE %:keyword% OR g.content LIKE %:keyword%) AND g.status = :status ORDER BY g.createdAt DESC",
+           countQuery = "SELECT count(g) FROM GroupBuy g WHERE (g.title LIKE %:keyword% OR g.content LIKE %:keyword%) AND g.status = :status")
     Page<GroupBuy> searchByKeyword(@Param("keyword") String keyword, 
                                     @Param("status") GroupBuyStatus status, 
                                     Pageable pageable);
 
-    @Query("SELECT g FROM GroupBuy g WHERE g.status = :status ORDER BY g.currentHeadcount DESC")
+    @Query(value = "SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.status = :status ORDER BY g.currentHeadcount DESC",
+           countQuery = "SELECT count(g) FROM GroupBuy g WHERE g.status = :status")
     Page<GroupBuy> findByStatusOrderByParticipantsDesc(@Param("status") GroupBuyStatus status, Pageable pageable);
 
-    @Query("SELECT g FROM GroupBuy g WHERE g.host.id = :hostId AND g.status IN :statuses ORDER BY g.createdAt DESC")
+    @Query(value = "SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.host.id = :hostId AND g.status IN :statuses ORDER BY g.createdAt DESC",
+           countQuery = "SELECT count(g) FROM GroupBuy g WHERE g.host.id = :hostId AND g.status IN :statuses")
     Page<GroupBuy> findByHostIdAndStatusIn(@Param("hostId") Long hostId, 
                                            @Param("statuses") List<GroupBuyStatus> statuses, 
                                            Pageable pageable);
     
-    @Query("SELECT g FROM GroupBuy g WHERE g.host.id = :hostId AND g.status IN :statuses AND g.deletedAt IS NULL ORDER BY g.createdAt DESC")
+    @Query(value = "SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.host.id = :hostId AND g.status IN :statuses AND g.deletedAt IS NULL ORDER BY g.createdAt DESC",
+           countQuery = "SELECT count(g) FROM GroupBuy g WHERE g.host.id = :hostId AND g.status IN :statuses AND g.deletedAt IS NULL")
     Page<GroupBuy> findByHostIdAndStatusInAndNotDeleted(@Param("hostId") Long hostId, 
                                                          @Param("statuses") List<GroupBuyStatus> statuses, 
                                                          Pageable pageable);
@@ -74,16 +88,16 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSp
     Optional<GroupBuy> findByIdWithHostAndImages(@Param("id") Long id);
 
     // 배치 작업용 쿼리 메서드
-    @Query("SELECT g FROM GroupBuy g WHERE g.status IN :statuses AND g.deadline < :now")
+    @Query("SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.status IN :statuses AND g.deadline < :now")
     List<GroupBuy> findByStatusInAndDeadlineBefore(@Param("statuses") List<GroupBuyStatus> statuses,
                                                     @Param("now") LocalDateTime now);
 
-    @Query("SELECT g FROM GroupBuy g WHERE g.status = :status AND g.deadline BETWEEN :start AND :end")
+    @Query("SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.status = :status AND g.deadline BETWEEN :start AND :end")
     List<GroupBuy> findByStatusAndDeadlineBetween(@Param("status") GroupBuyStatus status,
                                                    @Param("start") LocalDateTime start,
                                                    @Param("end") LocalDateTime end);
 
-    @Query("SELECT g FROM GroupBuy g WHERE g.deadline BETWEEN :start AND :end AND g.status IN :statuses")
+    @Query("SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.deadline BETWEEN :start AND :end AND g.status IN :statuses")
     List<GroupBuy> findByDeadlineBetweenAndStatusIn(@Param("start") LocalDateTime start,
                                                      @Param("end") LocalDateTime end,
                                                      @Param("statuses") List<GroupBuyStatus> statuses);

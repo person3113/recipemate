@@ -11,7 +11,7 @@ import com.recipemate.domain.groupbuy.dto.UpdateGroupBuyRequest;
 import com.recipemate.domain.groupbuy.service.GroupBuyService;
 import com.recipemate.domain.groupbuy.service.ParticipationService;
 import com.recipemate.domain.user.entity.User;
-import com.recipemate.domain.user.repository.UserRepository;
+import com.recipemate.domain.user.service.CustomUserDetailsService.CustomUserDetails;
 import com.recipemate.domain.wishlist.service.WishlistService;
 import com.recipemate.global.common.ApiResponse;
 import com.recipemate.global.common.DeliveryMethod;
@@ -45,7 +45,6 @@ public class GroupBuyController {
     private final GroupBuyService groupBuyService;
     private final ParticipationService participationService;
     private final WishlistService wishlistService;
-    private final UserRepository userRepository;
     private final com.recipemate.domain.recipe.service.RecipeService recipeService;
     private final ObjectMapper objectMapper;
 
@@ -108,10 +107,9 @@ public class GroupBuyController {
     ) {
         // 로그인한 사용자의 ID 조회
         Long currentUserId = null;
-        if (userDetails != null) {
-            User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-            currentUserId = user.getId();
+        if (userDetails instanceof CustomUserDetails) {
+            CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+            currentUserId = customUserDetails.getUserId();
         }
         
         // 사용자 상태 정보를 포함한 공구 상세 조회
@@ -283,8 +281,8 @@ public class GroupBuyController {
         @AuthenticationPrincipal UserDetails userDetails,
         Model model
     ) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
         java.util.List<com.recipemate.domain.groupbuy.dto.ParticipantResponse> participants = 
@@ -351,8 +349,8 @@ public class GroupBuyController {
             return "group-purchases/form";
         }
         
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         GroupBuyResponse response = groupBuyService.createGroupBuy(user.getId(), request);
         redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 생성되었습니다.");
@@ -453,8 +451,8 @@ public class GroupBuyController {
             return "group-purchases/form";
         }
         
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         GroupBuyResponse response = groupBuyService.createRecipeBasedGroupBuy(user.getId(), request);
         redirectAttributes.addFlashAttribute("successMessage", "레시피 기반 공동구매가 성공적으로 생성되었습니다.");
@@ -509,8 +507,8 @@ public class GroupBuyController {
             }
         }
         
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         groupBuyService.updateGroupBuy(user.getId(), purchaseId, request, deletedImages);
         redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 수정되었습니다.");
@@ -526,8 +524,8 @@ public class GroupBuyController {
         @AuthenticationPrincipal UserDetails userDetails,
         RedirectAttributes redirectAttributes
     ) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         groupBuyService.deleteGroupBuy(user.getId(), purchaseId);
         redirectAttributes.addFlashAttribute("successMessage", "공동구매 기록이 삭제되었습니다.");
@@ -543,8 +541,8 @@ public class GroupBuyController {
         @AuthenticationPrincipal UserDetails userDetails,
         RedirectAttributes redirectAttributes
     ) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         try {
             groupBuyService.cancelGroupBuy(user.getId(), purchaseId);
@@ -574,8 +572,8 @@ public class GroupBuyController {
         log.info("공구 참여 요청 - groupBuyId: {}, quantity: {}, deliveryMethod: {}, addressId: {}, totalPayment: {}", 
             purchaseId, quantity, deliveryMethod, addressId, totalPayment);
         
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         try {
             ParticipateRequest request = ParticipateRequest.builder()
@@ -609,8 +607,8 @@ public class GroupBuyController {
         @PathVariable Long purchaseId,
         RedirectAttributes redirectAttributes
     ) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         try {
             participationService.cancelParticipation(user.getId(), purchaseId);
@@ -634,8 +632,8 @@ public class GroupBuyController {
         @PathVariable Long userId,
         RedirectAttributes redirectAttributes
     ) {
-        User host = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User host = customUserDetails.getUser();
         
         try {
             participationService.forceRemoveParticipant(host.getId(), purchaseId, userId);
@@ -662,8 +660,8 @@ public class GroupBuyController {
             return ApiResponse.error(ErrorCode.UNAUTHORIZED.getCode(), ErrorCode.UNAUTHORIZED.getMessage());
         }
         
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         wishlistService.addWishlist(user.getId(), purchaseId);
         return ApiResponse.success(null);
@@ -682,8 +680,8 @@ public class GroupBuyController {
             return ApiResponse.error(ErrorCode.UNAUTHORIZED.getCode(), ErrorCode.UNAUTHORIZED.getMessage());
         }
         
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         wishlistService.removeWishlist(user.getId(), purchaseId);
         return ApiResponse.success(null);
@@ -703,8 +701,8 @@ public class GroupBuyController {
             return ApiResponse.success(false);
         }
         
-        User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         boolean isWishlisted = wishlistService.isWishlisted(user.getId(), purchaseId);
         

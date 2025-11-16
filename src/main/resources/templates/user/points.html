@@ -107,10 +107,14 @@
                                                   class="badge bg-danger">
                                                 <i class="bi bi-dash-circle"></i> 사용
                                             </span>
+                                            <span th:if="${history.type == T(com.recipemate.global.common.PointType).RECIPE_CORRECTION}" 
+                                                  class="badge bg-warning">
+                                                <i class="bi bi-award"></i> 보상
+                                            </span>
                                         </td>
                                         <td th:text="${history.description}">내용</td>
                                         <td class="text-end">
-                                            <span th:if="${history.type == T(com.recipemate.global.common.PointType).EARN || history.type == T(com.recipemate.global.common.PointType).CHARGE || history.type == T(com.recipemate.global.common.PointType).REFUND}" 
+                                            <span th:if="${history.type == T(com.recipemate.global.common.PointType).EARN || history.type == T(com.recipemate.global.common.PointType).CHARGE || history.type == T(com.recipemate.global.common.PointType).REFUND || history.type == T(com.recipemate.global.common.PointType).RECIPE_CORRECTION}" 
                                                   class="text-success fw-bold">
                                                 +<span th:text="${#numbers.formatInteger(history.amount, 0, 'COMMA')}">100</span>P
                                             </span>

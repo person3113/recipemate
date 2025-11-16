@@ -12,6 +12,7 @@ import com.recipemate.domain.recipe.entity.Recipe;
 import com.recipemate.domain.recipe.entity.RecipeSource;
 import com.recipemate.domain.recipe.service.RecipeService;
 import com.recipemate.domain.recipe.service.RecipeSyncService;
+import com.recipemate.domain.user.service.CustomUserDetailsService.CustomUserDetails;
 import com.recipemate.global.common.ApiResponse;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
@@ -58,7 +59,6 @@ public class RecipeController {
 
     private final RecipeService recipeService;
     private final RecipeSyncService recipeSyncService;
-    private final com.recipemate.domain.user.repository.UserRepository userRepository;
     private final com.recipemate.domain.recipe.repository.RecipeRepository recipeRepository;
     private final ObjectMapper objectMapper;
 
@@ -166,19 +166,17 @@ public class RecipeController {
         
         model.addAttribute("recipe", recipe);
         
-        // ✅ 본인이 작성한 레시피인지 확인 (dbId 사용)
+        // 본인이 작성한 레시피인지 확인 (dbId 사용)
         boolean isOwner = false;
-        if (userDetails != null && recipe.getDbId() != null) {
+        if (userDetails instanceof CustomUserDetails && recipe.getDbId() != null) {
             try {
-                com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                        .orElse(null);
+                CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+                com.recipemate.domain.user.entity.User currentUser = customUserDetails.getUser();
 
-                if (currentUser != null) {
-                    Recipe recipeEntity = recipeRepository.findById(recipe.getDbId()).orElse(null);
-                    if (recipeEntity != null) {
-                        // Recipe 엔티티에서 직접 권한 확인 (source 체크 불필요)
-                        isOwner = recipeEntity.canModify(currentUser);
-                    }
+                Recipe recipeEntity = recipeRepository.findById(recipe.getDbId()).orElse(null);
+                if (recipeEntity != null) {
+                    // Recipe 엔티티에서 직접 권한 확인 (source 체크 불필요)
+                    isOwner = recipeEntity.canModify(currentUser);
                 }
             } catch (Exception e) {
                 log.warn("Failed to check recipe ownership", e);
@@ -408,8 +406,8 @@ public class RecipeController {
         }
 
         try {
-            com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+            com.recipemate.domain.user.entity.User currentUser = customUserDetails.getUser();
 
             RecipeDetailResponse created = recipeService.createUserRecipe(request, currentUser);
 
@@ -439,8 +437,8 @@ public class RecipeController {
         }
 
         try {
-            com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+            com.recipemate.domain.user.entity.User currentUser = customUserDetails.getUser();
 
             // DB에서 레시피 엔티티 조회
             Recipe recipeEntity = recipeRepository.findById(id)
@@ -607,8 +605,8 @@ public class RecipeController {
         }
 
         try {
-            com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+            com.recipemate.domain.user.entity.User currentUser = customUserDetails.getUser();
 
             recipeService.updateUserRecipe(id, request, currentUser);
 
@@ -637,8 +635,8 @@ public class RecipeController {
         }
 
         try {
-            com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+            com.recipemate.domain.user.entity.User currentUser = customUserDetails.getUser();
 
             recipeService.deleteUserRecipe(id, currentUser);
 

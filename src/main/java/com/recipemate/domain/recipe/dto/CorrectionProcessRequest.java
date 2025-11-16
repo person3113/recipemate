@@ -1,6 +1,5 @@
 package com.recipemate.domain.recipe.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,6 +12,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CorrectionProcessRequest {
 
-    @NotBlank(message = "처리 사유를 입력해주세요.")
     private String reason;
 }

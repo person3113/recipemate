@@ -5,7 +5,7 @@ import com.recipemate.domain.comment.dto.CreateCommentRequest;
 import com.recipemate.domain.comment.dto.UpdateCommentRequest;
 import com.recipemate.domain.comment.service.CommentService;
 import com.recipemate.domain.user.entity.User;
-import com.recipemate.domain.user.repository.UserRepository;
+import com.recipemate.domain.user.service.CustomUserDetailsService.CustomUserDetails;
 import com.recipemate.global.common.CommentType;
 import com.recipemate.global.common.EntityType;
 import com.recipemate.global.exception.CustomException;
@@ -36,7 +36,6 @@ import java.util.Set;
 public class CommentController {
 
     private final CommentService commentService;
-    private final UserRepository userRepository;
     private final Validator validator;
 
     // ========== 폼 제출 엔드포인트 ==========
@@ -77,8 +76,8 @@ public class CommentController {
         
         // 3. 사용자 조회 및 댓글 생성
         try {
-            User user = userRepository.findByEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+            User user = customUserDetails.getUser();
             
             commentService.createComment(user.getId(), request);
             redirectAttributes.addFlashAttribute("successMessage", "댓글이 성공적으로 작성되었습니다.");
@@ -123,8 +122,8 @@ public class CommentController {
         
         // 3. 사용자 조회 및 댓글 수정
         try {
-            User user = userRepository.findByEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+            User user = customUserDetails.getUser();
             
             commentService.updateComment(user.getId(), commentId, request);
             redirectAttributes.addFlashAttribute("successMessage", "댓글이 성공적으로 수정되었습니다.");
@@ -154,8 +153,8 @@ public class CommentController {
         
         try {
             // 1. 사용자 조회 및 댓글 삭제
-            User user = userRepository.findByEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+            User user = customUserDetails.getUser();
             
             commentService.deleteComment(user.getId(), commentId);
             
@@ -198,8 +197,8 @@ public class CommentController {
         // 현재 로그인한 사용자 ID 조회 (비로그인 시 null)
         Long currentUserId = null;
         if (userDetails != null) {
-            User user = userRepository.findByEmail(userDetails.getUsername())
-                    .orElse(null);
+            CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+            User user = customUserDetails.getUser();
             if (user != null) {
                 currentUserId = user.getId();
             }
@@ -246,8 +245,8 @@ public class CommentController {
         }
         
         // 3. 사용자 조회 및 댓글 생성
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         CommentResponse comment = commentService.createComment(user.getId(), request);
         model.addAttribute("comment", comment);
@@ -285,8 +284,8 @@ public class CommentController {
         }
         
         // 3. 사용자 조회 및 댓글 수정
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         CommentResponse comment = commentService.updateComment(user.getId(), commentId, request);
         
@@ -333,8 +332,8 @@ public class CommentController {
         }
         
         // 3. 사용자 조회 및 대댓글 생성
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         CommentResponse reply = commentService.createComment(user.getId(), request);
         model.addAttribute("reply", reply);
@@ -372,8 +371,8 @@ public class CommentController {
         }
         
         // 3. 사용자 조회 및 대댓글 수정
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         CommentResponse reply = commentService.updateComment(user.getId(), replyId, request);
         model.addAttribute("reply", reply);
@@ -398,8 +397,8 @@ public class CommentController {
             Model model) {
         
         // 1. 사용자 조회 및 대댓글 삭제
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+        User user = customUserDetails.getUser();
         
         commentService.deleteComment(user.getId(), replyId);
         

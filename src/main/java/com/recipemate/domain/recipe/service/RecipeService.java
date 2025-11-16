@@ -250,8 +250,26 @@ public class RecipeService {
     public List<GroupBuyResponse> getRelatedGroupBuys(String recipeApiId) {
         validateRecipeApiId(recipeApiId);
 
-        // 레시피 ID로 삭제되지 않은 공동구매 조회
+        // 레시피 ID로 삭제되지 않은 공동구매 조회 (host도 함께 fetch)
         List<GroupBuy> groupBuys = groupBuyRepository.findByRecipeApiIdAndNotDeleted(recipeApiId);
+
+        if (groupBuys.isEmpty()) {
+            return List.of();
+        }
+
+        // 모든 공동구매 ID 수집
+        List<Long> groupBuyIds = groupBuys.stream()
+                .map(GroupBuy::getId)
+                .collect(Collectors.toList());
+
+        // 리뷰 통계를 한 번에 조회
+        java.util.Map<Long, com.recipemate.domain.review.dto.ReviewStatsDto> statsMap = 
+                reviewRepository.findReviewStatsByGroupBuyIds(groupBuyIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                com.recipemate.domain.review.dto.ReviewStatsDto::getGroupBuyId,
+                                java.util.function.Function.identity()
+                        ));
 
         // 모든 상태의 공동구매를 변환 (마감된 공구의 평점도 표시)
         return groupBuys.stream()
@@ -261,9 +279,10 @@ public class RecipeService {
                             .map(img -> img.getImageUrl())
                             .collect(Collectors.toList());
                     
-                    // 후기 정보 조회
-                    Double averageRating = reviewRepository.findAverageRatingByGroupBuyId(gb.getId());
-                    long reviewCount = reviewRepository.countByGroupBuyId(gb.getId());
+                    // 리뷰 통계 가져오기 (없으면 기본값 0)
+                    com.recipemate.domain.review.dto.ReviewStatsDto stats = statsMap.get(gb.getId());
+                    Double averageRating = stats != null ? stats.getAverageRating() : 0.0;
+                    int reviewCount = stats != null ? stats.getReviewCount().intValue() : 0;
                     
                     return GroupBuyResponse.builder()
                             .id(gb.getId())
@@ -288,7 +307,7 @@ public class RecipeService {
                             .recipeImageUrl(gb.getRecipeImageUrl())
                             .imageUrls(imageUrls)
                             .averageRating(averageRating)
-                            .reviewCount((int) reviewCount)
+                            .reviewCount(reviewCount)
                             .createdAt(gb.getCreatedAt())
                             .updatedAt(gb.getUpdatedAt())
                             .build();
@@ -622,11 +641,21 @@ public class RecipeService {
      * API ID로 레시피 상세 조회 (DB 우선)
      * DB에 있으면 DB에서 조회, 없으면 외부 API 호출
      * 
-     * @param apiId API ID (meal-{id} 또는 food-{id} 형식)
+     * @param apiId API ID (meal-{id}, food-{id}, 또는 숫자 ID)
      * @return 레시피 상세 정보
      */
     public RecipeDetailResponse getRecipeDetailByApiId(String apiId) {
         validateApiId(apiId);
+        
+        // 사용자 레시피인 경우 (숫자 ID)
+        if (!apiId.startsWith(MEAL_PREFIX) && !apiId.startsWith(FOOD_PREFIX)) {
+            try {
+                Long recipeId = Long.parseLong(apiId);
+                return getRecipeDetailById(recipeId);
+            } catch (NumberFormatException e) {
+                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            }
+        }
         
         // DB에서 먼저 조회 시도
         RecipeSource source;
@@ -635,11 +664,9 @@ public class RecipeService {
         if (apiId.startsWith(MEAL_PREFIX)) {
             source = RecipeSource.MEAL_DB;
             sourceApiId = apiId.substring(MEAL_PREFIX.length());
-        } else if (apiId.startsWith(FOOD_PREFIX)) {
+        } else {
             source = RecipeSource.FOOD_SAFETY;
             sourceApiId = apiId.substring(FOOD_PREFIX.length());
-        } else {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         
         // DB에서 조회 시도
@@ -876,14 +903,20 @@ public class RecipeService {
 
     /**
      * API ID 유효성 검증
+     * meal-{id}, food-{id}, 또는 숫자 ID(사용자 레시피) 허용
      */
     private void validateApiId(String apiId) {
         if (apiId == null || apiId.trim().isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         
+        // meal- 또는 food- prefix가 있거나, 숫자로만 구성된 경우 유효
         if (!apiId.startsWith(MEAL_PREFIX) && !apiId.startsWith(FOOD_PREFIX)) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            try {
+                Long.parseLong(apiId); // 숫자 형식 검증 (사용자 레시피 ID)
+            } catch (NumberFormatException e) {
+                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            }
         }
     }
 

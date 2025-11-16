@@ -80,5 +80,15 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
      */
     @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END FROM Review r WHERE r.reviewer.id = :reviewerId AND r.groupBuy.id = :groupBuyId AND r.deletedAt IS NOT NULL")
     boolean existsDeletedReviewByReviewerIdAndGroupBuyId(@Param("reviewerId") Long reviewerId, @Param("groupBuyId") Long groupBuyId);
+
+    /**
+     * 여러 공구의 리뷰 통계를 한 번에 조회 (N+1 문제 해결)
+     * GROUP BY를 사용하여 각 공구별 평균 평점과 리뷰 개수를 계산
+     */
+    @Query("SELECT new com.recipemate.domain.review.dto.ReviewStatsDto(r.groupBuy.id, AVG(r.rating), COUNT(r.id)) " +
+           "FROM Review r " +
+           "WHERE r.groupBuy.id IN :groupBuyIds AND r.deletedAt IS NULL " +
+           "GROUP BY r.groupBuy.id")
+    List<com.recipemate.domain.review.dto.ReviewStatsDto> findReviewStatsByGroupBuyIds(@Param("groupBuyIds") List<Long> groupBuyIds);
 }
 

@@ -526,11 +526,23 @@ public class GroupBuyService {
                     java.util.stream.Collectors.mapping(GroupBuyImage::getImageUrl, java.util.stream.Collectors.toList())
                 ));
         
+        // N+1 문제 해결: 모든 공구의 리뷰 통계를 한 번에 조회
+        java.util.Map<Long, com.recipemate.domain.review.dto.ReviewStatsDto> reviewStatsMap = 
+            reviewRepository.findReviewStatsByGroupBuyIds(groupBuyIds)
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                    com.recipemate.domain.review.dto.ReviewStatsDto::getGroupBuyId, 
+                    java.util.function.Function.identity()
+                ));
+        
         // Response DTO로 변환
         return popularGroupBuys.stream()
                 .map(groupBuy -> {
                     List<String> imageUrls = imageMap.getOrDefault(groupBuy.getId(), List.of());
-                    return mapToResponse(groupBuy, imageUrls);
+                    com.recipemate.domain.review.dto.ReviewStatsDto stats = reviewStatsMap.get(groupBuy.getId());
+                    Double avgRating = stats != null ? stats.getAverageRating() : 0.0;
+                    int reviewCount = stats != null ? stats.getReviewCount().intValue() : 0;
+                    return mapToResponseWithStats(groupBuy, imageUrls, avgRating, reviewCount);
                 })
                 .toList();
     }
@@ -590,10 +602,11 @@ public class GroupBuyService {
     }
 
     /**
-     * Entity를 Response DTO로 변환
+     * Entity를 Response DTO로 변환 (단일 공구 조회용)
+     * 주의: 리스트 조회 시에는 mapToResponseWithStats를 사용하여 N+1 문제를 방지해야 함
      */
     private GroupBuyResponse mapToResponse(GroupBuy groupBuy, List<String> imageUrls) {
-        // 후기 정보 조회
+        // 후기 정보 조회 (단일 공구 조회 시에만 사용)
         Double averageRating = reviewRepository.findAverageRatingByGroupBuyId(groupBuy.getId());
         long reviewCount = reviewRepository.countByGroupBuyId(groupBuy.getId());
         
@@ -628,11 +641,12 @@ public class GroupBuyService {
     }
 
     /**
-     * Entity를 Response DTO로 변환 (사용자 상태 정보 포함)
+     * Entity를 Response DTO로 변환 (사용자 상태 정보 포함, 단일 공구 조회용)
+     * 주의: 리스트 조회 시에는 배치 조회를 사용하여 N+1 문제를 방지해야 함
      */
     private GroupBuyResponse mapToResponseWithUserStatus(GroupBuy groupBuy, List<String> imageUrls, 
                                                           boolean isHost, boolean isParticipant, boolean isCancellable) {
-        // 후기 정보 조회
+        // 후기 정보 조회 (단일 공구 조회 시에만 사용)
         Double averageRating = reviewRepository.findAverageRatingByGroupBuyId(groupBuy.getId());
         long reviewCount = reviewRepository.countByGroupBuyId(groupBuy.getId());
         

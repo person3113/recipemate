@@ -16,8 +16,9 @@ import java.util.Map;
  * JSON 응답만 반환
  * 
  * Note: MVC 컨트롤러의 예외는 MvcExceptionHandler에서 처리
+ * @RestController 또는 @ResponseBody가 붙은 메서드만 처리
  */
-@RestControllerAdvice(basePackages = "com.recipemate.domain.recipe")
+@RestControllerAdvice(annotations = org.springframework.web.bind.annotation.RestController.class)
 public class ApiExceptionHandler {
 
     /**

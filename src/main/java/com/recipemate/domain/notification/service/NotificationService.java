@@ -3,6 +3,8 @@ package com.recipemate.domain.notification.service;
 import com.recipemate.domain.notification.dto.NotificationResponse;
 import com.recipemate.domain.notification.entity.Notification;
 import com.recipemate.domain.notification.repository.NotificationRepository;
+import com.recipemate.domain.recipe.entity.RecipeCorrection;
+import com.recipemate.domain.recipe.repository.RecipeCorrectionRepository;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.global.common.EntityType;
@@ -25,6 +27,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final RecipeCorrectionRepository recipeCorrectionRepository;
 
     /**
      * 알림 생성
@@ -61,7 +64,7 @@ public class NotificationService {
         String content = generateNotificationContent(type, actor);
 
         // URL 생성
-        String url = generateNotificationUrl(relatedEntityType, relatedEntityId);
+        String url = generateNotificationUrl(type, relatedEntityType, relatedEntityId);
 
         // 알림 저장
         Notification notification = Notification.create(
@@ -207,10 +210,29 @@ public class NotificationService {
     }
 
     /**
-     * 엔티티 타입에 따른 URL 생성
+     * 알림 타입과 엔티티 타입에 따른 URL 생성
      */
-    private String generateNotificationUrl(EntityType entityType, Long entityId) {
-        if (entityType == null || entityId == null) {
+    private String generateNotificationUrl(NotificationType notificationType, EntityType entityType, Long entityId) {
+        if (entityId == null) {
+            return null;
+        }
+
+        // RECIPE_CORRECTION 타입은 특별 처리: correction ID -> recipe API ID로 변환
+        if (notificationType == NotificationType.RECIPE_CORRECTION_APPROVED || 
+            notificationType == NotificationType.RECIPE_CORRECTION_REJECTED) {
+            
+            RecipeCorrection correction = recipeCorrectionRepository.findById(entityId)
+                    .orElse(null);
+            
+            if (correction != null && correction.getRecipe() != null) {
+                String recipeApiId = correction.getRecipe().getApiId();
+                return "/recipes/" + recipeApiId;
+            }
+            return null;
+        }
+
+        // 일반적인 엔티티 타입별 URL 생성
+        if (entityType == null) {
             return null;
         }
 

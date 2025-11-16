@@ -249,4 +249,20 @@ public class Recipe extends BaseEntity {
         }
         this.lastSyncedAt = LocalDateTime.now();
     }
+
+    /**
+     * API ID 반환 (URL 생성용)
+     * - 사용자 레시피: DB ID
+     * - TheMealDB: meal-{sourceApiId}
+     * - 식품안전나라: food-{sourceApiId}
+     */
+    public String getApiId() {
+        if (this.sourceApi == RecipeSource.USER) {
+            return String.valueOf(this.id);
+        } else if (this.sourceApi == RecipeSource.MEAL_DB) {
+            return "meal-" + this.sourceApiId;
+        } else {
+            return "food-" + this.sourceApiId;
+        }
+    }
 }

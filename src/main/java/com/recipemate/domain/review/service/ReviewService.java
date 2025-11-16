@@ -14,6 +14,7 @@ import com.recipemate.global.event.ReviewCreatedEvent;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -81,7 +83,10 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         // 8. 후기 생성 관련 이벤트 발행 (매너온도, 알림, 포인트, 뱃지 등)
-        eventPublisher.publishEvent(new ReviewCreatedEvent(savedReview));
+        ReviewCreatedEvent event = new ReviewCreatedEvent(savedReview);
+        log.info("ReviewCreatedEvent 발행 - ReviewId: {}, HostId: {}, Rating: {}", 
+            savedReview.getId(), event.getHostId(), savedReview.getRating());
+        eventPublisher.publishEvent(event);
 
         return ReviewResponse.from(savedReview);
     }
@@ -89,6 +94,7 @@ public class ReviewService {
     /**
      * 후기 수정
      * - 작성자만 수정 가능
+     * - 별점 변경 시 매너온도 재계산
      */
     @Transactional
     public ReviewResponse updateReview(Long userId, Long reviewId, UpdateReviewRequest request) {
@@ -105,8 +111,13 @@ public class ReviewService {
             throw new CustomException(ErrorCode.UNAUTHORIZED_REVIEW_ACCESS);
         }
 
-        // 4. 후기 수정
-        review.update(request.getRating(), request.getContent());
+        // 4. 후기 수정 (기존 별점 반환)
+        Integer oldRating = review.update(request.getRating(), request.getContent());
+
+        // 5. 별점이 변경된 경우 매너온도 재계산 이벤트 발행
+        if (request.getRating() != null && !oldRating.equals(request.getRating())) {
+            eventPublisher.publishEvent(new com.recipemate.global.event.ReviewUpdatedEvent(review, oldRating));
+        }
 
         return ReviewResponse.from(review);
     }
@@ -114,6 +125,7 @@ public class ReviewService {
     /**
      * 후기 삭제 (소프트 삭제)
      * - 작성자만 삭제 가능
+     * - 매너온도 원상복귀
      */
     @Transactional
     public void deleteReview(Long userId, Long reviewId) {
@@ -130,7 +142,12 @@ public class ReviewService {
             throw new CustomException(ErrorCode.UNAUTHORIZED_REVIEW_ACCESS);
         }
 
-        // 4. 후기 소프트 삭제
+        // 4. 후기 삭제 이벤트 발행 (매너온도 원상복귀)
+        eventPublisher.publishEvent(new com.recipemate.global.event.ReviewDeletedEvent(review));
+        log.info("ReviewDeletedEvent 발행 - ReviewId: {}, HostId: {}, Rating: {}", 
+            review.getId(), review.getGroupBuy().getHost().getId(), review.getRating());
+
+        // 5. 후기 소프트 삭제
         review.softDelete();
     }
 

@@ -72,7 +72,13 @@ public class Review extends BaseEntity {
     }
 
     //== 수정 메서드 ==//
-    public void update(Integer rating, String content) {
+    /**
+     * 후기 수정
+     * @return 수정 전 별점 (매너온도 재계산용)
+     */
+    public Integer update(Integer rating, String content) {
+        Integer oldRating = this.rating;
+        
         if (rating != null) {
             if (rating < 1 || rating > 5) {
                 throw new CustomException(ErrorCode.INVALID_RATING);
@@ -82,20 +88,22 @@ public class Review extends BaseEntity {
         if (content != null) {
             this.content = content;
         }
+        
+        return oldRating;
     }
 
     //== 비즈니스 로직 ==//
     /**
      * 별점에 따른 매너온도 변화량 계산
-     * 5점: +0.5, 4점: +0.3, 3점: 0, 2점: -1.0, 1점: -2.0
+     * 5점: +0.5, 4점: +0.2, 3점: 0, 2점: -0.2, 1점: -0.5
      */
     public double calculateMannerTemperatureDelta() {
         return switch (rating) {
             case 5 -> 0.5;
-            case 4 -> 0.3;
+            case 4 -> 0.2;
             case 3 -> 0.0;
-            case 2 -> -1.0;
-            case 1 -> -2.0;
+            case 2 -> -0.2;
+            case 1 -> -0.5;
             default -> throw new CustomException(ErrorCode.INVALID_RATING);
         };
     }

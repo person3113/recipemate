@@ -309,15 +309,23 @@ public class GroupBuy extends BaseEntity {
     }
 
     public void increaseCurrentAmount(Integer amount) {
-        if (amount == null || amount <= 0) {
+        if (amount == null || amount < 0) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        // 0원인 경우 금액 증가 없이 정상 처리
+        if (amount == 0) {
+            return;
         }
         this.currentAmount += amount;
     }
 
     public void decreaseCurrentAmount(Integer amount) {
-        if (amount == null || amount <= 0) {
+        if (amount == null || amount < 0) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        // 0원인 경우 금액 감소 없이 정상 처리
+        if (amount == 0) {
+            return;
         }
         if (this.currentAmount - amount < 0) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);

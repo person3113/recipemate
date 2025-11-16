@@ -76,9 +76,11 @@ public class ParticipationService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ADDRESS_NOT_FOUND));
         }
 
-        // 4. 포인트 결제 처리
-        pointService.usePoints(userId, request.getTotalPayment(), 
-            String.format("공동구매 참여 (공구 ID: %d)", groupBuyId));
+        // 4. 포인트 결제 처리 (0원이 아닐 때만)
+        if (request.getTotalPayment() > 0) {
+            pointService.usePoints(userId, request.getTotalPayment(), 
+                String.format("공동구매 참여 (공구 ID: %d)", groupBuyId));
+        }
 
         // 5. 도메인 엔티티에 참여 위임
         Participation participation = groupBuy.addParticipant(
@@ -118,9 +120,11 @@ public class ParticipationService {
         // 2. 도메인 엔티티에 참여 취소 위임
         groupBuy.cancelParticipation(participation);
 
-        // 3. 포인트 환불 처리 (전액 환불: 재료비 + 택배비)
-        pointService.refundPoints(userId, participation.getTotalPayment(),
-            String.format("공동구매 참여 취소 (공구 ID: %d)", groupBuyId));
+        // 3. 포인트 환불 처리 (전액 환불: 재료비 + 택배비, 0원이 아닐 때만)
+        if (participation.getTotalPayment() > 0) {
+            pointService.refundPoints(userId, participation.getTotalPayment(),
+                String.format("공동구매 참여 취소 (공구 ID: %d)", groupBuyId));
+        }
 
         // 4. 공구 금액 차감 (택배비 제외한 재료비만 차감)
         Integer itemAmount = calculateItemAmountFromParticipation(groupBuy, participation);
@@ -157,9 +161,11 @@ public class ParticipationService {
         // 4. 강제 탈퇴 (마감일 제한 없음)
         groupBuy.forceRemoveParticipant(participation);
 
-        // 5. 포인트 환불 처리
-        pointService.refundPoints(participantUserId, participation.getTotalPayment(),
-            String.format("공동구매 강제 탈퇴 (공구 ID: %d)", groupBuyId));
+        // 5. 포인트 환불 처리 (0원이 아닐 때만)
+        if (participation.getTotalPayment() > 0) {
+            pointService.refundPoints(participantUserId, participation.getTotalPayment(),
+                String.format("공동구매 강제 탈퇴 (공구 ID: %d)", groupBuyId));
+        }
 
         // 6. 공구 금액 차감 (택배비 제외한 재료비만 차감)
         Integer itemAmount = calculateItemAmountFromParticipation(groupBuy, participation);

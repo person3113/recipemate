@@ -193,6 +193,25 @@ public class UserController {
     }
 
     /**
+     * 내 매너온도 내역 페이지 렌더링
+     * GET /users/me/manner-histories
+     */
+    @GetMapping("/me/manner-histories")
+    public String myMannerHistoriesPage(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Model model) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        Page<com.recipemate.domain.user.dto.MannerTempHistoryResponse> mannerHistories = 
+                userService.getMannerTempHistories(user.getId(), pageable);
+        model.addAttribute("mannerHistories", mannerHistories);
+        model.addAttribute("currentTemperature", user.getMannerTemperature());
+        return "user/manner-histories";
+    }
+
+    /**
      * 출석 체크 (HTML 폼용)
      * POST /users/me/check-in
      */

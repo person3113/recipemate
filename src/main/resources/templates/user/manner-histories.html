@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>매너온도 내역 - RecipeMate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-5">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <!-- Page Header -->
+                <div class="mb-4">
+                    <h1 class="display-6 fw-bold">
+                        <i class="bi bi-thermometer-half text-warning"></i> 매너온도 내역
+                    </h1>
+                    <p class="text-muted">후기를 통해 변동된 매너온도를 확인하세요!</p>
+                </div>
+
+                <!-- Current Temperature Card -->
+                <div class="card shadow-sm mb-4 border-warning">
+                    <div class="card-body text-center py-4">
+                        <h5 class="text-muted mb-2">현재 매너온도</h5>
+                        <h2 class="display-4 text-warning fw-bold mb-0">
+                            <i class="bi bi-thermometer-half"></i>
+                            <span th:text="${#numbers.formatDecimal(currentTemperature, 1, 1)}">36.5</span>°C
+                        </h2>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span th:text="${message}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Manner Temperature History Table -->
+                <div th:if="${mannerHistories != null and mannerHistories.hasContent()}" class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history"></i> 매너온도 변동 내역
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">날짜</th>
+                                        <th scope="col">사유</th>
+                                        <th scope="col" class="text-center">변동</th>
+                                        <th scope="col" class="text-end">이전 온도</th>
+                                        <th scope="col" class="text-end">변동 후 온도</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="history : ${mannerHistories.content}">
+                                        <td>
+                                            <i class="bi bi-calendar3 text-muted"></i>
+                                            <span th:text="${#temporals.format(history.createdAt, 'yyyy-MM-dd HH:mm')}">
+                                                2024-01-01 12:00
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span th:text="${history.reason}">후기 평점 반영</span>
+                                            <span th:if="${history.relatedGroupBuyId != null}">
+                                                <a th:href="@{'/group-purchases/' + ${history.relatedGroupBuyId} + '/reviews'}" 
+                                                   class="text-primary small ms-1"
+                                                   title="후기 목록으로 이동">
+                                                    <i class="bi bi-link-45deg"></i>
+                                                </a>
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span th:if="${history.changeValue > 0}" 
+                                                  class="badge bg-success">
+                                                <i class="bi bi-arrow-up"></i>
+                                                +<span th:text="${#numbers.formatDecimal(history.changeValue, 1, 1)}">0.5</span>°C
+                                            </span>
+                                            <span th:if="${history.changeValue < 0}" 
+                                                  class="badge bg-danger">
+                                                <i class="bi bi-arrow-down"></i>
+                                                <span th:text="${#numbers.formatDecimal(history.changeValue, 1, 1)}">-0.5</span>°C
+                                            </span>
+                                            <span th:if="${history.changeValue == 0}" 
+                                                  class="badge bg-secondary">
+                                                <i class="bi bi-dash"></i> 0.0°C
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <span th:text="${#numbers.formatDecimal(history.previousTemperature, 1, 1)}">36.5</span>°C
+                                        </td>
+                                        <td class="text-end fw-bold">
+                                            <span th:text="${#numbers.formatDecimal(history.newTemperature, 1, 1)}">37.0</span>°C
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <nav th:if="${mannerHistories != null and mannerHistories.totalPages > 1}" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" th:classappend="${mannerHistories.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/users/me/manner-histories(page=${mannerHistories.number - 1})}">
+                                <i class="bi bi-chevron-left"></i> 이전
+                            </a>
+                        </li>
+                        <li class="page-item active">
+                            <span class="page-link">
+                                <span th:text="${mannerHistories.number + 1}">1</span> / 
+                                <span th:text="${mannerHistories.totalPages}">10</span>
+                            </span>
+                        </li>
+                        <li class="page-item" th:classappend="${mannerHistories.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/users/me/manner-histories(page=${mannerHistories.number + 1})}">
+                                다음 <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- Empty State -->
+                <div th:if="${mannerHistories == null or !mannerHistories.hasContent()}" class="card text-center py-5 shadow-sm">
+                    <div class="card-body">
+                        <i class="bi bi-thermometer-half display-1 text-muted"></i>
+                        <h3 class="mt-4 mb-3">아직 매너온도 변동 내역이 없습니다</h3>
+                        <p class="text-muted mb-4">
+                            공동구매에 참여하고 후기를 받아보세요!<br>
+                            다른 사용자들이 남긴 후기를 통해 매너온도가 변동됩니다.
+                        </p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="/group-purchases" class="btn btn-primary">
+                                <i class="bi bi-cart"></i> 공구 둘러보기
+                            </a>
+                            <a href="/group-purchases/new" class="btn btn-outline-primary">
+                                <i class="bi bi-plus-circle"></i> 공구 만들기
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Card -->
+                <div class="card shadow-sm mt-4 bg-light">
+                    <div class="card-body">
+                        <h6 class="mb-3">
+                            <i class="bi bi-info-circle text-primary"></i> 매너온도 안내
+                        </h6>
+                        <ul class="mb-0 small">
+                            <li>매너온도는 다른 사용자가 작성한 후기의 별점에 따라 변동됩니다</li>
+                            <li>5점 후기: +0.5°C</li>
+                            <li>4점 후기: +0.2°C</li>
+                            <li>3점 후기: 변동 없음</li>
+                            <li>2점 후기: -0.2°C</li>
+                            <li>1점 후기: -0.5°C</li>
+                            <li>매너온도가 높을수록 신뢰도가 높은 사용자입니다</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Back Button -->
+                <div class="mt-4 text-center">
+                    <a th:href="@{/users/me}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 마이페이지로 돌아가기
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

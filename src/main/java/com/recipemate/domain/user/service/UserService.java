@@ -23,6 +23,7 @@ import com.recipemate.domain.user.dto.*;
 import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -53,6 +55,7 @@ public class UserService {
     private final PostLikeRepository postLikeRepository;
     private final BadgeRepository badgeRepository;
     private final CustomUserDetailsService customUserDetailsService;
+    private final MannerTempHistoryService mannerTempHistoryService;
 
     @Transactional
     public UserResponse signup(SignupRequest request) {
@@ -194,14 +197,27 @@ public class UserService {
 
     /**
      * 매너온도 업데이트
-     * - 후기 작성 시 호출됨
+     * - 후기 작성/수정 시 호출됨
+     * - 변경 내역 기록
      */
     @Transactional
-    public void updateMannerTemperature(Long userId, double delta) {
+    public void updateMannerTemperature(Long userId, double delta, String reason, Long relatedReviewId) {
+        log.info("매너온도 업데이트 시작 - UserId: {}, Delta: {}, Reason: {}", userId, delta, reason);
+        
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
+        Double previousTemperature = user.getMannerTemperature();
+        log.debug("이전 매너온도: {}", previousTemperature);
+        
         user.updateMannerTemperature(delta);
+        userRepository.save(user);
+        
+        log.info("새 매너온도: {} (DB 저장 완료)", user.getMannerTemperature());
+        
+        mannerTempHistoryService.recordHistory(user, delta, previousTemperature, reason, relatedReviewId);
+        
+        log.info("매너온도 내역 저장 완료");
     }
 
     public Page<MyPostDto> findMyPosts(User user, Pageable pageable) {
@@ -299,6 +315,13 @@ public class UserService {
                 badgeTypes, 
                 hostedGroupBuysDto
         );
+    }
+
+    /**
+     * 매너온도 변경 내역 조회
+     */
+    public Page<com.recipemate.domain.user.dto.MannerTempHistoryResponse> getMannerTempHistories(Long userId, Pageable pageable) {
+        return mannerTempHistoryService.getHistoriesWithGroupBuyId(userId, pageable);
     }
 
     /**

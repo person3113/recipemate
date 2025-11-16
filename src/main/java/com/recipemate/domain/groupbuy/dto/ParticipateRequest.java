@@ -26,6 +26,6 @@ public class ParticipateRequest {
     private Long addressId;
 
     @NotNull(message = "결제 금액은 필수입니다")
-    @Min(value = 1, message = "결제 금액은 1 이상이어야 합니다")
+    @Min(value = 0, message = "결제 금액은 0 이상이어야 합니다")
     private Integer totalPayment;
 }

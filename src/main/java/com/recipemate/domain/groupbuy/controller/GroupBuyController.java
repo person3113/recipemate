@@ -571,6 +571,9 @@ public class GroupBuyController {
         @RequestParam Integer totalPayment,
         RedirectAttributes redirectAttributes
     ) {
+        log.info("공구 참여 요청 - groupBuyId: {}, quantity: {}, deliveryMethod: {}, addressId: {}, totalPayment: {}", 
+            purchaseId, quantity, deliveryMethod, addressId, totalPayment);
+        
         User user = userRepository.findByEmail(userDetails.getUsername())
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
@@ -583,10 +586,15 @@ public class GroupBuyController {
                 .build();
             participationService.participate(user.getId(), purchaseId, request);
             redirectAttributes.addFlashAttribute("successMessage", "공동구매에 성공적으로 참여했습니다.");
+            log.info("공구 참여 성공 - userId: {}, groupBuyId: {}", user.getId(), purchaseId);
         } catch (CustomException e) {
             log.error("참여 실패 - userId: {}, groupBuyId: {}, error: {}", 
                 user.getId(), purchaseId, e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (Exception e) {
+            log.error("공구 참여 중 예상치 못한 오류 - userId: {}, groupBuyId: {}", 
+                user.getId(), purchaseId, e);
+            redirectAttributes.addFlashAttribute("errorMessage", "참여 처리 중 오류가 발생했습니다.");
         }
         
         return "redirect:/group-purchases/" + purchaseId;

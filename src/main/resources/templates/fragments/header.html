@@ -34,7 +34,7 @@
                     </div>
                 </form>
                 
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item">
                         <a th:href="@{/recipes}" class="nav-link">레시피</a>
                     </li>
@@ -45,18 +45,42 @@
                         <a th:href="@{/community-posts/list}" class="nav-link">커뮤니티</a>
                     </li>
                     
-                    <!-- Authenticated User Menu -->
+                    <!-- Authenticated User - Icon Navigation -->
+                    <li sec:authorize="isAuthenticated()" class="nav-item ms-2">
+                        <a th:href="@{/users/me/notifications}" class="nav-link position-relative" title="알림">
+                            <i class="bi bi-bell fs-5"></i>
+                            <!-- Unread notification badge -->
+                            <span th:if="${unreadNotificationCount > 0}" 
+                                  class="position-absolute badge rounded-pill bg-danger" 
+                                  style="top: -2px; right: -8px; font-size: 0.6rem; padding: 0.25em 0.5em;"
+                                  th:text="${unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}">
+                                3
+                            </span>
+                        </a>
+                    </li>
+                    
+                    <li sec:authorize="isAuthenticated()" class="nav-item">
+                        <a th:href="@{/direct-messages/contacts}" class="nav-link position-relative" title="쪽지">
+                            <i class="bi bi-envelope fs-5"></i>
+                            <!-- Unread message badge -->
+                            <span th:if="${unreadMessageCount > 0}" 
+                                  class="position-absolute badge rounded-pill bg-danger" 
+                                  style="top: -2px; right: -8px; font-size: 0.6rem; padding: 0.25em 0.5em;"
+                                  th:text="${unreadMessageCount > 99 ? '99+' : unreadMessageCount}">
+                                5
+                            </span>
+                        </a>
+                    </li>
+                    
+                    <!-- Authenticated User - Profile Dropdown -->
                     <li sec:authorize="isAuthenticated()" class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle"></i> 내 메뉴
+                        <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="내 메뉴">
+                            <i class="bi bi-person-circle fs-4"></i>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a th:href="@{/users/me}" class="dropdown-item"><i class="bi bi-person"></i> 마이페이지</a></li>
-                            <li><a th:href="@{/users/me/notifications}" class="dropdown-item"><i class="bi bi-bell"></i> 알림</a></li>
                             <li><a th:href="@{/users/me/bookmarks}" class="dropdown-item"><i class="bi bi-heart"></i> 찜 목록</a></li>
-                            <li><a th:href="@{/users/me/recipes}" class="dropdown-item"><i class="bi bi-book"></i> 내가 작성한 레시피</a></li>
-                            <li><a th:href="@{/users/me/participations}" class="dropdown-item"><i class="bi bi-cart-check"></i> 참여중인 공구</a></li>
-                            <li><a th:href="@{/users/me/group-purchases}" class="dropdown-item"><i class="bi bi-shop"></i> 내가 만든 공구</a></li>
+                            <li><a th:href="@{/users/me/settings}" class="dropdown-item"><i class="bi bi-gear"></i> 설정</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form th:action="@{/auth/logout}" method="post" class="d-inline">

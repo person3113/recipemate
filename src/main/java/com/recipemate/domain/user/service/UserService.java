@@ -309,6 +309,7 @@ public class UserService {
         });
 
         return UserProfileResponseDto.of(
+                user.getId(),
                 user.getNickname(), 
                 user.getProfileImageUrl(),
                 user.getMannerTemperature(), 

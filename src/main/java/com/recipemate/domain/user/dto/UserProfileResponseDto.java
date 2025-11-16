@@ -13,15 +13,16 @@ import java.util.List;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserProfileResponseDto {
     
+    private Long id;
     private String nickname;
     private String profileImageUrl;
     private Double mannerTemperature;
     private List<BadgeType> badges;
     private Page<GroupBuyResponse> hostedGroupBuys;
     
-    public static UserProfileResponseDto of(String nickname, String profileImageUrl, 
+    public static UserProfileResponseDto of(Long id, String nickname, String profileImageUrl, 
                                              Double mannerTemperature, List<BadgeType> badges, 
                                              Page<GroupBuyResponse> hostedGroupBuys) {
-        return new UserProfileResponseDto(nickname, profileImageUrl, mannerTemperature, badges, hostedGroupBuys);
+        return new UserProfileResponseDto(id, nickname, profileImageUrl, mannerTemperature, badges, hostedGroupBuys);
     }
 }

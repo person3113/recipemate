@@ -38,6 +38,14 @@
                                 <!-- Nickname -->
                                 <h2 class="mb-3" th:text="${userProfile.nickname}">닉네임</h2>
                                 
+                                <!-- Action Buttons (Send Message) -->
+                                <div class="mb-3" sec:authorize="isAuthenticated()">
+                                    <a th:href="@{/direct-messages/conversation/{userId}(userId=${userProfile.id})}" 
+                                       class="btn btn-primary btn-sm">
+                                        <i class="bi bi-envelope"></i> 쪽지 보내기
+                                    </a>
+                                </div>
+                                
                                 <!-- Stats -->
                                 <div class="row g-3 mb-3">
                                     <div class="col-sm-6 col-md-4">

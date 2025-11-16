@@ -78,11 +78,29 @@ public class UserController {
 
         // 안 읽은 쪽지 개수 조회
         long unreadMessageCount = directMessageService.getUnreadCount(user.getId());
+        
+        // 보유 배지 개수 조회
+        List<BadgeChallengeResponse> badgeChallenges = badgeService.getBadgeChallenges(user.getId());
+        long badgeCount = badgeChallenges.stream()
+                .filter(BadgeChallengeResponse::isAcquired)
+                .count();
 
         model.addAttribute("user", userResponse);
         model.addAttribute("currentPoints", user.getPoints());
         model.addAttribute("unreadMessageCount", unreadMessageCount);
+        model.addAttribute("badgeCount", badgeCount);
         return "user/my-page";
+    }
+
+    /**
+     * 설정 페이지 렌더링 (프로필 수정, 비밀번호 변경)
+     * GET /users/me/settings
+     */
+    @GetMapping("/me/settings")
+    public String mySettingsPage(@AuthenticationPrincipal UserDetails userDetails, Model model) {
+        UserResponse userResponse = userService.getMyProfile(userDetails.getUsername());
+        model.addAttribute("user", userResponse);
+        return "user/settings";
     }
 
     /**
@@ -96,7 +114,7 @@ public class UserController {
             RedirectAttributes redirectAttributes) {
         userService.updateProfile(userDetails.getUsername(), request);
         redirectAttributes.addFlashAttribute("message", "프로필이 수정되었습니다.");
-        return "redirect:/users/me";
+        return "redirect:/users/me/settings";
     }
 
     /**
@@ -110,7 +128,7 @@ public class UserController {
             RedirectAttributes redirectAttributes) {
         userService.changePassword(userDetails.getUsername(), request);
         redirectAttributes.addFlashAttribute("message", "비밀번호가 변경되었습니다.");
-        return "redirect:/users/me";
+        return "redirect:/users/me/settings";
     }
     
     /**

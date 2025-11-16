@@ -439,6 +439,16 @@ main {
     }
 }
 
+/* Hover Link Styles */
+.hover-link {
+    transition: color 0.2s ease;
+}
+
+.hover-link:hover {
+    color: var(--primary-color) !important;
+    text-decoration: underline !important;
+}
+
 /* Search Autocomplete Styles */
 .search-autocomplete-dropdown {
     position: absolute;

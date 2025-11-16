@@ -199,11 +199,20 @@ public class Recipe extends BaseEntity {
 
     /**
      * 특정 사용자가 이 레시피를 수정할 수 있는지 확인
+     * - 관리자(ADMIN)는 모든 레시피 수정 가능
+     * - 일반 사용자는 본인이 작성한 레시피만 수정 가능
      */
     public boolean canModify(com.recipemate.domain.user.entity.User user) {
         if (user == null) {
             return false;
         }
+        
+        // 관리자는 모든 레시피 수정 가능
+        if (user.getRole() == com.recipemate.global.common.UserRole.ADMIN) {
+            return true;
+        }
+        
+        // 일반 사용자는 본인이 작성한 사용자 레시피만 수정 가능
         return isUserRecipe() && author != null && author.getId().equals(user.getId());
     }
 

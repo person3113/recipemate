@@ -22,7 +22,9 @@ import com.recipemate.domain.user.entity.User;
 import com.recipemate.domain.user.repository.UserRepository;
 import com.recipemate.domain.user.service.PointService;
 import com.recipemate.domain.user.service.UserService;
+import com.recipemate.domain.recipe.dto.RecipeCorrectionResponse;
 import com.recipemate.domain.recipe.dto.RecipeListResponse;
+import com.recipemate.domain.recipe.service.RecipeCorrectionService;
 import com.recipemate.domain.recipe.service.RecipeService;
 import com.recipemate.domain.recipewishlist.dto.RecipeWishlistResponse;
 import com.recipemate.domain.recipewishlist.service.RecipeWishlistService;
@@ -63,6 +65,7 @@ public class UserController {
     private final BadgeService badgeService;
     private final PointService pointService;
     private final RecipeService recipeService;
+    private final RecipeCorrectionService recipeCorrectionService;
     private final GroupBuyRepository groupBuyRepository;
     private final ParticipationRepository participationRepository;
     private final com.recipemate.domain.review.repository.ReviewRepository reviewRepository;
@@ -485,6 +488,24 @@ public class UserController {
         model.addAttribute("pageSize", size);
 
         return "user/my-recipes";
+    }
+
+    /**
+     * 내 레시피 개선 제안 목록 페이지 렌더링
+     * GET /users/me/corrections
+     */
+    @GetMapping("/me/corrections")
+    public String myCorrectionsPage(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            Model model) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        
+        Page<RecipeCorrectionResponse> corrections = recipeCorrectionService.getUserCorrections(user.getId(), pageable);
+        
+        model.addAttribute("corrections", corrections);
+        return "recipes/my-corrections";
     }
 
     /**

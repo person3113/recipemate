@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>제안 상세 - RecipeMate Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-5">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <!-- Page Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="display-6 fw-bold">
+                            <i class="bi bi-file-text text-primary"></i> 제안 상세
+                        </h1>
+                    </div>
+                    <a th:href="@{/admin/corrections}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 목록으로
+                    </a>
+                </div>
+
+                <!-- Messages -->
+                <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span th:text="${message}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Correction Details Card -->
+                <div class="card shadow-sm mb-4" th:object="${correction}">
+                    <div class="card-header bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">제안 정보</h5>
+                            <th:block th:switch="*{status}">
+                                <span th:case="'PENDING'" class="badge bg-warning">대기중</span>
+                                <span th:case="'APPROVED'" class="badge bg-success">승인됨</span>
+                                <span th:case="'REJECTED'" class="badge bg-danger">기각됨</span>
+                            </th:block>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold text-muted">제안 ID</div>
+                            <div class="col-md-9" th:text="*{id}">#1</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold text-muted">레시피</div>
+                            <div class="col-md-9">
+                                <a th:href="@{/recipes/{id}(id=*{recipeId})}" 
+                                   th:text="*{recipeTitle}"
+                                   class="text-decoration-none"
+                                   target="_blank">
+                                    레시피명
+                                </a>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold text-muted">제안 종류</div>
+                            <div class="col-md-9">
+                                <th:block th:switch="*{correctionType}">
+                                    <span th:case="'TYPO'" class="badge bg-info">오타/오류</span>
+                                    <span th:case="'INCORRECT_INFO'" class="badge bg-danger">잘못된 정보</span>
+                                    <span th:case="'SUGGESTION'" class="badge bg-success">개선 제안</span>
+                                    <span th:case="*" class="badge bg-secondary">기타</span>
+                                </th:block>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold text-muted">제안자</div>
+                            <div class="col-md-9">
+                                <a th:href="@{/users/profile/{nickname}(nickname=*{proposerNickname})}"
+                                   th:text="*{proposerNickname}"
+                                   class="text-decoration-none"
+                                   target="_blank">
+                                    제안자
+                                </a>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold text-muted">제안일</div>
+                            <div class="col-md-9" th:text="${#temporals.format(correction.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01 12:00:00</div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-3 fw-bold text-muted">제안 내용</div>
+                            <div class="col-md-9">
+                                <div class="bg-light p-3 rounded" style="white-space: pre-wrap;" th:text="*{proposedChange}">
+                                    제안 내용이 여기에 표시됩니다.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Response (if processed) -->
+                <div th:if="${correction.status != T(com.recipemate.domain.recipe.entity.CorrectionStatus).PENDING}" class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">관리자 처리 내역</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold text-muted">처리자</div>
+                            <div class="col-md-9">
+                                <a th:href="@{/users/profile/{nickname}(nickname=${correction.resolverNickname})}"
+                                   th:text="${correction.resolverNickname}"
+                                   class="text-decoration-none"
+                                   target="_blank">
+                                    관리자
+                                </a>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold text-muted">처리일</div>
+                            <div class="col-md-9" th:text="${#temporals.format(correction.updatedAt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01 12:00:00</div>
+                        </div>
+                        <div class="row" th:if="${correction.adminReason}">
+                            <div class="col-md-3 fw-bold text-muted">처리 사유</div>
+                            <div class="col-md-9">
+                                <div class="bg-light p-3 rounded" style="white-space: pre-wrap;" th:text="${correction.adminReason}">
+                                    처리 사유가 여기에 표시됩니다.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recipe Edit Link (only if PENDING) -->
+                <div th:if="${correction.status == T(com.recipemate.domain.recipe.entity.CorrectionStatus).PENDING}" class="alert alert-info border-info shadow-sm mb-4">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-info-circle-fill"></i> 레시피 수동 수정 안내
+                    </h6>
+                    <p class="mb-2">
+                        제안 내용을 확인한 후, 관리자가 직접 레시피를 수정해 주세요.
+                    </p>
+                    <hr>
+                    <div class="d-flex align-items-center">
+                        <a th:href="@{/recipes/{id}/edit(id=${correction.recipeId})}" 
+                           class="btn btn-primary me-2"
+                           target="_blank">
+                            <i class="bi bi-pencil-square"></i> 레시피 수정하러 가기
+                        </a>
+                        <small class="text-muted">
+                            (새 탭에서 열림)
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Action Forms (only if PENDING) -->
+                <div th:if="${correction.status == T(com.recipemate.domain.recipe.entity.CorrectionStatus).PENDING}" class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">제안 처리</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Approve Form -->
+                        <form th:action="@{/admin/corrections/{id}/approve(id=${correction.id})}" 
+                              method="post" 
+                              class="mb-4">
+                            <div class="mb-3">
+                                <label for="approveReason" class="form-label fw-bold">
+                                    <i class="bi bi-check-circle text-success"></i> 승인 사유 (선택)
+                                </label>
+                                <textarea class="form-control" 
+                                          id="approveReason" 
+                                          name="reason" 
+                                          rows="3" 
+                                          placeholder="승인 사유를 입력하세요 (선택사항)"></textarea>
+                                <small class="text-muted">
+                                    승인 시 제안자에게 매너온도 +0.5°C, 포인트 +50P가 지급됩니다.
+                                </small>
+                            </div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> 승인
+                            </button>
+                        </form>
+
+                        <hr>
+
+                        <!-- Reject Form -->
+                        <form th:action="@{/admin/corrections/{id}/reject(id=${correction.id})}" 
+                              method="post">
+                            <div class="mb-3">
+                                <label for="rejectReason" class="form-label fw-bold">
+                                    <i class="bi bi-x-circle text-danger"></i> 기각 사유 (선택)
+                                </label>
+                                <textarea class="form-control" 
+                                          id="rejectReason" 
+                                          name="reason" 
+                                          rows="3" 
+                                          placeholder="기각 사유를 입력하세요 (선택사항)"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-x-circle"></i> 기각
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

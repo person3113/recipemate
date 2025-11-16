@@ -16,7 +16,8 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class RecipeDetailResponse {
-    private String id;
+    private String id;  // API ID for display (meal-123, food-456, or DB ID for USER recipes)
+    private Long dbId;  // DB ID for operations (edit, delete)
     private String name;
     private String imageUrl;
     private String category;

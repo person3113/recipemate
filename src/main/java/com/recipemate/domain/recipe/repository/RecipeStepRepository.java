@@ -2,6 +2,7 @@ package com.recipemate.domain.recipe.repository;
 
 import com.recipemate.domain.recipe.entity.RecipeStep;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -24,9 +25,19 @@ public interface RecipeStepRepository extends JpaRepository<RecipeStep, Long> {
     List<RecipeStep> findByRecipeIdWithRecipeOrderByStepNumber(@Param("recipeId") Long recipeId);
 
     /**
-     * 레시피의 모든 조리 단계 삭제
+     * 레시피의 모든 조리 단계 삭제 (N+1 방지용 - 사용 금지, bulkSoftDelete 사용)
+     * @deprecated Use bulkSoftDeleteByRecipeId instead
      */
+    @Deprecated
     void deleteByRecipeId(Long recipeId);
+
+    /**
+     * 레시피의 모든 조리 단계를 Soft Delete (Bulk UPDATE - 성능 최적화)
+     * 단일 쿼리로 처리하여 N+1 문제 방지
+     */
+    @Modifying
+    @Query("UPDATE RecipeStep rs SET rs.deletedAt = CURRENT_TIMESTAMP WHERE rs.recipe.id = :recipeId AND rs.deletedAt IS NULL")
+    int bulkSoftDeleteByRecipeId(@Param("recipeId") Long recipeId);
 
     /**
      * 특정 레시피의 조리 단계 수 조회

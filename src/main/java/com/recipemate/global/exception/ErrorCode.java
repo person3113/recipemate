@@ -46,6 +46,10 @@ public enum ErrorCode {
     
     RECIPE_NOT_FOUND(HttpStatus.NOT_FOUND, "RECIPE-001", "레시피를 찾을 수 없습니다."),
     
+    CORRECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "CORRECTION-001", "제안을 찾을 수 없습니다."),
+    DUPLICATE_CORRECTION_REQUEST(HttpStatus.CONFLICT, "CORRECTION-002", "동일한 레시피에 대한 제안이 이미 대기 중입니다."),
+    ALREADY_PROCESSED_CORRECTION(HttpStatus.BAD_REQUEST, "CORRECTION-003", "이미 처리된 제안입니다."),
+    
     WISHLIST_ALREADY_EXISTS(HttpStatus.CONFLICT, "WISHLIST-001", "이미 찜한 공동구매입니다."),
     WISHLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "WISHLIST-002", "찜 내역을 찾을 수 없습니다."),
     

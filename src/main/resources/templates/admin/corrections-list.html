@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>레시피 개선 제안 관리 - RecipeMate Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-5">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <!-- Page Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="display-6 fw-bold">
+                            <i class="bi bi-shield-check text-danger"></i> 레시피 개선 제안 관리
+                        </h1>
+                        <p class="text-muted">사용자가 제출한 레시피 개선 제안을 검토하고 처리하세요</p>
+                    </div>
+                    <a th:href="@{/admin}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 관리자 대시보드
+                    </a>
+                </div>
+
+                <!-- Messages -->
+                <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span th:text="${message}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Statistics Card -->
+                <div class="card shadow-sm mb-4 border-0">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col">
+                                <h3 class="mb-0 text-warning fw-bold" th:text="${totalCount}">0</h3>
+                                <small class="text-muted">대기 중인 제안</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Corrections List -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-list-check"></i> 제안 목록
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div th:if="${corrections.isEmpty()}" class="text-center py-5">
+                            <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                            <p class="text-muted mt-3 mb-0">대기 중인 제안이 없습니다.</p>
+                        </div>
+
+                        <div th:if="${!corrections.isEmpty()}" class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>레시피</th>
+                                        <th>제안 종류</th>
+                                        <th>제안자</th>
+                                        <th>제안일</th>
+                                        <th>상태</th>
+                                        <th>관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="correction : ${corrections}">
+                                        <td th:text="${correction.id}">#1</td>
+                                        <td>
+                                            <a th:href="@{/recipes/{id}(id=${correction.recipeId})}" 
+                                               th:text="${correction.recipeTitle}"
+                                               class="text-decoration-none"
+                                               target="_blank">
+                                                레시피명
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <th:block th:switch="${correction.correctionType}">
+                                                <span th:case="'TYPO'" class="badge bg-info">오타/오류</span>
+                                                <span th:case="'INCORRECT_INFO'" class="badge bg-danger">잘못된 정보</span>
+                                                <span th:case="'SUGGESTION'" class="badge bg-success">개선 제안</span>
+                                                <span th:case="*" class="badge bg-secondary">기타</span>
+                                            </th:block>
+                                        </td>
+                                        <td>
+                                            <a th:href="@{/users/profile/{nickname}(nickname=${correction.proposerNickname})}"
+                                               th:text="${correction.proposerNickname}"
+                                               class="text-decoration-none"
+                                               target="_blank">
+                                                제안자
+                                            </a>
+                                        </td>
+                                        <td th:text="${#temporals.format(correction.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01</td>
+                                        <td>
+                                            <span class="badge bg-warning">대기중</span>
+                                        </td>
+                                        <td>
+                                            <a th:href="@{/admin/corrections/{id}(id=${correction.id})}" 
+                                               class="btn btn-sm btn-primary">
+                                                <i class="bi bi-eye"></i> 검토
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

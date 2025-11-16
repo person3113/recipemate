@@ -154,10 +154,10 @@
                             <div class="alert alert-info small mb-2">
                                 <i class="bi bi-info-circle"></i> 내가 작성한 레시피입니다
                             </div>
-                            <a th:href="@{/recipes/{id}/edit(id=${recipe.id})}" class="btn btn-warning w-100 mb-2">
+                            <a th:href="@{/recipes/{id}/edit(id=${recipe.dbId})}" class="btn btn-warning w-100 mb-2">
                                 <i class="bi bi-pencil-square"></i> 수정하기
                             </a>
-                            <form th:action="@{/recipes/{id}/delete(id=${recipe.id})}"
+                            <form th:action="@{/recipes/{id}/delete(id=${recipe.dbId})}"
                                   method="post"
                                   onsubmit="return confirm('정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.');">
                                 <button type="submit" class="btn btn-danger w-100">
@@ -195,6 +195,13 @@
                         <button type="button" class="btn btn-outline-secondary" onclick="shareRecipe()">
                             <i class="bi bi-share"></i> 공유하기
                         </button>
+
+                        <!-- 레시피 개선 제안 버튼 (로그인한 사용자만) -->
+                        <a sec:authorize="isAuthenticated()"
+                           th:href="@{/recipes/{id}/corrections/new(id=${recipe.dbId})}"
+                           class="btn btn-outline-warning">
+                            <i class="bi bi-lightbulb"></i> 레시피 개선 제안하기
+                        </a>
                     </div>
                 </div>
             </div>

@@ -31,8 +31,7 @@ public class SecurityConfig {
                 // CSRF 보호 활성화 (세션 기반 폼 로그인 보호)
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
-                                "/h2-console/**",           // H2 콘솔
-                                "/recipes/admin/**"         // Admin API endpoints
+                                "/h2-console/**"            // H2 콘솔
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
@@ -86,6 +85,9 @@ public class SecurityConfig {
                             "/recipes/new",                       // Recipe creation form
                             "/recipes/*/edit"                     // Recipe edit form
                         ).authenticated()
+                        
+                        // Admin-only endpoints
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         
                         // All other requests require authentication
                         .anyRequest().authenticated()

@@ -2,6 +2,7 @@ package com.recipemate.domain.recipe.repository;
 
 import com.recipemate.domain.recipe.entity.RecipeIngredient;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -36,9 +37,19 @@ public interface RecipeIngredientRepository extends JpaRepository<RecipeIngredie
     Long countRecipesByIngredientName(@Param("ingredientName") String ingredientName);
 
     /**
-     * 레시피의 모든 재료 삭제
+     * 레시피의 모든 재료 삭제 (N+1 방지용 - 사용 금지, bulkSoftDelete 사용)
+     * @deprecated Use bulkSoftDeleteByRecipeId instead
      */
+    @Deprecated
     void deleteByRecipeId(Long recipeId);
+
+    /**
+     * 레시피의 모든 재료를 Soft Delete (Bulk UPDATE - 성능 최적화)
+     * 단일 쿼리로 처리하여 N+1 문제 방지
+     */
+    @Modifying
+    @Query("UPDATE RecipeIngredient ri SET ri.deletedAt = CURRENT_TIMESTAMP WHERE ri.recipe.id = :recipeId AND ri.deletedAt IS NULL")
+    int bulkSoftDeleteByRecipeId(@Param("recipeId") Long recipeId);
 
     /**
      * 모든 고유 재료명 조회 (중복 제거)

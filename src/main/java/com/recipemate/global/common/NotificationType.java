@@ -9,5 +9,7 @@ public enum NotificationType {
     REVIEW_GROUP_BUY,          // 공구 후기 알림
     GROUP_BUY_DEADLINE,        // 공구 마감 알림
     GROUP_BUY_COMPLETED,       // 공구 목표 달성 알림
-    DIRECT_MESSAGE             // 쪽지 알림
+    DIRECT_MESSAGE,            // 쪽지 알림
+    RECIPE_CORRECTION_APPROVED, // 레시피 제안 승인 알림
+    RECIPE_CORRECTION_REJECTED  // 레시피 제안 기각 알림
 }

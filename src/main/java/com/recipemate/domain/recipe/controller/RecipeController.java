@@ -1,5 +1,7 @@
 package com.recipemate.domain.recipe.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.recipemate.domain.groupbuy.dto.GroupBuyResponse;
 import com.recipemate.domain.recipe.dto.CategoryResponse;
 import com.recipemate.domain.recipe.dto.RecipeCreateRequest;
@@ -58,6 +60,7 @@ public class RecipeController {
     private final RecipeSyncService recipeSyncService;
     private final com.recipemate.domain.user.repository.UserRepository userRepository;
     private final com.recipemate.domain.recipe.repository.RecipeRepository recipeRepository;
+    private final ObjectMapper objectMapper;
 
     private static final int DEFAULT_RANDOM_COUNT = 5;
     private static final int DEFAULT_PAGE_SIZE = 20;
@@ -163,16 +166,15 @@ public class RecipeController {
         
         model.addAttribute("recipe", recipe);
         
-        // ✅ 본인이 작성한 레시피인지 확인
+        // ✅ 본인이 작성한 레시피인지 확인 (dbId 사용)
         boolean isOwner = false;
-        if (userDetails != null && recipeId.matches("\\d+")) {
+        if (userDetails != null && recipe.getDbId() != null) {
             try {
                 com.recipemate.domain.user.entity.User currentUser = userRepository.findByEmail(userDetails.getUsername())
                         .orElse(null);
 
                 if (currentUser != null) {
-                    Long dbId = Long.parseLong(recipeId);
-                    Recipe recipeEntity = recipeRepository.findById(dbId).orElse(null);
+                    Recipe recipeEntity = recipeRepository.findById(recipe.getDbId()).orElse(null);
                     if (recipeEntity != null) {
                         // Recipe 엔티티에서 직접 권한 확인 (source 체크 불필요)
                         isOwner = recipeEntity.canModify(currentUser);
@@ -329,14 +331,74 @@ public class RecipeController {
             return "redirect:/auth/login";
         }
 
-        // 빈 재료 필터링 (name 또는 measure가 비어있는 경우 제거)
-        if (request.getIngredients() != null) {
-            request.setIngredients(
-                request.getIngredients().stream()
-                    .filter(ingredient -> ingredient.getName() != null && !ingredient.getName().trim().isEmpty()
-                                       && ingredient.getMeasure() != null && !ingredient.getMeasure().trim().isEmpty())
-                    .collect(java.util.stream.Collectors.toList())
-            );
+        log.info("=== 레시피 생성 요청 수신 ===");
+        log.info("ingredientsJson 길이: {}", request.getIngredientsJson() != null ? request.getIngredientsJson().length() : "null");
+        log.info("ingredientsJson 내용: {}", request.getIngredientsJson());
+        log.info("stepsJson 길이: {}", request.getStepsJson() != null ? request.getStepsJson().length() : "null");
+        log.info("stepsJson 내용: {}", request.getStepsJson());
+
+        // JSON에서 재료 파싱
+        if (request.getIngredientsJson() != null && !request.getIngredientsJson().isBlank()) {
+            try {
+                List<RecipeCreateRequest.IngredientDto> ingredients = objectMapper.readValue(
+                    request.getIngredientsJson(),
+                    new TypeReference<List<RecipeCreateRequest.IngredientDto>>() {}
+                );
+                
+                if (ingredients == null || ingredients.isEmpty()) {
+                    model.addAttribute("recipe", request);
+                    model.addAttribute("isEdit", false);
+                    model.addAttribute("errorMessage", "최소 1개 이상의 재료를 입력해주세요.");
+                    return "recipes/form";
+                }
+                
+                request.setIngredients(ingredients);
+                log.info("재료 JSON 파싱 완료: {} 개", ingredients.size());
+                
+            } catch (Exception e) {
+                log.error("재료 JSON 파싱 실패: {}", e.getMessage());
+                model.addAttribute("recipe", request);
+                model.addAttribute("isEdit", false);
+                model.addAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
+                return "recipes/form";
+            }
+        } else {
+            model.addAttribute("recipe", request);
+            model.addAttribute("isEdit", false);
+            model.addAttribute("errorMessage", "최소 1개 이상의 재료를 입력해주세요.");
+            return "recipes/form";
+        }
+
+        // JSON에서 조리 단계 파싱
+        if (request.getStepsJson() != null && !request.getStepsJson().isBlank()) {
+            try {
+                List<RecipeCreateRequest.StepDto> steps = objectMapper.readValue(
+                    request.getStepsJson(),
+                    new TypeReference<List<RecipeCreateRequest.StepDto>>() {}
+                );
+                
+                if (steps == null || steps.isEmpty()) {
+                    model.addAttribute("recipe", request);
+                    model.addAttribute("isEdit", false);
+                    model.addAttribute("errorMessage", "최소 1개 이상의 조리 단계를 입력해주세요.");
+                    return "recipes/form";
+                }
+                
+                request.setSteps(steps);
+                log.info("조리 단계 JSON 파싱 완료: {} 개", steps.size());
+                
+            } catch (Exception e) {
+                log.error("조리 단계 JSON 파싱 실패: {}", e.getMessage());
+                model.addAttribute("recipe", request);
+                model.addAttribute("isEdit", false);
+                model.addAttribute("errorMessage", "조리 단계 정보 처리 중 오류가 발생했습니다.");
+                return "recipes/form";
+            }
+        } else {
+            model.addAttribute("recipe", request);
+            model.addAttribute("isEdit", false);
+            model.addAttribute("errorMessage", "최소 1개 이상의 조리 단계를 입력해주세요.");
+            return "recipes/form";
         }
 
         if (bindingResult.hasErrors()) {
@@ -460,14 +522,81 @@ public class RecipeController {
             return "redirect:/auth/login";
         }
 
-        // 빈 재료 필터링 (name 또는 measure가 비어있는 경우 제거)
-        if (request.getIngredients() != null) {
-            request.setIngredients(
-                request.getIngredients().stream()
-                    .filter(ingredient -> ingredient.getName() != null && !ingredient.getName().trim().isEmpty()
-                                       && ingredient.getMeasure() != null && !ingredient.getMeasure().trim().isEmpty())
-                    .collect(java.util.stream.Collectors.toList())
-            );
+        log.info("=== 레시피 수정 요청 수신 ===");
+        log.info("Recipe ID: {}", id);
+        log.info("ingredientsJson 길이: {}", request.getIngredientsJson() != null ? request.getIngredientsJson().length() : "null");
+        log.info("ingredientsJson 내용: {}", request.getIngredientsJson());
+        log.info("stepsJson 길이: {}", request.getStepsJson() != null ? request.getStepsJson().length() : "null");
+        log.info("stepsJson 내용: {}", request.getStepsJson());
+
+        // JSON에서 재료 파싱
+        if (request.getIngredientsJson() != null && !request.getIngredientsJson().isBlank()) {
+            try {
+                List<RecipeUpdateRequest.IngredientDto> ingredients = objectMapper.readValue(
+                    request.getIngredientsJson(),
+                    new TypeReference<List<RecipeUpdateRequest.IngredientDto>>() {}
+                );
+                
+                if (ingredients == null || ingredients.isEmpty()) {
+                    model.addAttribute("recipe", request);
+                    model.addAttribute("isEdit", true);
+                    model.addAttribute("recipeId", id);
+                    model.addAttribute("errorMessage", "최소 1개 이상의 재료를 입력해주세요.");
+                    return "recipes/form";
+                }
+                
+                request.setIngredients(ingredients);
+                log.info("재료 JSON 파싱 완료: {} 개", ingredients.size());
+                
+            } catch (Exception e) {
+                log.error("재료 JSON 파싱 실패: {}", e.getMessage());
+                model.addAttribute("recipe", request);
+                model.addAttribute("isEdit", true);
+                model.addAttribute("recipeId", id);
+                model.addAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
+                return "recipes/form";
+            }
+        } else {
+            model.addAttribute("recipe", request);
+            model.addAttribute("isEdit", true);
+            model.addAttribute("recipeId", id);
+            model.addAttribute("errorMessage", "최소 1개 이상의 재료를 입력해주세요.");
+            return "recipes/form";
+        }
+
+        // JSON에서 조리 단계 파싱
+        if (request.getStepsJson() != null && !request.getStepsJson().isBlank()) {
+            try {
+                List<RecipeUpdateRequest.StepDto> steps = objectMapper.readValue(
+                    request.getStepsJson(),
+                    new TypeReference<List<RecipeUpdateRequest.StepDto>>() {}
+                );
+                
+                if (steps == null || steps.isEmpty()) {
+                    model.addAttribute("recipe", request);
+                    model.addAttribute("isEdit", true);
+                    model.addAttribute("recipeId", id);
+                    model.addAttribute("errorMessage", "최소 1개 이상의 조리 단계를 입력해주세요.");
+                    return "recipes/form";
+                }
+                
+                request.setSteps(steps);
+                log.info("조리 단계 JSON 파싱 완료: {} 개", steps.size());
+                
+            } catch (Exception e) {
+                log.error("조리 단계 JSON 파싱 실패: {}", e.getMessage());
+                model.addAttribute("recipe", request);
+                model.addAttribute("isEdit", true);
+                model.addAttribute("recipeId", id);
+                model.addAttribute("errorMessage", "조리 단계 정보 처리 중 오류가 발생했습니다.");
+                return "recipes/form";
+            }
+        } else {
+            model.addAttribute("recipe", request);
+            model.addAttribute("isEdit", true);
+            model.addAttribute("recipeId", id);
+            model.addAttribute("errorMessage", "최소 1개 이상의 조리 단계를 입력해주세요.");
+            return "recipes/form";
         }
 
         if (bindingResult.hasErrors()) {

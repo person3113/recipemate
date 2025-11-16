@@ -89,8 +89,8 @@ public class NotificationService {
             case JOIN_GROUP_BUY, CANCEL_PARTICIPATION, GROUP_BUY_DEADLINE, 
                  GROUP_BUY_COMPLETED, REVIEW_GROUP_BUY -> recipient.getGroupPurchaseNotification();
             
-            // 쪽지는 항상 알림 생성
-            case DIRECT_MESSAGE -> true;
+            // 쪽지, 레시피 제안 처리 알림은 항상 생성
+            case DIRECT_MESSAGE, RECIPE_CORRECTION_APPROVED, RECIPE_CORRECTION_REJECTED -> true;
         };
     }
 
@@ -201,6 +201,8 @@ public class NotificationService {
             case GROUP_BUY_DEADLINE -> "찜한 공구가 곧 마감됩니다.";
             case GROUP_BUY_COMPLETED -> "참여한 공구가 목표 인원을 달성했습니다.";
             case DIRECT_MESSAGE -> actorName + "님이 쪽지를 보냈습니다.";
+            case RECIPE_CORRECTION_APPROVED -> "레시피 개선 제안이 승인되었습니다.";
+            case RECIPE_CORRECTION_REJECTED -> "레시피 개선 제안이 기각되었습니다.";
         };
     }
 

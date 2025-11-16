@@ -26,7 +26,8 @@
 
                     <div class="card-body p-4">
                         <!-- 폼 시작 -->
-                        <form th:action="${isEdit ? '/recipes/' + recipeId + '/edit' : '/recipes'}"
+                        <form id="recipeForm"
+                              th:action="${isEdit ? '/recipes/' + recipeId + '/edit' : '/recipes'}"
                               method="post"
                               enctype="multipart/form-data"
                               th:object="${recipe}">
@@ -104,16 +105,14 @@
                                             <div class="row">
                                                 <div class="col-md-5">
                                                     <input type="text"
-                                                           class="form-control"
-                                                           th:name="|ingredients[${iterStat.index}].name|"
+                                                           class="form-control ingredient-name-input"
                                                            th:value="${ingredient.name}"
                                                            placeholder="재료명"
                                                            required>
                                                 </div>
                                                 <div class="col-md-5">
                                                     <input type="text"
-                                                           class="form-control"
-                                                           th:name="|ingredients[${iterStat.index}].measure|"
+                                                           class="form-control ingredient-measure-input"
                                                            th:value="${ingredient.measure}"
                                                            placeholder="분량"
                                                            required>
@@ -132,15 +131,13 @@
                                         <div class="row">
                                             <div class="col-md-5">
                                                 <input type="text"
-                                                       class="form-control"
-                                                       name="ingredients[0].name"
+                                                       class="form-control ingredient-name-input"
                                                        placeholder="재료명 (예: 돼지고기)"
                                                        required>
                                             </div>
                                             <div class="col-md-5">
                                                 <input type="text"
-                                                       class="form-control"
-                                                       name="ingredients[0].measure"
+                                                       class="form-control ingredient-measure-input"
                                                        placeholder="분량 (예: 300g)"
                                                        required>
                                             </div>
@@ -173,8 +170,7 @@
                                                       style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;"
                                                       th:text="${iterStat.index + 1}">1</span>
                                                 <div class="flex-grow-1 me-2">
-                                                    <textarea class="form-control"
-                                                              th:name="|steps[${iterStat.index}].description|"
+                                                    <textarea class="form-control step-description-input"
                                                               th:text="${step.description}"
                                                               rows="3"
                                                               placeholder="조리 단계를 입력하세요"
@@ -193,8 +189,7 @@
                                             <span class="badge bg-primary rounded-circle me-2 mt-1"
                                                   style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">1</span>
                                             <div class="flex-grow-1 me-2">
-                                                <textarea class="form-control"
-                                                          name="steps[0].description"
+                                                <textarea class="form-control step-description-input"
                                                           rows="3"
                                                           placeholder="조리 단계를 입력하세요 (예: 돼지고기를 한입 크기로 썰어주세요)"
                                                           required></textarea>
@@ -267,10 +262,10 @@
             newIngredient.innerHTML = `
                 <div class="row">
                     <div class="col-md-5">
-                        <input type="text" class="form-control" name="ingredients[${ingredientCount}].name" placeholder="재료명" required>
+                        <input type="text" class="form-control ingredient-name-input" placeholder="재료명" required>
                     </div>
                     <div class="col-md-5">
-                        <input type="text" class="form-control" name="ingredients[${ingredientCount}].measure" placeholder="분량" required>
+                        <input type="text" class="form-control ingredient-measure-input" placeholder="분량" required>
                     </div>
                     <div class="col-md-2">
                         <button type="button" class="btn btn-danger" onclick="removeIngredient(this)">
@@ -288,24 +283,9 @@
             const ingredientItem = button.closest('.ingredient-item');
             if (document.querySelectorAll('.ingredient-item').length > 1) {
                 ingredientItem.remove();
-                // 삭제 후 인덱스 재정렬
-                reindexIngredients();
             } else {
                 alert('최소 1개의 재료가 필요합니다.');
             }
-        }
-
-        // 재료 인덱스 재정렬
-        function reindexIngredients() {
-            const ingredientItems = document.querySelectorAll('.ingredient-item');
-            ingredientItems.forEach((item, index) => {
-                const nameInput = item.querySelector('input[name*=".name"]');
-                const measureInput = item.querySelector('input[name*=".measure"]');
-
-                if (nameInput) nameInput.name = `ingredients[${index}].name`;
-                if (measureInput) measureInput.name = `ingredients[${index}].measure`;
-            });
-            ingredientCount = ingredientItems.length;
         }
 
         // 조리 단계 추가
@@ -319,8 +299,7 @@
                     <span class="badge bg-primary rounded-circle me-2 mt-1"
                           style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">${stepNumber}</span>
                     <div class="flex-grow-1 me-2">
-                        <textarea class="form-control"
-                                  name="steps[${stepCount}].description"
+                        <textarea class="form-control step-description-input"
                                   rows="3"
                                   placeholder="조리 단계를 입력하세요"
                                   required></textarea>
@@ -339,24 +318,19 @@
             const stepItem = button.closest('.step-item');
             if (document.querySelectorAll('.step-item').length > 1) {
                 stepItem.remove();
-                // 삭제 후 인덱스 및 번호 재정렬
+                // 삭제 후 번호 재정렬
                 reindexSteps();
             } else {
                 alert('최소 1개의 조리 단계가 필요합니다.');
             }
         }
 
-        // 조리 단계 인덱스 및 번호 재정렬
+        // 조리 단계 번호 재정렬
         function reindexSteps() {
             const stepItems = document.querySelectorAll('.step-item');
             stepItems.forEach((item, index) => {
-                // 번호 표시 업데이트
                 const badge = item.querySelector('.badge');
                 if (badge) badge.textContent = index + 1;
-
-                // textarea name 업데이트
-                const textarea = item.querySelector('textarea[name*=".description"]');
-                if (textarea) textarea.name = `steps[${index}].description`;
             });
             stepCount = stepItems.length;
         }
@@ -373,6 +347,110 @@
                 reader.readAsDataURL(file);
             }
         }
+
+        // 폼 제출 시 재료와 조리 단계를 JSON으로 변환 (Tomcat 파일 개수 제한 우회)
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('recipeForm');
+            
+            if (!form) {
+                console.error('레시피 폼을 찾을 수 없습니다.');
+                return;
+            }
+            
+            // 폼 제출 시 재료와 조리 단계를 JSON으로 변환
+            form.addEventListener('submit', function(e) {
+                console.log('=== 폼 제출 시작 ===');
+                
+                // 1. 재료 데이터 수집
+                const ingredientItems = document.querySelectorAll('.ingredient-item');
+                const ingredientsData = [];
+                
+                console.log('재료 아이템 개수:', ingredientItems.length);
+                
+                ingredientItems.forEach((item, index) => {
+                    const nameInput = item.querySelector('.ingredient-name-input');
+                    const measureInput = item.querySelector('.ingredient-measure-input');
+                    
+                    console.log(`재료 ${index + 1}:`, {
+                        nameInput: nameInput,
+                        nameValue: nameInput ? nameInput.value : 'null',
+                        measureInput: measureInput,
+                        measureValue: measureInput ? measureInput.value : 'null'
+                    });
+                    
+                    if (nameInput && measureInput && nameInput.value.trim() !== '') {
+                        ingredientsData.push({
+                            name: nameInput.value.trim(),
+                            measure: measureInput.value.trim()
+                        });
+                    }
+                });
+                
+                console.log('수집된 재료 데이터:', ingredientsData);
+                
+                // 2. 조리 단계 데이터 수집
+                const stepItems = document.querySelectorAll('.step-item');
+                const stepsData = [];
+                
+                console.log('조리 단계 아이템 개수:', stepItems.length);
+                
+                stepItems.forEach((item, index) => {
+                    const textarea = item.querySelector('.step-description-input');
+                    
+                    console.log(`조리 단계 ${index + 1}:`, {
+                        textarea: textarea,
+                        value: textarea ? textarea.value : 'null'
+                    });
+                    
+                    if (textarea && textarea.value.trim() !== '') {
+                        stepsData.push({
+                            description: textarea.value.trim()
+                        });
+                    }
+                });
+                
+                console.log('수집된 조리 단계 데이터:', stepsData);
+                
+                // 3. 최소 개수 검증
+                if (ingredientsData.length === 0) {
+                    e.preventDefault();
+                    alert('최소 1개 이상의 재료를 입력해주세요.');
+                    return false;
+                }
+                
+                if (stepsData.length === 0) {
+                    e.preventDefault();
+                    alert('최소 1개 이상의 조리 단계를 입력해주세요.');
+                    return false;
+                }
+                
+                // 4. JSON 문자열로 변환하여 hidden input에 저장
+                let ingredientsJsonInput = document.getElementById('ingredientsJson');
+                if (!ingredientsJsonInput) {
+                    ingredientsJsonInput = document.createElement('input');
+                    ingredientsJsonInput.type = 'hidden';
+                    ingredientsJsonInput.id = 'ingredientsJson';
+                    ingredientsJsonInput.name = 'ingredientsJson';
+                    form.appendChild(ingredientsJsonInput);
+                }
+                ingredientsJsonInput.value = JSON.stringify(ingredientsData);
+                console.log('ingredientsJson 생성:', ingredientsJsonInput.value);
+                
+                let stepsJsonInput = document.getElementById('stepsJson');
+                if (!stepsJsonInput) {
+                    stepsJsonInput = document.createElement('input');
+                    stepsJsonInput.type = 'hidden';
+                    stepsJsonInput.id = 'stepsJson';
+                    stepsJsonInput.name = 'stepsJson';
+                    form.appendChild(stepsJsonInput);
+                }
+                stepsJsonInput.value = JSON.stringify(stepsData);
+                console.log('stepsJson 생성:', stepsJsonInput.value);
+                
+                console.log('=== 폼 제출 준비 완료 ===');
+                // e.preventDefault()를 호출하지 않았으므로 자연스럽게 폼이 제출됨
+            });
+        });
     </script>
 </body>
 </html>

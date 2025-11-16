@@ -12,6 +12,7 @@ import com.recipemate.domain.recipe.entity.RecipeSource;
 import com.recipemate.domain.recipe.entity.RecipeStep;
 import com.recipemate.domain.recipe.repository.RecipeIngredientRepository;
 import com.recipemate.domain.recipe.repository.RecipeRepository;
+import com.recipemate.domain.recipe.repository.RecipeStepRepository;
 import com.recipemate.global.common.GroupBuyStatus;
 import com.recipemate.global.config.CacheConfig;
 import com.recipemate.global.exception.CustomException;
@@ -50,6 +51,7 @@ public class RecipeService {
     private final GroupBuyRepository groupBuyRepository;
     private final RecipeRepository recipeRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
+    private final RecipeStepRepository recipeStepRepository;
     private final JPAQueryFactory queryFactory;
     private final com.recipemate.domain.review.repository.ReviewRepository reviewRepository;
     private final com.recipemate.global.util.ImageUploadUtil imageUploadUtil;
@@ -744,6 +746,7 @@ public class RecipeService {
 
         return RecipeDetailResponse.builder()
                 .id(apiId)
+                .dbId(recipe.getId())  // DB ID 추가 (수정/삭제 작업용)
                 .name(recipe.getTitle())
                 .imageUrl(recipe.getFullImageUrl() != null ? recipe.getFullImageUrl() : recipe.getThumbnailImageUrl())
                 .category(recipe.getCategory())
@@ -1029,8 +1032,11 @@ public class RecipeService {
             request.getSourceUrl()
         );
 
-        // 5. 재료 업데이트 (기존 재료 삭제 후 새로 추가)
-        recipe.getIngredients().clear();
+        // 5. 재료 업데이트 (Bulk DELETE 후 새로 추가 - N+1 문제 방지)
+        // recipe.getIngredients().clear(); // ← N+1 문제 발생! 각 재료마다 개별 DELETE
+        recipeIngredientRepository.bulkSoftDeleteByRecipeId(recipeId); // ← 단일 UPDATE 쿼리
+        recipe.getIngredients().clear(); // 영속성 컨텍스트 동기화
+        
         for (RecipeUpdateRequest.IngredientDto ingredientDto : request.getIngredients()) {
             RecipeIngredient ingredient = RecipeIngredient.builder()
                     .name(ingredientDto.getName())
@@ -1039,8 +1045,11 @@ public class RecipeService {
             recipe.addIngredient(ingredient);
         }
 
-        // 6. 조리 단계 업데이트 (기존 단계 삭제 후 새로 추가)
-        recipe.getSteps().clear();
+        // 6. 조리 단계 업데이트 (Bulk DELETE 후 새로 추가 - N+1 문제 방지)
+        // recipe.getSteps().clear(); // ← N+1 문제 발생! 각 단계마다 개별 DELETE
+        recipeStepRepository.bulkSoftDeleteByRecipeId(recipeId); // ← 단일 UPDATE 쿼리
+        recipe.getSteps().clear(); // 영속성 컨텍스트 동기화
+        
         int stepNumber = 1;
         for (RecipeUpdateRequest.StepDto stepDto : request.getSteps()) {
             RecipeStep step = RecipeStep.builder()

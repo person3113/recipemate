@@ -44,26 +44,25 @@ public class RecipeUpdateRequest {
 
     // 재료 목록
     @Valid
-    @NotNull(message = "재료를 최소 1개 이상 입력해주세요")
-    @Size(min = 1, message = "재료를 최소 1개 이상 입력해주세요")
     @Builder.Default
     private List<IngredientDto> ingredients = new ArrayList<>();
 
     // 조리 단계 목록
     @Valid
-    @NotNull(message = "조리 단계를 최소 1개 이상 입력해주세요")
-    @Size(min = 1, message = "조리 단계를 최소 1개 이상 입력해주세요")
     @Builder.Default
     private List<StepDto> steps = new ArrayList<>();
+
+    // JSON 형식의 재료 데이터 (Tomcat 폼 필드 개수 제한 우회)
+    private String ingredientsJson;
+
+    // JSON 형식의 조리 단계 데이터 (Tomcat 폼 필드 개수 제한 우회)
+    private String stepsJson;
 
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static class IngredientDto {
-        @NotBlank(message = "재료명을 입력해주세요")
         private String name;
-
-        @NotBlank(message = "재료 분량을 입력해주세요")
         private String measure;
     }
 
@@ -71,7 +70,6 @@ public class RecipeUpdateRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class StepDto {
-        @NotBlank(message = "조리 단계 설명을 입력해주세요")
         private String description;
     }
 }

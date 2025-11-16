@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>레시피 개선 제안하기 - RecipeMate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-5">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <!-- Page Header -->
+                <div class="mb-4">
+                    <h1 class="display-6 fw-bold">
+                        <i class="bi bi-lightbulb text-warning"></i> 레시피 개선 제안하기
+                    </h1>
+                    <p class="text-muted">레시피에 오류나 개선사항이 있다면 제안해주세요!</p>
+                </div>
+
+                <!-- Info Alert -->
+                <div class="alert alert-info">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-info-circle"></i> 제안 안내
+                    </h6>
+                    <ul class="mb-0 small">
+                        <li>제안이 승인되면 <strong>매너온도 +0.5°C</strong>와 <strong>포인트 +50P</strong>가 지급됩니다.</li>
+                        <li>관리자 검토 후 승인/기각 여부가 결정되며, 결과는 알림으로 전달됩니다.</li>
+                        <li>동일한 레시피에 대해 대기 중인 제안이 있으면 새 제안을 제출할 수 없습니다.</li>
+                    </ul>
+                </div>
+
+                <!-- Recipe Info Card -->
+                <div class="card shadow-sm mb-4" th:if="${recipe}">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">제안 대상 레시피</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <img th:if="${recipe.imageUrl}" 
+                                 th:src="${recipe.imageUrl}" 
+                                 th:alt="${recipe.name}"
+                                 class="rounded me-3"
+                                 style="width: 80px; height: 80px; object-fit: cover;">
+                            <div th:unless="${recipe.imageUrl}" 
+                                 class="rounded bg-light d-flex align-items-center justify-content-center me-3"
+                                 style="width: 80px; height: 80px;">
+                                <i class="bi bi-egg-fried text-muted" style="font-size: 2rem;"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1" th:text="${recipe.name}">레시피명</h5>
+                                <p class="text-muted mb-0 small">
+                                    <span th:text="${recipe.category}">카테고리</span>
+                                    <span th:if="${recipe.area}"> · <span th:text="${recipe.area}">지역</span></span>
+                                </p>
+                                <a th:href="@{/recipes/{id}(id=${recipe.id})}" 
+                                   class="btn btn-sm btn-outline-primary mt-2"
+                                   target="_blank">
+                                    <i class="bi bi-box-arrow-up-right"></i> 레시피 보기
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Messages -->
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Correction Form -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">제안 내용 작성</h5>
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/recipes/{recipeApiId}/corrections(recipeApiId=${recipeApiId})}" 
+                              method="post">
+                            <!-- Correction Type -->
+                            <div class="mb-4">
+                                <label for="correctionType" class="form-label fw-bold">
+                                    제안 종류 <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" 
+                                        id="correctionType" 
+                                        name="correctionType" 
+                                        required>
+                                    <option value="">선택해주세요</option>
+                                    <option value="TYPO">오타/오류 수정</option>
+                                    <option value="INCORRECT_INFO">잘못된 정보 수정</option>
+                                    <option value="SUGGESTION">개선 제안</option>
+                                    <option value="OTHER">기타</option>
+                                </select>
+                                <div class="form-text">
+                                    <ul class="small mb-0 mt-2">
+                                        <li><strong>오타/오류:</strong> 맞춤법, 띄어쓰기, 단위 등의 오류</li>
+                                        <li><strong>잘못된 정보:</strong> 재료, 분량, 조리법의 잘못된 내용</li>
+                                        <li><strong>개선 제안:</strong> 더 나은 조리 방법이나 추가 정보</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Proposed Change -->
+                            <div class="mb-4">
+                                <label for="proposedChange" class="form-label fw-bold">
+                                    제안 내용 <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" 
+                                          id="proposedChange" 
+                                          name="proposedChange" 
+                                          rows="8" 
+                                          placeholder="문제가 되는 부분과 수정/개선 방안을 구체적으로 작성해주세요.&#10;&#10;예시:&#10;- 현재: 설탕 500g&#10;- 수정: 설탕 50g&#10;- 이유: 분량이 과다하게 표기되어 있습니다."
+                                          required
+                                          minlength="10"
+                                          maxlength="1000"></textarea>
+                                <div class="form-text">
+                                    최소 10자 이상, 최대 1000자까지 작성 가능합니다.
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a th:href="@{/recipes/{id}(id=${recipe.id})}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> 취소
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-send"></i> 제안 제출
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Character counter
+        const textarea = document.getElementById('proposedChange');
+        const counterDiv = document.createElement('div');
+        counterDiv.className = 'form-text text-end';
+        counterDiv.id = 'charCounter';
+        textarea.parentElement.appendChild(counterDiv);
+
+        function updateCounter() {
+            const length = textarea.value.length;
+            counterDiv.textContent = `${length} / 1000자`;
+            if (length < 10) {
+                counterDiv.classList.add('text-danger');
+            } else {
+                counterDiv.classList.remove('text-danger');
+            }
+        }
+
+        textarea.addEventListener('input', updateCounter);
+        updateCounter();
+    </script>
+</body>
+</html>

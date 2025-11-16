@@ -45,6 +45,13 @@
                         <a th:href="@{/community-posts/list}" class="nav-link">커뮤니티</a>
                     </li>
                     
+                    <!-- Admin Menu - Only visible for ADMIN role -->
+                    <li sec:authorize="hasRole('ADMIN')" class="nav-item">
+                        <a th:href="@{/admin}" class="nav-link text-danger" title="관리자">
+                            <i class="bi bi-shield-check"></i> 관리자
+                        </a>
+                    </li>
+                    
                     <!-- Authenticated User - Icon Navigation -->
                     <li sec:authorize="isAuthenticated()" class="nav-item ms-2">
                         <a th:href="@{/users/me/notifications}" class="nav-link position-relative" title="알림">

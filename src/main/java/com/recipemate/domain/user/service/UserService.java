@@ -103,6 +103,11 @@ public class UserService {
         return UserResponse.from(user);
     }
 
+    public User getUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
     @Transactional
     public UserResponse updateProfile(String email, UpdateProfileRequest request) {
         User user = userRepository.findByEmail(email)
@@ -416,5 +421,30 @@ public class UserService {
 
         String encodedPassword = passwordEncoder.encode(newPassword);
         user.changePassword(encodedPassword);
+    }
+
+    /**
+     * 관리자의 매너온도 조정
+     * 상승/차감을 모두 처리하고 MannerTempHistory에 기록
+     */
+    @Transactional
+    public void adjustMannerTemperature(Long userId, Double changeValue, String reason) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        Double previousTemp = user.getMannerTemperature();
+        user.updateMannerTemperature(changeValue);
+        
+        // 매너온도 변경 이력 기록
+        mannerTempHistoryService.recordHistory(
+                user, 
+                changeValue, 
+                previousTemp, 
+                "관리자 조정: " + reason, 
+                null
+        );
+        
+        log.info("관리자가 사용자 {}(ID: {})의 매너온도를 {}°C 조정했습니다. (이전: {}°C, 현재: {}°C, 사유: {})",
+                user.getNickname(), userId, changeValue, previousTemp, user.getMannerTemperature(), reason);
     }
 }

@@ -23,6 +23,7 @@ public class ReportResponse {
     private Long reporterId;
     private ReportedEntityType reportedEntityType;
     private Long reportedEntityId;
+    private String reportedUserNickname; // 사용자 신고 시 피신고자 닉네임
     private ReportType reportType;
     private String content;
     private ReportStatus status;
@@ -38,6 +39,7 @@ public class ReportResponse {
                 .reporterId(report.getReporter() != null ? report.getReporter().getId() : null)
                 .reportedEntityType(report.getReportedEntityType())
                 .reportedEntityId(report.getReportedEntityId())
+                .reportedUserNickname(null) // ReportService에서 설정
                 .reportType(report.getReportType())
                 .content(report.getContent())
                 .status(report.getStatus())

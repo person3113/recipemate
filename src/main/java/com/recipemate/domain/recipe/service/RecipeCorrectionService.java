@@ -75,10 +75,19 @@ public class RecipeCorrectionService {
     }
 
     /**
-     * PENDING 상태의 모든 제안 조회 (관리자용)
+     * PENDING 상태의 제안 목록 조회 (관리자용)
      */
     public List<RecipeCorrectionResponse> getPendingCorrections() {
         return correctionRepository.findAllPending().stream()
+                .map(RecipeCorrectionResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 상태별 제안 목록 조회 (관리자용)
+     */
+    public List<RecipeCorrectionResponse> getCorrectionsByStatus(com.recipemate.domain.recipe.entity.CorrectionStatus status) {
+        return correctionRepository.findAllByStatus(status).stream()
                 .map(RecipeCorrectionResponse::from)
                 .collect(Collectors.toList());
     }

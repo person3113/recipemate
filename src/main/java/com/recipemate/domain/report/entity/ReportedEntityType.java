@@ -16,7 +16,8 @@ public enum ReportedEntityType {
     private final String urlPrefix;
 
     public String getEntityUrl(Long entityId) {
-        if (this == COMMENT) {
+        // COMMENT와 USER는 직접 접근 URL이 없으므로 null 반환
+        if (this == COMMENT || this == USER) {
             return null;
         }
         return "/" + urlPrefix + "/" + entityId;

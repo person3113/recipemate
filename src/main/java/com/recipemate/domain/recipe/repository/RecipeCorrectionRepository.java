@@ -26,6 +26,14 @@ public interface RecipeCorrectionRepository extends JpaRepository<RecipeCorrecti
     List<RecipeCorrection> findAllPending();
 
     /**
+     * 특정 상태의 모든 제안 조회 (관리자용)
+     */
+    @Query("SELECT rc FROM RecipeCorrection rc " +
+            "WHERE rc.status = :status " +
+            "ORDER BY rc.createdAt DESC")
+    List<RecipeCorrection> findAllByStatus(@Param("status") CorrectionStatus status);
+
+    /**
      * 특정 레시피에 대한 제안 조회
      */
     @Query("SELECT rc FROM RecipeCorrection rc " +

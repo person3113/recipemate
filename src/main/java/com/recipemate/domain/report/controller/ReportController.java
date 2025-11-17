@@ -18,8 +18,10 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriUtils;
 
 import java.beans.PropertyEditorSupport;
+import java.nio.charset.StandardCharsets;
 
 /**
  * 신고 컨트롤러 (사용자용)
@@ -87,15 +89,34 @@ public class ReportController {
 
             redirectAttributes.addFlashAttribute("message", "신고가 접수되었습니다. 검토 후 조치하겠습니다.");
             
-            String redirectUrl = request.getReportedEntityType().getEntityUrl(request.getReportedEntityId());
-            if (redirectUrl != null) {
-                return "redirect:" + redirectUrl;
-            }
-            return "redirect:/";
+            // 신고 대상에 따라 리다이렉트 URL 결정
+            String redirectUrl = getRedirectUrl(request);
+            return "redirect:" + redirectUrl;
             
         } catch (CustomException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             return "redirect:/";
         }
+    }
+    
+    /**
+     * 신고 제출 후 리다이렉트 URL 결정
+     * 한글 닉네임의 경우 URL 인코딩 처리
+     */
+    private String getRedirectUrl(ReportCreateRequest request) {
+        // 사용자 신고인 경우 닉네임으로 프로필 URL 생성
+        if (request.getReportedEntityType() == ReportedEntityType.USER) {
+            User reportedUser = userRepository.findById(request.getReportedEntityId())
+                    .orElse(null);
+            if (reportedUser != null) {
+                // 한글 닉네임을 URL 안전하게 인코딩
+                String encodedNickname = UriUtils.encodePath(reportedUser.getNickname(), StandardCharsets.UTF_8);
+                return "/users/profile/" + encodedNickname;
+            }
+        }
+        
+        // 다른 타입은 기본 getEntityUrl() 사용
+        String entityUrl = request.getReportedEntityType().getEntityUrl(request.getReportedEntityId());
+        return (entityUrl != null) ? entityUrl : "/";
     }
 }

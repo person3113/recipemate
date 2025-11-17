@@ -20,7 +20,8 @@
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div>
                         <h1 class="display-6 fw-bold">
-                            <i class="bi bi-shield-check text-danger"></i> 레시피 개선 제안 관리
+                            <i class="bi bi-shield-check text-danger"></i> 
+                            <span th:text="${pageTitle} ?: '레시피 개선 제안 관리'">레시피 개선 제안 관리</span>
                         </h1>
                         <p class="text-muted">사용자가 제출한 레시피 개선 제안을 검토하고 처리하세요</p>
                     </div>
@@ -48,7 +49,7 @@
                         <div class="row text-center">
                             <div class="col">
                                 <h3 class="mb-0 text-warning fw-bold" th:text="${totalCount}">0</h3>
-                                <small class="text-muted">대기 중인 제안</small>
+                                <small class="text-muted" th:text="${pageTitle} ?: '대기 중인 제안'">대기 중인 제안</small>
                             </div>
                         </div>
                     </div>
@@ -64,7 +65,7 @@
                     <div class="card-body p-0">
                         <div th:if="${corrections.isEmpty()}" class="text-center py-5">
                             <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
-                            <p class="text-muted mt-3 mb-0">대기 중인 제안이 없습니다.</p>
+                            <p class="text-muted mt-3 mb-0">제안이 없습니다.</p>
                         </div>
 
                         <div th:if="${!corrections.isEmpty()}" class="table-responsive">
@@ -109,7 +110,11 @@
                                         </td>
                                         <td th:text="${#temporals.format(correction.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01</td>
                                         <td>
-                                            <span class="badge bg-warning">대기중</span>
+                                            <th:block th:switch="${correction.status.name()}">
+                                                <span th:case="'PENDING'" class="badge bg-warning">대기중</span>
+                                                <span th:case="'APPROVED'" class="badge bg-success">승인됨</span>
+                                                <span th:case="'REJECTED'" class="badge bg-secondary">기각됨</span>
+                                            </th:block>
                                         </td>
                                         <td>
                                             <a th:href="@{/admin/corrections/{id}(id=${correction.id})}" 

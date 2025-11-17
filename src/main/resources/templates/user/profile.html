@@ -38,11 +38,18 @@
                                 <!-- Nickname -->
                                 <h2 class="mb-3" th:text="${userProfile.nickname}">닉네임</h2>
                                 
-                                <!-- Action Buttons (Send Message) -->
+                                <!-- Action Buttons (Send Message + Report) -->
                                 <div class="mb-3" sec:authorize="isAuthenticated()">
                                     <a th:href="@{/direct-messages/conversation/{userId}(userId=${userProfile.id})}" 
                                        class="btn btn-primary btn-sm">
                                         <i class="bi bi-envelope"></i> 쪽지 보내기
+                                    </a>
+                                    
+                                    <!-- 신고 버튼: 다른 사용자의 프로필을 볼 때만 표시 -->
+                                    <a th:if="${currentUserId != null and currentUserId != userProfile.id}"
+                                       th:href="@{/reports/new(entityType='USER', entityId=${userProfile.id}, entityName=${userProfile.nickname})}" 
+                                       class="btn btn-outline-danger btn-sm ms-2">
+                                        <i class="bi bi-flag"></i> 신고하기
                                     </a>
                                 </div>
                                 

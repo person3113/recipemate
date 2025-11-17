@@ -99,12 +99,20 @@
                                             <i class="bi bi-box-arrow-up-right"></i> 공구 보기
                                         </a>
                                         <a th:case="'USER'" 
-                                           th:href="@{/users/profile/{id}(id=*{reportedEntityId})}"
+                                           th:href="@{/users/profile/{nickname}(nickname=*{reportedUserNickname})}"
                                            class="btn btn-sm btn-outline-danger"
                                            target="_blank">
                                             <i class="bi bi-box-arrow-up-right"></i> 사용자 프로필 보기
                                         </a>
                                     </th:block>
+                                    
+                                    <!-- 사용자 신고인 경우 매너온도 조정 버튼 추가 -->
+                                    <a th:if="*{reportedEntityType.name() == 'USER'}"
+                                       th:href="@{/admin/users/{userId}/manner-temp(userId=*{reportedEntityId})}"
+                                       class="btn btn-sm btn-warning ms-2"
+                                       target="_blank">
+                                        <i class="bi bi-thermometer-half"></i> 매너온도 조정
+                                    </a>
                                 </div>
                             </div>
                         </div>

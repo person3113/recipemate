@@ -515,10 +515,21 @@ public class UserController {
     @GetMapping("/profile/{nickname}")
     public String userProfile(
             @PathVariable String nickname,
+            @AuthenticationPrincipal UserDetails userDetails,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Model model) {
         UserProfileResponseDto userProfile = userService.getUserProfile(nickname, pageable);
         model.addAttribute("userProfile", userProfile);
+        
+        // 현재 로그인한 사용자의 ID를 모델에 추가 (신고 버튼 표시 여부 판단용)
+        if (userDetails != null) {
+            User currentUser = userRepository.findByEmail(userDetails.getUsername())
+                    .orElse(null);
+            if (currentUser != null) {
+                model.addAttribute("currentUserId", currentUser.getId());
+            }
+        }
+        
         return "user/profile";
     }
 

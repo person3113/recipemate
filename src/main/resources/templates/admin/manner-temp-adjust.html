@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>매너온도 조정 - RecipeMate Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-5">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <!-- Page Header -->
+                <div class="mb-4">
+                    <h1 class="display-6 fw-bold">
+                        <i class="bi bi-thermometer-half text-primary"></i> 매너온도 조정
+                    </h1>
+                    <p class="text-muted">사용자의 매너온도를 상승 또는 차감할 수 있습니다.</p>
+                </div>
+
+                <!-- Messages -->
+                <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span th:text="${message}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- User Info Card -->
+                <div class="card shadow-sm mb-4" th:object="${userProfile}">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">사용자 정보</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <!-- Profile Image or Default Icon -->
+                            <div th:if="*{profileImageUrl}" class="me-3">
+                                <img th:src="*{profileImageUrl}" 
+                                     class="rounded-circle" 
+                                     style="width: 80px; height: 80px; object-fit: cover;" 
+                                     alt="프로필 이미지">
+                            </div>
+                            <div th:unless="*{profileImageUrl}" class="me-3">
+                                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" 
+                                     style="width: 80px; height: 80px;">
+                                    <i class="bi bi-person-circle text-muted" style="font-size: 4rem;"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="mb-1" th:text="*{nickname}">사용자닉네임</h4>
+                                <p class="text-muted mb-0">
+                                    <i class="bi bi-person-badge"></i> 
+                                    ID: <span th:text="*{id}">1</span>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded">
+                                    <div class="text-muted small">현재 매너온도</div>
+                                    <div class="h3 mb-0">
+                                        <i class="bi bi-thermometer-half"></i>
+                                        <span th:text="*{mannerTemperature} + '°C'">36.5°C</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manner Temperature Adjust Form -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">매너온도 조정</h5>
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/admin/users/{userId}/manner-temp(userId=${userProfile.id})}" 
+                              method="post" 
+                              id="adjustForm">
+                            
+                            <!-- Change Value -->
+                            <div class="mb-4">
+                                <label for="changeValue" class="form-label fw-bold">
+                                    변경값 (°C) <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       name="changeValue" 
+                                       id="changeValue" 
+                                       step="0.1"
+                                       placeholder="예: 차감은 -1.0, 상승은 1.0"
+                                       required>
+                                <div class="form-text">
+                                    상승은 양수(+), 차감은 음수(-)로 입력하세요. (예: +1.0, -2.5)
+                                </div>
+                            </div>
+
+                            <!-- Quick Buttons -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">빠른 입력</label>
+                                <div class="btn-group d-flex gap-2" role="group">
+                                    <button type="button" class="btn btn-outline-danger" onclick="setChangeValue(-5.0)">
+                                        -5.0°C
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" onclick="setChangeValue(-2.0)">
+                                        -2.0°C
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" onclick="setChangeValue(-1.0)">
+                                        -1.0°C
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success" onclick="setChangeValue(1.0)">
+                                        +1.0°C
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success" onclick="setChangeValue(2.0)">
+                                        +2.0°C
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success" onclick="setChangeValue(5.0)">
+                                        +5.0°C
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Reason -->
+                            <div class="mb-4">
+                                <label for="reason" class="form-label fw-bold">
+                                    조정 사유 <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" 
+                                          name="reason" 
+                                          id="reason" 
+                                          rows="4" 
+                                          placeholder="매너온도 조정 사유를 상세히 입력해주세요."
+                                          required
+                                          minlength="10"
+                                          maxlength="500"></textarea>
+                                <div class="form-text">
+                                    최소 10자 이상, 최대 500자까지 입력 가능합니다.
+                                </div>
+                            </div>
+
+                            <!-- Preview -->
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>변경 후 예상 매너온도:</strong>
+                                <span id="previewTemp" class="fw-bold">-</span>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i class="bi bi-check-circle"></i> 조정하기
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="history.back()">
+                                    <i class="bi bi-x-circle"></i> 취소
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Warning Box -->
+                <div class="alert alert-warning">
+                    <h6 class="fw-bold">
+                        <i class="bi bi-exclamation-triangle"></i> 주의사항
+                    </h6>
+                    <ul class="small mb-0">
+                        <li>매너온도 조정은 신중하게 수행해주세요.</li>
+                        <li>모든 조정 내역은 매너온도 변경 이력에 기록됩니다.</li>
+                        <li>사용자는 마이페이지에서 변경 이력을 확인할 수 있습니다.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom Script -->
+    <script th:inline="javascript">
+        const currentTemp = /*[[${userProfile.mannerTemperature}]]*/ 36.5;
+        
+        // 빠른 입력 버튼
+        function setChangeValue(value) {
+            document.getElementById('changeValue').value = value;
+            updatePreview(value);
+        }
+        
+        // 변경값 입력 시 미리보기 업데이트
+        document.getElementById('changeValue').addEventListener('input', function(e) {
+            const value = parseFloat(e.target.value) || 0;
+            updatePreview(value);
+        });
+        
+        // 미리보기 업데이트
+        function updatePreview(changeValue) {
+            const newTemp = currentTemp + changeValue;
+            document.getElementById('previewTemp').textContent = newTemp.toFixed(1) + '°C';
+            
+            // 색상 변경
+            const previewElement = document.getElementById('previewTemp');
+            if (changeValue > 0) {
+                previewElement.className = 'text-success fw-bold';
+            } else if (changeValue < 0) {
+                previewElement.className = 'text-danger fw-bold';
+            } else {
+                previewElement.className = 'fw-bold';
+            }
+        }
+        
+        // 폼 제출 시 중복 방지
+        document.getElementById('adjustForm').addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn.disabled) {
+                e.preventDefault();
+                return false;
+            }
+            
+            const changeValue = parseFloat(document.getElementById('changeValue').value);
+            if (isNaN(changeValue)) {
+                e.preventDefault();
+                alert('변경값을 올바르게 입력해주세요.');
+                return false;
+            }
+            
+            if (!confirm(`정말로 매너온도를 ${changeValue > 0 ? '+' : ''}${changeValue}°C 조정하시겠습니까?`)) {
+                e.preventDefault();
+                return false;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> 처리 중...';
+        });
+    </script>
+</body>
+</html>

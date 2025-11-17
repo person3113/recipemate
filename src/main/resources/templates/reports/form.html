@@ -36,7 +36,7 @@
                 <!-- Report Form Card -->
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
-                        <form th:action="@{/reports}" method="post">
+                        <form th:action="@{/reports}" method="post" id="reportForm">
                             <!-- Hidden Fields -->
                             <input type="hidden" name="reportedEntityType" th:value="${entityType}">
                             <input type="hidden" name="reportedEntityId" th:value="${entityId}">
@@ -88,7 +88,7 @@
                             
                             <!-- Action Buttons -->
                             <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-danger">
+                                <button type="submit" class="btn btn-danger" id="submitBtn">
                                     <i class="bi bi-flag"></i> 신고 제출
                                 </button>
                                 <button type="button" class="btn btn-secondary" onclick="history.back()">
@@ -119,5 +119,18 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Prevent Double Submit -->
+    <script>
+        document.getElementById('reportForm').addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn.disabled) {
+                e.preventDefault();
+                return false;
+            }
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> 제출 중...';
+        });
+    </script>
 </body>
 </html>

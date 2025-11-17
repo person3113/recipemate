@@ -100,7 +100,17 @@ public class ReportService {
     public List<ReportResponse> getPendingReports() {
         List<Report> reports = reportRepository.findByStatusOrderByCreatedAtDesc(ReportStatus.PENDING);
         return reports.stream()
-                .map(ReportResponse::from)
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 상태별 신고 목록 조회
+     */
+    public List<ReportResponse> getReportsByStatus(ReportStatus status) {
+        List<Report> reports = reportRepository.findByStatusOrderByCreatedAtDesc(status);
+        return reports.stream()
+                .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
@@ -110,7 +120,40 @@ public class ReportService {
     public ReportResponse getReport(Long reportId) {
         Report report = reportRepository.findByIdWithUsers(reportId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REPORT_NOT_FOUND));
-        return ReportResponse.from(report);
+        return convertToResponse(report);
+    }
+
+    /**
+     * Report 엔티티를 ReportResponse로 변환
+     * 사용자 신고인 경우 피신고자 닉네임 조회
+     */
+    private ReportResponse convertToResponse(Report report) {
+        ReportResponse response = ReportResponse.from(report);
+        
+        // 사용자 신고인 경우 피신고자 닉네임 조회
+        if (report.getReportedEntityType() == ReportedEntityType.USER) {
+            String reportedUserNickname = userRepository.findById(report.getReportedEntityId())
+                    .map(User::getNickname)
+                    .orElse("삭제된 사용자");
+            
+            return ReportResponse.builder()
+                    .id(response.getId())
+                    .reporterNickname(response.getReporterNickname())
+                    .reporterId(response.getReporterId())
+                    .reportedEntityType(response.getReportedEntityType())
+                    .reportedEntityId(response.getReportedEntityId())
+                    .reportedUserNickname(reportedUserNickname)
+                    .reportType(response.getReportType())
+                    .content(response.getContent())
+                    .status(response.getStatus())
+                    .adminNotes(response.getAdminNotes())
+                    .resolverNickname(response.getResolverNickname())
+                    .createdAt(response.getCreatedAt())
+                    .updatedAt(response.getUpdatedAt())
+                    .build();
+        }
+        
+        return response;
     }
 
     /**

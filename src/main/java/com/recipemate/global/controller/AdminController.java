@@ -6,7 +6,10 @@ import com.recipemate.domain.recipe.service.RecipeCorrectionService;
 import com.recipemate.domain.report.dto.ReportProcessRequest;
 import com.recipemate.domain.report.dto.ReportResponse;
 import com.recipemate.domain.report.service.ReportService;
+import com.recipemate.domain.user.dto.MannerTempAdjustRequest;
+import com.recipemate.domain.user.dto.UserProfileResponseDto;
 import com.recipemate.domain.user.service.CustomUserDetailsService.CustomUserDetails;
+import com.recipemate.domain.user.service.UserService;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import jakarta.validation.Valid;
@@ -23,6 +26,7 @@ import java.util.List;
  * 관리자 전용 컨트롤러
  * - 레시피 개선 제안 관리
  * - 신고 관리
+ * - 사용자 매너온도 조정
  */
 @Controller
 @RequestMapping("/admin")
@@ -31,6 +35,7 @@ public class AdminController {
 
     private final RecipeCorrectionService correctionService;
     private final ReportService reportService;
+    private final UserService userService;
 
     /**
      * 관리자 대시보드 (향후 구현)
@@ -44,12 +49,40 @@ public class AdminController {
     /**
      * 레시피 개선 제안 목록 페이지
      * GET /admin/corrections
+     * GET /admin/corrections?status=APPROVED
+     * GET /admin/corrections?status=REJECTED
      */
     @GetMapping("/corrections")
-    public String correctionsList(Model model) {
-        List<RecipeCorrectionResponse> pendingCorrections = correctionService.getPendingCorrections();
-        model.addAttribute("corrections", pendingCorrections);
-        model.addAttribute("totalCount", pendingCorrections.size());
+    public String correctionsList(
+            @RequestParam(required = false) String status,
+            Model model) {
+        
+        List<RecipeCorrectionResponse> corrections;
+        String pageTitle;
+        
+        if (status != null && !status.isEmpty()) {
+            try {
+                com.recipemate.domain.recipe.entity.CorrectionStatus correctionStatus = 
+                        com.recipemate.domain.recipe.entity.CorrectionStatus.valueOf(status);
+                corrections = correctionService.getCorrectionsByStatus(correctionStatus);
+                pageTitle = switch (correctionStatus) {
+                    case PENDING -> "대기 중인 제안";
+                    case APPROVED -> "승인된 제안";
+                    case REJECTED -> "기각된 제안";
+                };
+            } catch (IllegalArgumentException e) {
+                corrections = correctionService.getPendingCorrections();
+                pageTitle = "대기 중인 제안";
+            }
+        } else {
+            corrections = correctionService.getPendingCorrections();
+            pageTitle = "대기 중인 제안";
+        }
+        
+        model.addAttribute("corrections", corrections);
+        model.addAttribute("totalCount", corrections.size());
+        model.addAttribute("pageTitle", pageTitle);
+        model.addAttribute("currentStatus", status);
         return "admin/corrections-list";
     }
 
@@ -111,12 +144,40 @@ public class AdminController {
     /**
      * 신고 목록 페이지
      * GET /admin/reports
+     * GET /admin/reports?status=PROCESSED
+     * GET /admin/reports?status=DISMISSED
      */
     @GetMapping("/reports")
-    public String reportsList(Model model) {
-        List<ReportResponse> pendingReports = reportService.getPendingReports();
-        model.addAttribute("reports", pendingReports);
-        model.addAttribute("totalCount", pendingReports.size());
+    public String reportsList(
+            @RequestParam(required = false) String status,
+            Model model) {
+        
+        List<ReportResponse> reports;
+        String pageTitle;
+        
+        if (status != null && !status.isEmpty()) {
+            try {
+                com.recipemate.domain.report.entity.ReportStatus reportStatus = 
+                        com.recipemate.domain.report.entity.ReportStatus.valueOf(status);
+                reports = reportService.getReportsByStatus(reportStatus);
+                pageTitle = switch (reportStatus) {
+                    case PENDING -> "대기 중인 신고";
+                    case PROCESSED -> "처리된 신고";
+                    case DISMISSED -> "기각된 신고";
+                };
+            } catch (IllegalArgumentException e) {
+                reports = reportService.getPendingReports();
+                pageTitle = "대기 중인 신고";
+            }
+        } else {
+            reports = reportService.getPendingReports();
+            pageTitle = "대기 중인 신고";
+        }
+        
+        model.addAttribute("reports", reports);
+        model.addAttribute("totalCount", reports.size());
+        model.addAttribute("pageTitle", pageTitle);
+        model.addAttribute("currentStatus", status);
         return "admin/reports-list";
     }
 
@@ -178,5 +239,44 @@ public class AdminController {
         }
 
         return "redirect:/admin/reports";
+    }
+
+    // ========== 사용자 매너온도 관리 ==========
+
+    /**
+     * 매너온도 조정 페이지
+     * GET /admin/users/{userId}/manner-temp
+     */
+    @GetMapping("/users/{userId}/manner-temp")
+    public String mannerTempAdjustPage(@PathVariable Long userId, Model model) {
+        UserProfileResponseDto userProfile = userService.getUserProfile(
+                userService.getUserById(userId).getNickname(),
+                org.springframework.data.domain.Pageable.unpaged()
+        );
+        model.addAttribute("userProfile", userProfile);
+        return "admin/manner-temp-adjust";
+    }
+
+    /**
+     * 매너온도 조정 처리
+     * POST /admin/users/{userId}/manner-temp
+     */
+    @PostMapping("/users/{userId}/manner-temp")
+    public String adjustMannerTemp(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @ModelAttribute MannerTempAdjustRequest request,
+            RedirectAttributes redirectAttributes) {
+        try {
+            userService.adjustMannerTemperature(userId, request.getChangeValue(), request.getReason());
+            redirectAttributes.addFlashAttribute("message", 
+                    String.format("매너온도가 %s°C 조정되었습니다.", 
+                            request.getChangeValue() > 0 ? "+" + request.getChangeValue() : request.getChangeValue()));
+        } catch (CustomException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/admin/users/" + userId + "/manner-temp";
+        }
+
+        return "redirect:/admin/users/" + userId + "/manner-temp";
     }
 }

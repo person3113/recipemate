@@ -20,14 +20,16 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * @param groupBuyId 공구 ID
      * @return 최상위 댓글 목록
      */
-    List<Comment> findByGroupBuyIdAndParentIsNullOrderByCreatedAtAsc(Long groupBuyId);
+    @Query("SELECT c FROM Comment c JOIN FETCH c.author WHERE c.groupBuy.id = :groupBuyId AND c.parent IS NULL ORDER BY c.createdAt ASC")
+    List<Comment> findByGroupBuyIdAndParentIsNullOrderByCreatedAtAsc(@Param("groupBuyId") Long groupBuyId);
 
     /**
      * 게시글에 달린 최상위 댓글(부모 댓글)만 조회 (생성일 오름차순)
      * @param postId 게시글 ID
      * @return 최상위 댓글 목록
      */
-    List<Comment> findByPostIdAndParentIsNullOrderByCreatedAtAsc(Long postId);
+    @Query("SELECT c FROM Comment c JOIN FETCH c.author WHERE c.post.id = :postId AND c.parent IS NULL ORDER BY c.createdAt ASC")
+    List<Comment> findByPostIdAndParentIsNullOrderByCreatedAtAsc(@Param("postId") Long postId);
 
     /**
      * 공구에 달린 최상위 댓글 페이지네이션 조회 (삭제된 것 포함)
@@ -35,7 +37,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * @param pageable 페이지 정보
      * @return 최상위 댓글 페이지
      */
-    @Query("SELECT c FROM Comment c WHERE c.groupBuy.id = :groupBuyId AND c.parent IS NULL ORDER BY c.createdAt ASC")
+    @Query("SELECT c FROM Comment c JOIN FETCH c.author WHERE c.groupBuy.id = :groupBuyId AND c.parent IS NULL ORDER BY c.createdAt ASC")
     Page<Comment> findByGroupBuyIdAndParentIsNullPageable(@Param("groupBuyId") Long groupBuyId, Pageable pageable);
 
     /**
@@ -44,7 +46,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * @param pageable 페이지 정보
      * @return 최상위 댓글 페이지
      */
-    @Query("SELECT c FROM Comment c WHERE c.post.id = :postId AND c.parent IS NULL ORDER BY c.createdAt ASC")
+    @Query("SELECT c FROM Comment c JOIN FETCH c.author WHERE c.post.id = :postId AND c.parent IS NULL ORDER BY c.createdAt ASC")
     Page<Comment> findByPostIdAndParentIsNullPageable(@Param("postId") Long postId, Pageable pageable);
 
     /**
@@ -53,6 +55,14 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * @return 대댓글 목록
      */
     List<Comment> findByParentIdOrderByCreatedAtAsc(Long parentId);
+
+    /**
+     * 여러 부모 댓글의 대댓글 일괄 조회 (N+1 방지)
+     * @param parentIds 부모 댓글 ID 목록
+     * @return 대댓글 목록
+     */
+    @Query("SELECT c FROM Comment c JOIN FETCH c.author WHERE c.parent.id IN :parentIds ORDER BY c.createdAt ASC")
+    List<Comment> findByParentIdIn(@Param("parentIds") List<Long> parentIds);
 
     /**
      * 공구에 달린 모든 댓글 조회 (최상위 댓글 + 대댓글, 삭제되지 않은 것만)

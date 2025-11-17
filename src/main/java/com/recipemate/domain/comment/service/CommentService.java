@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -236,6 +237,76 @@ public class CommentService {
     }
 
     /**
+     * 여러 댓글에 좋아요 정보 일괄 추가 (N+1 방지)
+     */
+    private List<CommentResponse> enrichWithLikeInfoBatch(List<CommentResponse> responses, Long currentUserId) {
+        if (responses.isEmpty()) {
+            return responses;
+        }
+        
+        // 모든 댓글 ID 수집 (부모 댓글 + 대댓글)
+        List<Long> allCommentIds = responses.stream()
+                .flatMap(response -> {
+                    List<Long> ids = new java.util.ArrayList<>();
+                    ids.add(response.getId());
+                    response.getReplies().forEach(reply -> ids.add(reply.getId()));
+                    return ids.stream();
+                })
+                .collect(Collectors.toList());
+        
+        if (allCommentIds.isEmpty()) {
+            return responses;
+        }
+        
+        // 좋아요 수 일괄 조회
+        List<CommentLikeRepository.CommentLikeCount> likeCounts = 
+                commentLikeRepository.countByCommentIds(allCommentIds);
+        Map<Long, Long> likeCountMap = likeCounts.stream()
+                .collect(Collectors.toMap(
+                        CommentLikeRepository.CommentLikeCount::getCommentId,
+                        CommentLikeRepository.CommentLikeCount::getLikeCount
+                ));
+        
+        // 현재 사용자가 좋아요를 누른 댓글 ID 일괄 조회
+        List<Long> likedCommentIds = (currentUserId != null) 
+                ? commentLikeRepository.findLikedCommentIdsByUserAndCommentIds(currentUserId, allCommentIds)
+                : List.of();
+        
+        // 각 댓글에 좋아요 정보 설정
+        return responses.stream()
+                .map(response -> applyLikeInfo(response, likeCountMap, likedCommentIds))
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 단일 댓글 응답에 좋아요 정보 적용
+     */
+    private CommentResponse applyLikeInfo(CommentResponse response, Map<Long, Long> likeCountMap, List<Long> likedCommentIds) {
+        long likeCount = likeCountMap.getOrDefault(response.getId(), 0L);
+        boolean isLiked = likedCommentIds.contains(response.getId());
+        
+        List<CommentResponse> enrichedReplies = response.getReplies().stream()
+                .map(reply -> applyLikeInfo(reply, likeCountMap, likedCommentIds))
+                .collect(Collectors.toList());
+        
+        return CommentResponse.builder()
+                .id(response.getId())
+                .authorId(response.getAuthorId())
+                .authorNickname(response.getAuthorNickname())
+                .authorEmail(response.getAuthorEmail())
+                .content(response.getContent())
+                .type(response.getType())
+                .parentId(response.getParentId())
+                .createdAt(response.getCreatedAt())
+                .updatedAt(response.getUpdatedAt())
+                .isDeleted(response.isDeleted())
+                .likeCount(likeCount)
+                .isLiked(isLiked)
+                .replies(enrichedReplies)
+                .build();
+    }
+
+    /**
      * 특정 대상의 댓글 목록 조회 with 좋아요 정보 (htmx fragment용)
      */
     public List<CommentResponse> getCommentsByTarget(EntityType targetType, Long targetId, Long currentUserId) {
@@ -248,11 +319,31 @@ public class CommentService {
         } else {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
-
-        return comments.stream()
-                .map(CommentResponse::from)
-                .map(response -> enrichWithLikeInfo(response, currentUserId))
+        
+        if (comments.isEmpty()) {
+            return List.of();
+        }
+        
+        // 대댓글 일괄 조회
+        List<Long> parentIds = comments.stream()
+                .map(Comment::getId)
                 .collect(Collectors.toList());
+        List<Comment> allReplies = commentRepository.findByParentIdIn(parentIds);
+        
+        // 부모 ID별로 대댓글 그룹화
+        Map<Long, List<Comment>> repliesMap = allReplies.stream()
+                .collect(Collectors.groupingBy(reply -> reply.getParent().getId()));
+        
+        // 댓글 응답 생성
+        List<CommentResponse> responses = comments.stream()
+                .map(comment -> {
+                    List<Comment> replies = repliesMap.getOrDefault(comment.getId(), List.of());
+                    return CommentResponse.fromWithReplies(comment, replies);
+                })
+                .collect(Collectors.toList());
+        
+        // 좋아요 정보 일괄 추가
+        return enrichWithLikeInfoBatch(responses, currentUserId);
     }
 
     /**
@@ -268,12 +359,38 @@ public class CommentService {
         } else {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
-
-        // 각 댓글에 대한 대댓글 조회 및 좋아요 정보 설정
-        return commentsPage.map(comment -> {
-            List<Comment> replies = commentRepository.findByParentIdOrderByCreatedAtAsc(comment.getId());
-            CommentResponse response = CommentResponse.fromWithReplies(comment, replies);
-            return enrichWithLikeInfo(response, currentUserId);
-        });
+        
+        List<Comment> comments = commentsPage.getContent();
+        if (comments.isEmpty()) {
+            return commentsPage.map(comment -> CommentResponse.from(comment));
+        }
+        
+        // 대댓글 일괄 조회
+        List<Long> parentIds = comments.stream()
+                .map(Comment::getId)
+                .collect(Collectors.toList());
+        List<Comment> allReplies = commentRepository.findByParentIdIn(parentIds);
+        
+        // 부모 ID별로 대댓글 그룹화
+        Map<Long, List<Comment>> repliesMap = allReplies.stream()
+                .collect(Collectors.groupingBy(reply -> reply.getParent().getId()));
+        
+        // 댓글 응답 생성
+        List<CommentResponse> responses = comments.stream()
+                .map(comment -> {
+                    List<Comment> replies = repliesMap.getOrDefault(comment.getId(), List.of());
+                    return CommentResponse.fromWithReplies(comment, replies);
+                })
+                .collect(Collectors.toList());
+        
+        // 좋아요 정보 일괄 추가
+        List<CommentResponse> enrichedResponses = enrichWithLikeInfoBatch(responses, currentUserId);
+        
+        // Page 객체로 변환
+        return new org.springframework.data.domain.PageImpl<>(
+                enrichedResponses,
+                commentsPage.getPageable(),
+                commentsPage.getTotalElements()
+        );
     }
 }

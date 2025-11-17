@@ -163,22 +163,7 @@
         </div>
         
         <!-- Pagination -->
-        <div th:replace="~{fragments/pagination :: paginationSpring(
-            url='/community-posts/list',
-            page=${posts},
-            keyword=${keyword},
-            ingredients=null,
-            category=${currentCategory},
-            status=null,
-            recipeOnly=null,
-            sortBy=null,
-            direction=null,
-            sort=${currentSort},
-            dir=${currentDir},
-            tab=null,
-            size=${posts != null ? posts.size : null},
-            type=null
-        )}"></div>
+        <div th:replace="~{fragments/pagination :: paginationSpring(url='/community-posts/list', page=${posts})}"></div>
     </main>
     
     <!-- Footer Fragment -->

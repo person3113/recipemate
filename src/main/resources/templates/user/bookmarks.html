@@ -215,18 +215,10 @@
                 </div>
 
                 <!-- Pagination for Group-buy -->
-                <div th:replace="~{fragments/pagination :: paginationSpring(
-                    url='/users/me/bookmarks',
-                    page=${wishlists},
-                    tab='groupbuy'
-                )}"></div>
+                <div th:replace="~{fragments/pagination :: paginationSpring(url='/users/me/bookmarks', page=${wishlists})}"></div>
 
                 <!-- Pagination for Recipe -->
-                <div th:replace="~{fragments/pagination :: paginationSpring(
-                    url='/users/me/bookmarks',
-                    page=${recipeWishlists},
-                    tab='recipe'
-                )}"></div>
+                <div th:replace="~{fragments/pagination :: paginationSpring(url='/users/me/bookmarks', page=${recipeWishlists})}"></div>
 
                 <!-- Empty State for Recipe -->
                 <div th:if="${currentTab == 'recipe' and (recipeWishlists == null or !recipeWishlists.hasContent())}" class="card text-center py-5 shadow-sm">

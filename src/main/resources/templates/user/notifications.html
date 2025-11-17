@@ -124,10 +124,7 @@
                 </div>
                 
                 <!-- Pagination -->
-                <div th:replace="~{fragments/pagination :: paginationSpring(
-                    url='/users/me/notifications',
-                    page=${notifications}
-                )}"></div>
+                <div th:replace="~{fragments/pagination :: paginationSpring(url='/users/me/notifications', page=${notifications})}"></div>
             </div>
         </div>
     </main>

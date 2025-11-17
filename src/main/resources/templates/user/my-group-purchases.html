@@ -200,11 +200,7 @@
                 </div>
                 
                 <!-- Pagination -->
-                <div th:replace="~{fragments/pagination :: paginationSpring(
-                    url='/users/me/group-purchases',
-                    page=${groupBuys},
-                    status=${currentStatus}
-                )}"></div>
+                <div th:replace="~{fragments/pagination :: paginationSpring(url='/users/me/group-purchases', page=${groupBuys})}"></div>
             </div>
         </div>
     </main>

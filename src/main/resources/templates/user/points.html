@@ -131,10 +131,7 @@
                 </div>
 
                 <!-- Pagination -->
-                <div th:replace="~{fragments/pagination :: paginationSpring(
-                    url='/users/me/points',
-                    page=${pointHistory}
-                )}"></div>
+                <div th:replace="~{fragments/pagination :: paginationSpring(url='/users/me/points', page=${pointHistory})}"></div>
 
                 <!-- Empty State -->
                 <div th:if="${pointHistory == null or !pointHistory.hasContent()}" class="card text-center py-5 shadow-sm">

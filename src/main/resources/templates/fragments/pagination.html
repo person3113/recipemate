@@ -90,10 +90,22 @@
     </nav>
     
     <!-- Spring Data Page 객체용 페이지네이션 (범용) -->
-    <nav th:fragment="paginationSpring(url, page, keyword, ingredients, category, status, recipeOnly, sortBy, direction, sort, dir, tab, size, type)" 
+    <nav th:fragment="paginationSpring(url, page)" 
          th:if="${page != null and !page.isEmpty()}"
          aria-label="Page navigation" 
-         class="mt-4">
+         class="mt-4"
+         th:with="keyword=${param.keyword != null ? param.keyword[0] : null},
+                  ingredients=${param.ingredients != null ? param.ingredients[0] : null},
+                  category=${param.category != null ? param.category[0] : null},
+                  status=${param.status != null ? param.status[0] : null},
+                  recipeOnly=${param.recipeOnly != null ? param.recipeOnly[0] : null},
+                  sortBy=${param.sortBy != null ? param.sortBy[0] : null},
+                  direction=${param.direction != null ? param.direction[0] : null},
+                  sort=${param.sort != null ? param.sort[0] : null},
+                  dir=${param.dir != null ? param.dir[0] : null},
+                  tab=${param.tab != null ? param.tab[0] : null},
+                  size=${param.size != null ? param.size[0] : null},
+                  type=${param.type != null ? param.type[0] : null}">
         <ul class="pagination justify-content-center">
             <!-- Show detailed page numbers for desktop -->
             <th:block th:if="${page.totalPages > 1}">

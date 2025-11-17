@@ -88,7 +88,7 @@
                                 </div>
 
                                 <!-- Admin Response (if processed) -->
-                                <div th:if="${correction.status != T(com.recipemate.domain.recipe.entity.CorrectionStatus).PENDING && correction.adminReason}" 
+                                <div th:if="${correction.status != T(com.recipemate.domain.recipe.entity.CorrectionStatus).PENDING && correction.adminReason != null && !#strings.isEmpty(correction.adminReason)}" 
                                      class="mt-3 p-3 bg-light rounded">
                                     <p class="mb-1 small fw-bold">
                                         <i class="bi bi-person-badge"></i> 관리자 응답
@@ -114,23 +114,8 @@
                     </div>
 
                     <!-- Pagination -->
-                    <div th:if="${corrections.getTotalPages() > 1}" class="card-footer bg-white">
-                        <div th:replace="~{fragments/pagination :: paginationSpring(
-                            url='/users/me/corrections',
-                            page=${corrections},
-                            keyword=null,
-                            ingredients=null,
-                            category=null,
-                            status=null,
-                            recipeOnly=null,
-                            sortBy=null,
-                            direction=null,
-                            sort=null,
-                            dir=null,
-                            tab=null,
-                            size=null,
-                            type=null
-                        )}"></div>
+                    <div class="card-footer bg-white">
+                        <div th:replace="~{fragments/pagination :: paginationSpring(url='/users/me/corrections', page=${corrections})}"></div>
                     </div>
                 </div>
             </div>

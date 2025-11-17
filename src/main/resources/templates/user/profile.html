@@ -205,10 +205,7 @@
                     </div>
                     
                     <!-- Pagination -->
-                    <div th:replace="~{fragments/pagination :: paginationSpring(
-                        url='/users/profile/' + ${userProfile.nickname},
-                        page=${userProfile.hostedGroupBuys}
-                    )}"></div>
+                    <div th:replace="~{fragments/pagination :: paginationSpring(url='/users/profile/' + ${userProfile.nickname}, page=${userProfile.hostedGroupBuys})}"></div>
                 </div>
             </div>
         </div>

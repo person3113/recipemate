@@ -250,16 +250,7 @@
         </div>
         
         <!-- Pagination -->
-        <div th:replace="~{fragments/pagination :: paginationSpring(
-            url='/group-purchases/list',
-            page=${groupBuys},
-            keyword=${searchCondition.keyword},
-            ingredients=${searchCondition.ingredients},
-            category=${searchCondition.category?.name()},
-            status=${searchCondition.status?.name()},
-            recipeOnly=${searchCondition.recipeOnly},
-            sortBy=${searchCondition.sortBy},
-            direction=${searchCondition.direction})}"></div>
+        <div th:replace="~{fragments/pagination :: paginationSpring(url='/group-purchases/list', page=${groupBuys})}"></div>
     </main>
     
     <!-- Footer Fragment -->

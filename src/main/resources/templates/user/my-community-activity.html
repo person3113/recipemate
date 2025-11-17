@@ -100,21 +100,7 @@
                         </div>
 
                         <!-- Pagination -->
-                        <nav th:if="${posts != null and posts.totalPages > 1}" class="mt-4" aria-label="Page navigation">
-                            <ul class="pagination justify-content-center">
-                                <li class="page-item" th:classappend="${posts.first} ? 'disabled'">
-                                    <a class="page-link" th:href="@{/users/me/community(tab='posts', page=${posts.number - 1})}">이전</a>
-                                </li>
-                                <li class="page-item" 
-                                    th:each="i : ${#numbers.sequence(0, posts.totalPages - 1)}" 
-                                    th:classappend="${i == posts.number} ? 'active'">
-                                    <a class="page-link" th:href="@{/users/me/community(tab='posts', page=${i})}" th:text="${i + 1}">1</a>
-                                </li>
-                                <li class="page-item" th:classappend="${posts.last} ? 'disabled'">
-                                    <a class="page-link" th:href="@{/users/me/community(tab='posts', page=${posts.number + 1})}">다음</a>
-                                </li>
-                            </ul>
-                        </nav>
+                        <div th:replace="~{fragments/pagination :: paginationSpring(url='/users/me/community', page=${posts})}"></div>
                     </div>
 
                     <!-- 내가 쓴 댓글 -->
@@ -163,21 +149,7 @@
                         </div>
 
                         <!-- Pagination -->
-                        <nav th:if="${comments != null and comments.totalPages > 1}" class="mt-4" aria-label="Page navigation">
-                            <ul class="pagination justify-content-center">
-                                <li class="page-item" th:classappend="${comments.first} ? 'disabled'">
-                                    <a class="page-link" th:href="@{/users/me/community(tab='comments', page=${comments.number - 1})}">이전</a>
-                                </li>
-                                <li class="page-item" 
-                                    th:each="i : ${#numbers.sequence(0, comments.totalPages - 1)}" 
-                                    th:classappend="${i == comments.number} ? 'active'">
-                                    <a class="page-link" th:href="@{/users/me/community(tab='comments', page=${i})}" th:text="${i + 1}">1</a>
-                                </li>
-                                <li class="page-item" th:classappend="${comments.last} ? 'disabled'">
-                                    <a class="page-link" th:href="@{/users/me/community(tab='comments', page=${comments.number + 1})}">다음</a>
-                                </li>
-                            </ul>
-                        </nav>
+                        <div th:replace="~{fragments/pagination :: paginationSpring(url='/users/me/community', page=${comments})}"></div>
                     </div>
 
                     <!-- 좋아요한 글 -->
@@ -221,21 +193,7 @@
                         </div>
 
                         <!-- Pagination -->
-                        <nav th:if="${likedPosts != null and likedPosts.totalPages > 1}" class="mt-4" aria-label="Page navigation">
-                            <ul class="pagination justify-content-center">
-                                <li class="page-item" th:classappend="${likedPosts.first} ? 'disabled'">
-                                    <a class="page-link" th:href="@{/users/me/community(tab='likes', page=${likedPosts.number - 1})}">이전</a>
-                                </li>
-                                <li class="page-item" 
-                                    th:each="i : ${#numbers.sequence(0, likedPosts.totalPages - 1)}" 
-                                    th:classappend="${i == likedPosts.number} ? 'active'">
-                                    <a class="page-link" th:href="@{/users/me/community(tab='likes', page=${i})}" th:text="${i + 1}">1</a>
-                                </li>
-                                <li class="page-item" th:classappend="${likedPosts.last} ? 'disabled'">
-                                    <a class="page-link" th:href="@{/users/me/community(tab='likes', page=${likedPosts.number + 1})}">다음</a>
-                                </li>
-                            </ul>
-                        </nav>
+                        <div th:replace="~{fragments/pagination :: paginationSpring(url='/users/me/community', page=${likedPosts})}"></div>
                     </div>
                 </div>
             </div>

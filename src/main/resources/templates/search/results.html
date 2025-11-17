@@ -343,22 +343,7 @@
                 </div>
                 
                 <!-- 페이지네이션 -->
-                <div th:replace="~{fragments/pagination :: paginationSpring(
-                    url='/search',
-                    page=${recipePage},
-                    keyword=${keyword},
-                    ingredients=null,
-                    category=null,
-                    status=null,
-                    recipeOnly=null,
-                    sortBy=null,
-                    direction=null,
-                    sort=null,
-                    dir=null,
-                    tab=null,
-                    size=null,
-                    type='RECIPE'
-                )}"></div>
+                <div th:replace="~{fragments/pagination :: paginationSpring(url='/search', page=${recipePage})}"></div>
             </div>
         </div>
 
@@ -435,22 +420,7 @@
                 </div>
                 
                 <!-- 페이지네이션 -->
-                <div th:replace="~{fragments/pagination :: paginationSpring(
-                    url='/search',
-                    page=${groupBuyPage},
-                    keyword=${keyword},
-                    ingredients=null,
-                    category=null,
-                    status=null,
-                    recipeOnly=null,
-                    sortBy=null,
-                    direction=null,
-                    sort=null,
-                    dir=null,
-                    tab=null,
-                    size=null,
-                    type='GROUP_BUY'
-                )}"></div>
+                <div th:replace="~{fragments/pagination :: paginationSpring(url='/search', page=${groupBuyPage})}"></div>
             </div>
         </div>
 
@@ -503,22 +473,7 @@
                 </div>
                 
                 <!-- 페이지네이션 -->
-                <div th:replace="~{fragments/pagination :: paginationSpring(
-                    url='/search',
-                    page=${postPage},
-                    keyword=${keyword},
-                    ingredients=null,
-                    category=null,
-                    status=null,
-                    recipeOnly=null,
-                    sortBy=null,
-                    direction=null,
-                    sort=null,
-                    dir=null,
-                    tab=null,
-                    size=null,
-                    type='POST'
-                )}"></div>
+                <div th:replace="~{fragments/pagination :: paginationSpring(url='/search', page=${postPage})}"></div>
             </div>
         </div>
     </main>

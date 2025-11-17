@@ -131,26 +131,10 @@
                 </div>
 
                 <!-- Pagination -->
-                <nav th:if="${pointHistory != null and pointHistory.totalPages > 1}" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item" th:classappend="${pointHistory.first} ? 'disabled'">
-                            <a class="page-link" th:href="@{/users/me/points(page=${pointHistory.number - 1})}">
-                                <i class="bi bi-chevron-left"></i> 이전
-                            </a>
-                        </li>
-                        <li class="page-item active">
-                            <span class="page-link">
-                                <span th:text="${pointHistory.number + 1}">1</span> / 
-                                <span th:text="${pointHistory.totalPages}">10</span>
-                            </span>
-                        </li>
-                        <li class="page-item" th:classappend="${pointHistory.last} ? 'disabled'">
-                            <a class="page-link" th:href="@{/users/me/points(page=${pointHistory.number + 1})}">
-                                다음 <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
+                <div th:replace="~{fragments/pagination :: paginationSpring(
+                    url='/users/me/points',
+                    page=${pointHistory}
+                )}"></div>
 
                 <!-- Empty State -->
                 <div th:if="${pointHistory == null or !pointHistory.hasContent()}" class="card text-center py-5 shadow-sm">

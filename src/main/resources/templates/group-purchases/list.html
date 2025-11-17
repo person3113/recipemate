@@ -36,14 +36,14 @@
         </div>
         
         <!-- Filter Indicators -->
-        <div th:if="${searchCondition.keyword != null or searchCondition.ingredients != null or searchCondition.category != null}" 
+        <div th:if="${!#strings.isEmpty(searchCondition.keyword) or !#strings.isEmpty(searchCondition.ingredients) or searchCondition.category != null}" 
              class="alert alert-primary mb-4">
             <div class="d-flex flex-wrap align-items-center gap-3">
-                <div th:if="${searchCondition.keyword != null}">
+                <div th:if="${!#strings.isEmpty(searchCondition.keyword)}">
                     <i class="bi bi-search me-2"></i>
                     키워드: <strong th:text="${searchCondition.keyword}"></strong>
                 </div>
-                <div th:if="${searchCondition.ingredients != null}">
+                <div th:if="${!#strings.isEmpty(searchCondition.ingredients)}">
                     <i class="bi bi-egg-fill me-2"></i>
                     재료: <strong th:text="${searchCondition.ingredients}"></strong>
                 </div>
@@ -119,22 +119,22 @@
         
         <!-- Sort Options -->
         <div class="d-flex justify-content-end align-items-center gap-3 mb-3">
-            <a th:href="@{/group-purchases/list(keyword=${searchCondition.keyword}, ingredients=${searchCondition.ingredients}, category=${searchCondition.category?.name()}, status=${searchCondition.status?.name()}, recipeOnly=${searchCondition.recipeOnly}, sortBy='latest', direction=(${currentSort == 'latest' || currentSort == null} ? (${currentDir == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
+            <a th:href="@{/group-purchases/list(keyword=${!#strings.isEmpty(searchCondition.keyword) ? searchCondition.keyword : null}, ingredients=${!#strings.isEmpty(searchCondition.ingredients) ? searchCondition.ingredients : null}, category=${searchCondition.category?.name()}, status=${searchCondition.status?.name()}, recipeOnly=${searchCondition.recipeOnly}, sortBy='latest', direction=(${currentSort == 'latest' || currentSort == null} ? (${currentDir == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
                class="text-decoration-none" th:classappend="${currentSort == 'latest' || currentSort == null} ? 'fw-bold text-primary' : 'text-muted'">
                 최신순
                 <i th:if="${currentSort == 'latest' || currentSort == null}" class="bi" th:classappend="${currentDir == 'desc' || currentDir == null} ? 'bi-sort-down' : 'bi-sort-up'"></i>
             </a>
-            <a th:href="@{/group-purchases/list(keyword=${searchCondition.keyword}, ingredients=${searchCondition.ingredients}, category=${searchCondition.category?.name()}, status=${searchCondition.status?.name()}, recipeOnly=${searchCondition.recipeOnly}, sortBy='deadline', direction=(${currentSort == 'deadline'} ? (${currentDir == 'asc'} ? 'desc' : 'asc') : 'asc'))}"
+            <a th:href="@{/group-purchases/list(keyword=${!#strings.isEmpty(searchCondition.keyword) ? searchCondition.keyword : null}, ingredients=${!#strings.isEmpty(searchCondition.ingredients) ? searchCondition.ingredients : null}, category=${searchCondition.category?.name()}, status=${searchCondition.status?.name()}, recipeOnly=${searchCondition.recipeOnly}, sortBy='deadline', direction=(${currentSort == 'deadline'} ? (${currentDir == 'asc'} ? 'desc' : 'asc') : 'asc'))}"
                class="text-decoration-none" th:classappend="${currentSort == 'deadline'} ? 'fw-bold text-primary' : 'text-muted'">
                 마감임박순
                 <i th:if="${currentSort == 'deadline'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
             </a>
-            <a th:href="@{/group-purchases/list(keyword=${searchCondition.keyword}, ingredients=${searchCondition.ingredients}, category=${searchCondition.category?.name()}, status=${searchCondition.status?.name()}, recipeOnly=${searchCondition.recipeOnly}, sortBy='price', direction=(${currentSort == 'price'} ? (${currentDir == 'asc'} ? 'desc' : 'asc') : 'asc'))}"
+            <a th:href="@{/group-purchases/list(keyword=${!#strings.isEmpty(searchCondition.keyword) ? searchCondition.keyword : null}, ingredients=${!#strings.isEmpty(searchCondition.ingredients) ? searchCondition.ingredients : null}, category=${searchCondition.category?.name()}, status=${searchCondition.status?.name()}, recipeOnly=${searchCondition.recipeOnly}, sortBy='price', direction=(${currentSort == 'price'} ? (${currentDir == 'asc'} ? 'desc' : 'asc') : 'asc'))}"
                class="text-decoration-none" th:classappend="${currentSort == 'price'} ? 'fw-bold text-primary' : 'text-muted'">
                 가격순
                 <i th:if="${currentSort == 'price'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
             </a>
-            <a th:href="@{/group-purchases/list(keyword=${searchCondition.keyword}, ingredients=${searchCondition.ingredients}, category=${searchCondition.category?.name()}, status=${searchCondition.status?.name()}, recipeOnly=${searchCondition.recipeOnly}, sortBy='participants', direction=(${currentSort == 'participants'} ? (${currentDir == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
+            <a th:href="@{/group-purchases/list(keyword=${!#strings.isEmpty(searchCondition.keyword) ? searchCondition.keyword : null}, ingredients=${!#strings.isEmpty(searchCondition.ingredients) ? searchCondition.ingredients : null}, category=${searchCondition.category?.name()}, status=${searchCondition.status?.name()}, recipeOnly=${searchCondition.recipeOnly}, sortBy='participants', direction=(${currentSort == 'participants'} ? (${currentDir == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
                class="text-decoration-none" th:classappend="${currentSort == 'participants'} ? 'fw-bold text-primary' : 'text-muted'">
                 참여자순
                 <i th:if="${currentSort == 'participants'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
@@ -250,43 +250,16 @@
         </div>
         
         <!-- Pagination -->
-        <nav th:if="${!groupBuys.isEmpty()}" aria-label="Page navigation" class="mt-4">
-            <ul class="pagination justify-content-center">
-                <li class="page-item" th:classappend="${!groupBuys.hasPrevious()} ? 'disabled'">
-                    <a class="page-link" 
-                       th:href="@{/group-purchases/list(
-                           keyword=${searchCondition.keyword},
-                           ingredients=${searchCondition.ingredients},
-                           category=${searchCondition.category?.name()},
-                           status=${searchCondition.status?.name()},
-                           recipeOnly=${searchCondition.recipeOnly},
-                           sortBy=${searchCondition.sortBy},
-                           direction=${searchCondition.direction},
-                           page=${groupBuys.number - 1})}">
-                        <i class="bi bi-chevron-left"></i> 이전
-                    </a>
-                </li>
-                <li class="page-item active">
-                    <span class="page-link">
-                        <span th:text="${groupBuys.number + 1}"></span> / <span th:text="${groupBuys.totalPages}"></span>
-                    </span>
-                </li>
-                <li class="page-item" th:classappend="${!groupBuys.hasNext()} ? 'disabled'">
-                    <a class="page-link" 
-                       th:href="@{/group-purchases/list(
-                           keyword=${searchCondition.keyword},
-                           ingredients=${searchCondition.ingredients},
-                           category=${searchCondition.category?.name()},
-                           status=${searchCondition.status?.name()},
-                           recipeOnly=${searchCondition.recipeOnly},
-                           sortBy=${searchCondition.sortBy},
-                           direction=${searchCondition.direction},
-                           page=${groupBuys.number + 1})}">
-                        다음 <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
-            </ul>
-        </nav>
+        <div th:replace="~{fragments/pagination :: paginationSpring(
+            url='/group-purchases/list',
+            page=${groupBuys},
+            keyword=${searchCondition.keyword},
+            ingredients=${searchCondition.ingredients},
+            category=${searchCondition.category?.name()},
+            status=${searchCondition.status?.name()},
+            recipeOnly=${searchCondition.recipeOnly},
+            sortBy=${searchCondition.sortBy},
+            direction=${searchCondition.direction})}"></div>
     </main>
     
     <!-- Footer Fragment -->

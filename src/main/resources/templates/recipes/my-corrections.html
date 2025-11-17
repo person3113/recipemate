@@ -115,31 +115,22 @@
 
                     <!-- Pagination -->
                     <div th:if="${corrections.getTotalPages() > 1}" class="card-footer bg-white">
-                        <nav>
-                            <ul class="pagination justify-content-center mb-0">
-                                <li class="page-item" th:classappend="${corrections.isFirst()} ? 'disabled'">
-                                    <a class="page-link" 
-                                       th:href="@{/users/me/corrections(page=${corrections.getNumber() - 1})}">
-                                        이전
-                                    </a>
-                                </li>
-                                <li class="page-item" 
-                                    th:each="pageNum : ${#numbers.sequence(0, corrections.getTotalPages() - 1)}"
-                                    th:classappend="${pageNum == corrections.getNumber()} ? 'active'">
-                                    <a class="page-link" 
-                                       th:href="@{/users/me/corrections(page=${pageNum})}"
-                                       th:text="${pageNum + 1}">
-                                        1
-                                    </a>
-                                </li>
-                                <li class="page-item" th:classappend="${corrections.isLast()} ? 'disabled'">
-                                    <a class="page-link" 
-                                       th:href="@{/users/me/corrections(page=${corrections.getNumber() + 1})}">
-                                        다음
-                                    </a>
-                                </li>
-                            </ul>
-                        </nav>
+                        <div th:replace="~{fragments/pagination :: paginationSpring(
+                            url='/users/me/corrections',
+                            page=${corrections},
+                            keyword=null,
+                            ingredients=null,
+                            category=null,
+                            status=null,
+                            recipeOnly=null,
+                            sortBy=null,
+                            direction=null,
+                            sort=null,
+                            dir=null,
+                            tab=null,
+                            size=null,
+                            type=null
+                        )}"></div>
                     </div>
                 </div>
             </div>

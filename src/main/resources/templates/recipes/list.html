@@ -29,18 +29,18 @@
         </div>
 
         <!-- Filter Indicators -->
-        <div th:if="${keyword != null or category != null or ingredients != null}" 
+        <div th:if="${!#strings.isEmpty(keyword) or !#strings.isEmpty(category) or !#strings.isEmpty(ingredients)}" 
              class="alert alert-primary mb-4">
             <div class="d-flex flex-wrap align-items-center gap-3">
-                <div th:if="${keyword != null}">
+                <div th:if="${!#strings.isEmpty(keyword)}">
                     <i class="bi bi-search me-2"></i>
                     키워드: <strong th:text="${keyword}"></strong>
                 </div>
-                <div th:if="${ingredients != null}">
+                <div th:if="${!#strings.isEmpty(ingredients)}">
                     <i class="bi bi-egg-fill me-2"></i>
                     재료: <strong th:text="${ingredients}"></strong>
                 </div>
-                <div th:if="${category != null}">
+                <div th:if="${!#strings.isEmpty(category)}">
                     <i class="bi bi-tag-fill me-2"></i>
                     카테고리: <strong th:text="${category}"></strong>
                 </div>
@@ -82,17 +82,17 @@
         
         <!-- Sort Options -->
         <div class="d-flex justify-content-end align-items-center gap-3 mb-3">
-            <a th:href="@{/recipes(keyword=${keyword}, ingredients=${ingredients}, category=${category}, sort='latest', direction=(${sort == 'latest' || sort == null} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
+            <a th:href="@{/recipes(keyword=${!#strings.isEmpty(keyword) ? keyword : null}, ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null}, category=${!#strings.isEmpty(category) ? category : null}, sort='latest', direction=(${sort == 'latest' || sort == null} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
                class="text-decoration-none" th:classappend="${sort == 'latest' || sort == null} ? 'fw-bold text-primary' : 'text-muted'">
                 최신순
                 <i th:if="${sort == 'latest' || sort == null}" class="bi" th:classappend="${direction == 'desc' || direction == null} ? 'bi-sort-down' : 'bi-sort-up'"></i>
             </a>
-            <a th:href="@{/recipes(keyword=${keyword}, ingredients=${ingredients}, category=${category}, sort='name', direction=(${sort == 'name'} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'asc'))}"
+            <a th:href="@{/recipes(keyword=${!#strings.isEmpty(keyword) ? keyword : null}, ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null}, category=${!#strings.isEmpty(category) ? category : null}, sort='name', direction=(${sort == 'name'} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'asc'))}"
                class="text-decoration-none" th:classappend="${sort == 'name'} ? 'fw-bold text-primary' : 'text-muted'">
                 이름순
                 <i th:if="${sort == 'name'}" class="bi" th:classappend="${direction == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
             </a>
-            <a th:href="@{/recipes(keyword=${keyword}, ingredients=${ingredients}, category=${category}, sort='popularity', direction=(${sort == 'popularity'} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
+            <a th:href="@{/recipes(keyword=${!#strings.isEmpty(keyword) ? keyword : null}, ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null}, category=${!#strings.isEmpty(category) ? category : null}, sort='popularity', direction=(${sort == 'popularity'} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
                class="text-decoration-none" th:classappend="${sort == 'popularity'} ? 'fw-bold text-primary' : 'text-muted'">
                 인기순
                 <i th:if="${sort == 'popularity'}" class="bi" th:classappend="${direction == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
@@ -152,50 +152,16 @@
                 </div>
                 
                 <!-- Pagination -->
-                <nav th:if="${recipes.totalCount > pageSize}" aria-label="Recipe pagination" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        <!-- Total pages calculation -->
-                        <th:block th:with="totalPages=${(recipes.totalCount + pageSize - 1) / pageSize}">
-                            <!-- Previous Button -->
-                            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                                <a class="page-link" 
-                                   th:href="@{/recipes(keyword=${keyword},category=${category},ingredients=${ingredients},sort=${sort},direction=${direction},page=${currentPage - 1},size=${pageSize})}"
-                                   aria-label="Previous">
-                                    <span aria-hidden="true">&laquo;</span>
-                                </a>
-                            </li>
-                            
-                            <!-- Page Numbers (show max 10 pages) -->
-                            <th:block th:with="startPage=${currentPage - 4 < 0 ? 0 : currentPage - 4}, 
-                                              endPage=${startPage + 9 >= totalPages ? totalPages - 1 : startPage + 9}">
-                                <li th:each="i : ${#numbers.sequence(startPage, endPage)}" 
-                                    class="page-item" 
-                                    th:classappend="${i == currentPage} ? 'active'">
-                                    <a class="page-link" 
-                                       th:href="@{/recipes(keyword=${keyword},category=${category},ingredients=${ingredients},sort=${sort},direction=${direction},page=${i},size=${pageSize})}"
-                                       th:text="${i + 1}"></a>
-                                </li>
-                            </th:block>
-                            
-                            <!-- Next Button -->
-                            <li class="page-item" th:classappend="${currentPage >= totalPages - 1} ? 'disabled'">
-                                <a class="page-link" 
-                                   th:href="@{/recipes(keyword=${keyword},category=${category},ingredients=${ingredients},sort=${sort},direction=${direction},page=${currentPage + 1},size=${pageSize})}"
-                                   aria-label="Next">
-                                    <span aria-hidden="true">&raquo;</span>
-                                </a>
-                            </li>
-                        </th:block>
-                    </ul>
-                    
-                    <!-- Page Info -->
-                    <div class="text-center text-muted small">
-                        <th:block th:with="totalPages=${(recipes.totalCount + pageSize - 1) / pageSize}">
-                            페이지 <strong th:text="${currentPage + 1}"></strong> / <strong th:text="${totalPages}"></strong>
-                            (총 <strong th:text="${recipes.totalCount}"></strong>개)
-                        </th:block>
-                    </div>
-                </nav>
+                <div th:replace="~{fragments/pagination :: pagination(
+                    url='/recipes',
+                    page=${recipes},
+                    pageSize=${pageSize},
+                    currentPage=${currentPage},
+                    keyword=${keyword},
+                    category=${category},
+                    ingredients=${ingredients},
+                    sort=${sort},
+                    direction=${direction})}"></div>
             </div>
         </div>
         

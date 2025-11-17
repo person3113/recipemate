@@ -343,39 +343,22 @@
                 </div>
                 
                 <!-- 페이지네이션 -->
-                <nav th:if="${recipePage != null and recipePage.totalPages > 1}" class="mt-4" aria-label="레시피 검색 결과 페이지네이션">
-                    <ul class="pagination justify-content-center">
-                        <!-- 이전 페이지 -->
-                        <li class="page-item" th:classappend="${recipePage.first} ? 'disabled'">
-                            <a class="page-link" 
-                               th:href="@{/search(keyword=${keyword}, type='RECIPE', page=${recipePage.number - 1})}"
-                               th:aria-disabled="${recipePage.first}">
-                                이전
-                            </a>
-                        </li>
-                        
-                        <!-- 페이지 번호 (최대 5개 표시) -->
-                        <th:block th:with="startPage=${recipePage.number < 2 ? 0 : (recipePage.number > recipePage.totalPages - 3 ? T(java.lang.Math).max(0, recipePage.totalPages - 5) : recipePage.number - 2)},
-                                           endPage=${T(java.lang.Math).min(startPage + 4, recipePage.totalPages - 1)}">
-                            <li th:each="i : ${#numbers.sequence(startPage, endPage)}"
-                                class="page-item" 
-                                th:classappend="${i == recipePage.number} ? 'active'">
-                                <a class="page-link"
-                                   th:href="@{/search(keyword=${keyword}, type='RECIPE', page=${i})}"
-                                   th:text="${i + 1}">1</a>
-                            </li>
-                        </th:block>
-                        
-                        <!-- 다음 페이지 -->
-                        <li class="page-item" th:classappend="${recipePage.last} ? 'disabled'">
-                            <a class="page-link" 
-                               th:href="@{/search(keyword=${keyword}, type='RECIPE', page=${recipePage.number + 1})}"
-                               th:aria-disabled="${recipePage.last}">
-                                다음
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
+                <div th:replace="~{fragments/pagination :: paginationSpring(
+                    url='/search',
+                    page=${recipePage},
+                    keyword=${keyword},
+                    ingredients=null,
+                    category=null,
+                    status=null,
+                    recipeOnly=null,
+                    sortBy=null,
+                    direction=null,
+                    sort=null,
+                    dir=null,
+                    tab=null,
+                    size=null,
+                    type='RECIPE'
+                )}"></div>
             </div>
         </div>
 
@@ -452,39 +435,22 @@
                 </div>
                 
                 <!-- 페이지네이션 -->
-                <nav th:if="${groupBuyPage != null and groupBuyPage.totalPages > 1}" class="mt-4" aria-label="공동구매 검색 결과 페이지네이션">
-                    <ul class="pagination justify-content-center">
-                        <!-- 이전 페이지 -->
-                        <li class="page-item" th:classappend="${groupBuyPage.first} ? 'disabled'">
-                            <a class="page-link" 
-                               th:href="@{/search(keyword=${keyword}, type='GROUP_BUY', page=${groupBuyPage.number - 1})}"
-                               th:aria-disabled="${groupBuyPage.first}">
-                                이전
-                            </a>
-                        </li>
-                        
-                        <!-- 페이지 번호 (최대 5개 표시) -->
-                        <th:block th:with="startPage=${groupBuyPage.number < 2 ? 0 : (groupBuyPage.number > groupBuyPage.totalPages - 3 ? T(java.lang.Math).max(0, groupBuyPage.totalPages - 5) : groupBuyPage.number - 2)},
-                                           endPage=${T(java.lang.Math).min(startPage + 4, groupBuyPage.totalPages - 1)}">
-                            <li th:each="i : ${#numbers.sequence(startPage, endPage)}"
-                                class="page-item" 
-                                th:classappend="${i == groupBuyPage.number} ? 'active'">
-                                <a class="page-link"
-                                   th:href="@{/search(keyword=${keyword}, type='GROUP_BUY', page=${i})}"
-                                   th:text="${i + 1}">1</a>
-                            </li>
-                        </th:block>
-                        
-                        <!-- 다음 페이지 -->
-                        <li class="page-item" th:classappend="${groupBuyPage.last} ? 'disabled'">
-                            <a class="page-link" 
-                               th:href="@{/search(keyword=${keyword}, type='GROUP_BUY', page=${groupBuyPage.number + 1})}"
-                               th:aria-disabled="${groupBuyPage.last}">
-                                다음
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
+                <div th:replace="~{fragments/pagination :: paginationSpring(
+                    url='/search',
+                    page=${groupBuyPage},
+                    keyword=${keyword},
+                    ingredients=null,
+                    category=null,
+                    status=null,
+                    recipeOnly=null,
+                    sortBy=null,
+                    direction=null,
+                    sort=null,
+                    dir=null,
+                    tab=null,
+                    size=null,
+                    type='GROUP_BUY'
+                )}"></div>
             </div>
         </div>
 
@@ -537,39 +503,22 @@
                 </div>
                 
                 <!-- 페이지네이션 -->
-                <nav th:if="${postPage != null and postPage.totalPages > 1}" class="mt-4" aria-label="커뮤니티 검색 결과 페이지네이션">
-                    <ul class="pagination justify-content-center">
-                        <!-- 이전 페이지 -->
-                        <li class="page-item" th:classappend="${postPage.first} ? 'disabled'">
-                            <a class="page-link" 
-                               th:href="@{/search(keyword=${keyword}, type='POST', page=${postPage.number - 1})}"
-                               th:aria-disabled="${postPage.first}">
-                                이전
-                            </a>
-                        </li>
-                        
-                        <!-- 페이지 번호 (최대 5개 표시) -->
-                        <th:block th:with="startPage=${postPage.number < 2 ? 0 : (postPage.number > postPage.totalPages - 3 ? T(java.lang.Math).max(0, postPage.totalPages - 5) : postPage.number - 2)},
-                                           endPage=${T(java.lang.Math).min(startPage + 4, postPage.totalPages - 1)}">
-                            <li th:each="i : ${#numbers.sequence(startPage, endPage)}"
-                                class="page-item" 
-                                th:classappend="${i == postPage.number} ? 'active'">
-                                <a class="page-link"
-                                   th:href="@{/search(keyword=${keyword}, type='POST', page=${i})}"
-                                   th:text="${i + 1}">1</a>
-                            </li>
-                        </th:block>
-                        
-                        <!-- 다음 페이지 -->
-                        <li class="page-item" th:classappend="${postPage.last} ? 'disabled'">
-                            <a class="page-link" 
-                               th:href="@{/search(keyword=${keyword}, type='POST', page=${postPage.number + 1})}"
-                               th:aria-disabled="${postPage.last}">
-                                다음
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
+                <div th:replace="~{fragments/pagination :: paginationSpring(
+                    url='/search',
+                    page=${postPage},
+                    keyword=${keyword},
+                    ingredients=null,
+                    category=null,
+                    status=null,
+                    recipeOnly=null,
+                    sortBy=null,
+                    direction=null,
+                    sort=null,
+                    dir=null,
+                    tab=null,
+                    size=null,
+                    type='POST'
+                )}"></div>
             </div>
         </div>
     </main>

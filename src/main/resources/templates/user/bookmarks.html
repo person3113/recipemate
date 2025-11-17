@@ -215,48 +215,18 @@
                 </div>
 
                 <!-- Pagination for Group-buy -->
-                <nav th:if="${(currentTab == null or currentTab == 'groupbuy') and wishlists != null and wishlists.totalPages > 1}" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item" th:classappend="${!wishlists.hasPrevious()} ? 'disabled'">
-                            <a class="page-link" th:href="@{/users/me/bookmarks(tab=groupbuy,page=${wishlists.number - 1})}">
-                                <i class="bi bi-chevron-left"></i> 이전
-                            </a>
-                        </li>
-                        <li class="page-item active">
-                            <span class="page-link">
-                                <span th:text="${wishlists.number + 1}">1</span> / 
-                                <span th:text="${wishlists.totalPages}">1</span>
-                            </span>
-                        </li>
-                        <li class="page-item" th:classappend="${!wishlists.hasNext()} ? 'disabled'">
-                            <a class="page-link" th:href="@{/users/me/bookmarks(tab=groupbuy,page=${wishlists.number + 1})}">
-                                다음 <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
+                <div th:replace="~{fragments/pagination :: paginationSpring(
+                    url='/users/me/bookmarks',
+                    page=${wishlists},
+                    tab='groupbuy'
+                )}"></div>
 
                 <!-- Pagination for Recipe -->
-                <nav th:if="${currentTab == 'recipe' and recipeWishlists != null and recipeWishlists.totalPages > 1}" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item" th:classappend="${!recipeWishlists.hasPrevious()} ? 'disabled'">
-                            <a class="page-link" th:href="@{/users/me/bookmarks(tab=recipe,page=${recipeWishlists.number - 1})}">
-                                <i class="bi bi-chevron-left"></i> 이전
-                            </a>
-                        </li>
-                        <li class="page-item active">
-                            <span class="page-link">
-                                <span th:text="${recipeWishlists.number + 1}">1</span> / 
-                                <span th:text="${recipeWishlists.totalPages}">1</span>
-                            </span>
-                        </li>
-                        <li class="page-item" th:classappend="${!recipeWishlists.hasNext()} ? 'disabled'">
-                            <a class="page-link" th:href="@{/users/me/bookmarks(tab=recipe,page=${recipeWishlists.number + 1})}">
-                                다음 <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
+                <div th:replace="~{fragments/pagination :: paginationSpring(
+                    url='/users/me/bookmarks',
+                    page=${recipeWishlists},
+                    tab='recipe'
+                )}"></div>
 
                 <!-- Empty State for Recipe -->
                 <div th:if="${currentTab == 'recipe' and (recipeWishlists == null or !recipeWishlists.hasContent())}" class="card text-center py-5 shadow-sm">

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <!-- 
+        공통 페이지네이션 컴포넌트
+        
+        사용법:
+        <div th:replace="~{fragments/pagination :: pagination(
+            url='/recipes',
+            page=${recipes},
+            keyword=${keyword},
+            category=${category},
+            ...
+        )}"></div>
+        
+        파라미터:
+        - url: 기본 URL 경로
+        - page: Page 객체 (Spring Data의 Page)
+        - 기타 필터 파라미터: keyword, category, ingredients 등
+    -->
+    
+    <!-- 레시피 목록용 페이지네이션 -->
+    <nav th:fragment="pagination(url, page, pageSize, currentPage, keyword, category, ingredients, sort, direction)" 
+         th:if="${page != null and page.totalCount > pageSize}"
+         aria-label="Pagination" 
+         class="mt-4">
+        <ul class="pagination justify-content-center">
+            <!-- Total pages calculation -->
+            <th:block th:with="totalPages=${(page.totalCount + pageSize - 1) / pageSize}">
+                <!-- Previous Button -->
+                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                    <a class="page-link" 
+                       th:href="@{${url}(
+                           keyword=${!#strings.isEmpty(keyword) ? keyword : null},
+                           category=${!#strings.isEmpty(category) ? category : null},
+                           ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null},
+                           sort=${!#strings.isEmpty(sort) ? sort : null},
+                           direction=${!#strings.isEmpty(direction) ? direction : null},
+                           page=${currentPage - 1},
+                           size=${pageSize})}"
+                       aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                
+                <!-- Page Numbers (show max 10 pages) -->
+                <th:block th:with="startPage=${currentPage - 4 < 0 ? 0 : currentPage - 4}, 
+                                  endPage=${startPage + 9 >= totalPages ? totalPages - 1 : startPage + 9}">
+                    <li th:each="i : ${#numbers.sequence(startPage, endPage)}" 
+                        class="page-item" 
+                        th:classappend="${i == currentPage} ? 'active'">
+                        <a class="page-link" 
+                           th:href="@{${url}(
+                               keyword=${!#strings.isEmpty(keyword) ? keyword : null},
+                               category=${!#strings.isEmpty(category) ? category : null},
+                               ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null},
+                               sort=${!#strings.isEmpty(sort) ? sort : null},
+                               direction=${!#strings.isEmpty(direction) ? direction : null},
+                               page=${i},
+                               size=${pageSize})}"
+                           th:text="${i + 1}"></a>
+                    </li>
+                </th:block>
+                
+                <!-- Next Button -->
+                <li class="page-item" th:classappend="${currentPage >= totalPages - 1} ? 'disabled'">
+                    <a class="page-link" 
+                       th:href="@{${url}(
+                           keyword=${!#strings.isEmpty(keyword) ? keyword : null},
+                           category=${!#strings.isEmpty(category) ? category : null},
+                           ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null},
+                           sort=${!#strings.isEmpty(sort) ? sort : null},
+                           direction=${!#strings.isEmpty(direction) ? direction : null},
+                           page=${currentPage + 1},
+                           size=${pageSize})}"
+                       aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </th:block>
+        </ul>
+        
+        <!-- Page Info -->
+        <div class="text-center text-muted small">
+            <th:block th:with="totalPages=${(page.totalCount + pageSize - 1) / pageSize}">
+                페이지 <strong th:text="${currentPage + 1}"></strong> / <strong th:text="${totalPages}"></strong>
+                (총 <strong th:text="${page.totalCount}"></strong>개)
+            </th:block>
+        </div>
+    </nav>
+    
+    <!-- Spring Data Page 객체용 페이지네이션 (범용) -->
+    <nav th:fragment="paginationSpring(url, page, keyword, ingredients, category, status, recipeOnly, sortBy, direction, sort, dir, tab, size, type)" 
+         th:if="${page != null and !page.isEmpty()}"
+         aria-label="Page navigation" 
+         class="mt-4">
+        <ul class="pagination justify-content-center">
+            <!-- Show detailed page numbers for desktop -->
+            <th:block th:if="${page.totalPages > 1}">
+                <!-- Previous Button -->
+                <li class="page-item" th:classappend="${!page.hasPrevious()} ? 'disabled'">
+                    <a class="page-link" 
+                       th:href="@{${url}(
+                           keyword=${!#strings.isEmpty(keyword) ? keyword : null},
+                           ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null},
+                           category=${!#strings.isEmpty(category) ? category : null},
+                           status=${!#strings.isEmpty(status) ? status : null},
+                           recipeOnly=${recipeOnly != null ? recipeOnly : null},
+                           sortBy=${!#strings.isEmpty(sortBy) ? sortBy : null},
+                           direction=${!#strings.isEmpty(direction) ? direction : null},
+                           sort=${!#strings.isEmpty(sort) ? sort : null},
+                           dir=${!#strings.isEmpty(dir) ? dir : null},
+                           tab=${!#strings.isEmpty(tab) ? tab : null},
+                           size=${size != null ? size : null},
+                           type=${!#strings.isEmpty(type) ? type : null},
+                           page=${page.number - 1})}"
+                       aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                
+                <!-- Page Numbers (show max 10 pages) -->
+                <th:block th:with="startPage=${page.number - 4 < 0 ? 0 : page.number - 4}, 
+                                  endPage=${startPage + 9 >= page.totalPages ? page.totalPages - 1 : startPage + 9}">
+                    <li th:each="i : ${#numbers.sequence(startPage, endPage)}" 
+                        class="page-item" 
+                        th:classappend="${i == page.number} ? 'active'">
+                        <a class="page-link" 
+                           th:href="@{${url}(
+                               keyword=${!#strings.isEmpty(keyword) ? keyword : null},
+                               ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null},
+                               category=${!#strings.isEmpty(category) ? category : null},
+                               status=${!#strings.isEmpty(status) ? status : null},
+                               recipeOnly=${recipeOnly != null ? recipeOnly : null},
+                               sortBy=${!#strings.isEmpty(sortBy) ? sortBy : null},
+                               direction=${!#strings.isEmpty(direction) ? direction : null},
+                               sort=${!#strings.isEmpty(sort) ? sort : null},
+                               dir=${!#strings.isEmpty(dir) ? dir : null},
+                               tab=${!#strings.isEmpty(tab) ? tab : null},
+                               size=${size != null ? size : null},
+                               type=${!#strings.isEmpty(type) ? type : null},
+                               page=${i})}"
+                           th:text="${i + 1}"></a>
+                    </li>
+                </th:block>
+                
+                <!-- Next Button -->
+                <li class="page-item" th:classappend="${!page.hasNext()} ? 'disabled'">
+                    <a class="page-link" 
+                       th:href="@{${url}(
+                           keyword=${!#strings.isEmpty(keyword) ? keyword : null},
+                           ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null},
+                           category=${!#strings.isEmpty(category) ? category : null},
+                           status=${!#strings.isEmpty(status) ? status : null},
+                           recipeOnly=${recipeOnly != null ? recipeOnly : null},
+                           sortBy=${!#strings.isEmpty(sortBy) ? sortBy : null},
+                           direction=${!#strings.isEmpty(direction) ? direction : null},
+                           sort=${!#strings.isEmpty(sort) ? sort : null},
+                           dir=${!#strings.isEmpty(dir) ? dir : null},
+                           tab=${!#strings.isEmpty(tab) ? tab : null},
+                           size=${size != null ? size : null},
+                           type=${!#strings.isEmpty(type) ? type : null},
+                           page=${page.number + 1})}"
+                       aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </th:block>
+        </ul>
+        
+        <!-- Page Info -->
+        <div class="text-center text-muted small">
+            페이지 <strong th:text="${page.number + 1}"></strong> / <strong th:text="${page.totalPages}"></strong>
+            (총 <strong th:text="${page.totalElements}"></strong>개)
+        </div>
+    </nav>
+</body>
+</html>

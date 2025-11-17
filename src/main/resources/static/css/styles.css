@@ -214,6 +214,7 @@ main {
 }
 
 .pagination .page-item.active .page-link {
+    color: #fff;
     background-color: var(--primary-color);
     border-color: var(--primary-color);
 }

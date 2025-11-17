@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>신고 관리 - RecipeMate Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-5">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <!-- Page Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="display-6 fw-bold">
+                            <i class="bi bi-shield-check text-danger"></i> 신고 관리
+                        </h1>
+                        <p class="text-muted">사용자가 제출한 신고를 검토하고 처리하세요</p>
+                    </div>
+                    <a th:href="@{/admin}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 관리자 대시보드
+                    </a>
+                </div>
+
+                <!-- Messages -->
+                <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span th:text="${message}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Statistics Card -->
+                <div class="card shadow-sm mb-4 border-0">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col">
+                                <h3 class="mb-0 text-danger fw-bold" th:text="${totalCount}">0</h3>
+                                <small class="text-muted">대기 중인 신고</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports List -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-flag"></i> 신고 목록
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div th:if="${reports.isEmpty()}" class="text-center py-5">
+                            <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                            <p class="text-muted mt-3 mb-0">대기 중인 신고가 없습니다.</p>
+                        </div>
+
+                        <div th:if="${!reports.isEmpty()}" class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>신고 대상</th>
+                                        <th>신고 사유</th>
+                                        <th>신고자</th>
+                                        <th>신고일</th>
+                                        <th>상태</th>
+                                        <th>관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="report : ${reports}">
+                                        <td th:text="${report.id}">#1</td>
+                                        <td>
+                                            <span class="badge" 
+                                                  th:classappend="${report.reportedEntityType.name() == 'RECIPE'} ? 'bg-primary' : 
+                                                                  (${report.reportedEntityType.name() == 'POST'} ? 'bg-success' : 
+                                                                  (${report.reportedEntityType.name() == 'COMMENT'} ? 'bg-info' : 
+                                                                  (${report.reportedEntityType.name() == 'GROUP_PURCHASE'} ? 'bg-warning' : 'bg-secondary')))"
+                                                  th:text="${report.reportedEntityType.displayName}">
+                                                대상
+                                            </span>
+                                            <span class="text-muted small">
+                                                #<span th:text="${report.reportedEntityId}">1</span>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <th:block th:switch="${report.reportType.name()}">
+                                                <span th:case="'INAPPROPRIATE_CONTENT'" class="badge bg-danger">부적절한 콘텐츠</span>
+                                                <span th:case="'SPAM'" class="badge bg-warning">스팸/광고</span>
+                                                <span th:case="'ABUSE'" class="badge bg-danger">욕설/비방</span>
+                                                <span th:case="'FALSE_INFORMATION'" class="badge bg-warning">허위 정보</span>
+                                                <span th:case="'COPYRIGHT'" class="badge bg-info">저작권 침해</span>
+                                                <span th:case="*" class="badge bg-secondary">기타</span>
+                                            </th:block>
+                                        </td>
+                                        <td>
+                                            <a th:href="@{/users/profile/{nickname}(nickname=${report.reporterNickname})}"
+                                               th:text="${report.reporterNickname}"
+                                               class="text-decoration-none"
+                                               target="_blank">
+                                                신고자
+                                            </a>
+                                        </td>
+                                        <td th:text="${#temporals.format(report.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01</td>
+                                        <td>
+                                            <span class="badge bg-warning">대기중</span>
+                                        </td>
+                                        <td>
+                                            <a th:href="@{/admin/reports/{id}(id=${report.id})}" 
+                                               class="btn btn-sm btn-danger">
+                                                <i class="bi bi-eye"></i> 검토
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

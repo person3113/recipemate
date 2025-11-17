@@ -134,4 +134,8 @@ public class User extends BaseEntity {
         this.commentNotification = commentNotification;
         this.groupPurchaseNotification = groupPurchaseNotification;
     }
+
+    public boolean isAdmin() {
+        return this.role == UserRole.ADMIN;
+    }
 }

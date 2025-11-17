@@ -17,6 +17,7 @@ import com.recipemate.global.event.CommentCreatedEvent;
 import com.recipemate.global.exception.CustomException;
 import com.recipemate.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class CommentService {
 
     private final CommentRepository commentRepository;
@@ -125,20 +127,38 @@ public class CommentService {
      */
     @Transactional
     public void deleteComment(Long userId, Long commentId) {
+        log.info("CommentService.deleteComment 시작 - userId: {}, commentId: {}", userId, commentId);
+        
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.error("댓글을 찾을 수 없음 - commentId: {}", commentId);
+                    return new CustomException(ErrorCode.COMMENT_NOT_FOUND);
+                });
 
         // 삭제된 댓글 체크
         if (comment.getDeletedAt() != null) {
+            log.error("이미 삭제된 댓글 - commentId: {}", commentId);
             throw new CustomException(ErrorCode.COMMENT_NOT_FOUND);
         }
 
-        // 작성자 권한 체크
-        if (!comment.getAuthor().getId().equals(userId)) {
+        // 작성자 또는 관리자 권한 체크
+        log.info("사용자 조회 시작 - userId: {}", userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    log.error("사용자를 찾을 수 없음 - userId: {}", userId);
+                    return new CustomException(ErrorCode.USER_NOT_FOUND);
+                });
+
+        log.info("사용자 조회 성공 - user: {}, isAdmin: {}", user.getNickname(), user.isAdmin());
+
+        if (!comment.getAuthor().getId().equals(userId) && !user.isAdmin()) {
+            log.error("댓글 삭제 권한 없음 - userId: {}, commentAuthorId: {}, isAdmin: {}", 
+                    userId, comment.getAuthor().getId(), user.isAdmin());
             throw new CustomException(ErrorCode.UNAUTHORIZED_COMMENT_DELETE);
         }
 
         comment.markAsDeleted();
+        log.info("댓글 삭제 완료 - commentId: {}", commentId);
     }
 
     /**

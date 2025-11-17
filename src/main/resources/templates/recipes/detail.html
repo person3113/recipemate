@@ -202,6 +202,14 @@
                            class="btn btn-outline-warning">
                             <i class="bi bi-lightbulb"></i> 레시피 개선 제안하기
                         </a>
+                        
+                        <!-- 신고 버튼 (로그인한 사용자만, 본인 레시피 제외) -->
+                        <a sec:authorize="isAuthenticated()"
+                           th:if="${!isOwner}"
+                           th:href="@{/reports/new(entityType='RECIPE', entityId=${recipe.dbId}, entityName=${recipe.name})}" 
+                           class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-flag"></i> 신고하기
+                        </a>
                     </div>
                 </div>
             </div>

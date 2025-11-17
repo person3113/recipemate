@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>신고 상세 - RecipeMate Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-5">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <!-- Page Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="display-6 fw-bold">
+                            <i class="bi bi-flag text-danger"></i> 신고 상세
+                        </h1>
+                    </div>
+                    <a th:href="@{/admin/reports}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 목록으로
+                    </a>
+                </div>
+
+                <!-- Messages -->
+                <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span th:text="${message}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Report Details Card -->
+                <div class="card shadow-sm mb-4" th:object="${report}">
+                    <div class="card-header bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">신고 정보</h5>
+                            <th:block th:switch="*{status}">
+                                <span th:case="'PENDING'" class="badge bg-warning">대기중</span>
+                                <span th:case="'PROCESSED'" class="badge bg-success">처리됨</span>
+                                <span th:case="'DISMISSED'" class="badge bg-secondary">기각됨</span>
+                            </th:block>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold text-muted">신고 ID</div>
+                            <div class="col-md-9" th:text="*{id}">#1</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold text-muted">신고 대상</div>
+                            <div class="col-md-9">
+                                <span class="badge" 
+                                      th:classappend="*{reportedEntityType.name() == 'RECIPE'} ? 'bg-primary' : 
+                                                      (*{reportedEntityType.name() == 'POST'} ? 'bg-success' : 
+                                                      (*{reportedEntityType.name() == 'COMMENT'} ? 'bg-info' : 
+                                                      (*{reportedEntityType.name() == 'GROUP_PURCHASE'} ? 'bg-warning' : 
+                                                      (*{reportedEntityType.name() == 'USER'} ? 'bg-danger' : 'bg-secondary'))))"
+                                      th:text="*{reportedEntityType.displayName}">
+                                    대상 유형
+                                </span>
+                                <span class="text-muted ms-2">
+                                    ID: <span th:text="*{reportedEntityId}">1</span>
+                                </span>
+                                <!-- Link to reported entity -->
+                                <div class="mt-2">
+                                    <th:block th:switch="*{reportedEntityType.name()}">
+                                        <a th:case="'RECIPE'" 
+                                           th:href="@{/recipes/{id}(id=*{reportedEntityId})}"
+                                           class="btn btn-sm btn-outline-primary"
+                                           target="_blank">
+                                            <i class="bi bi-box-arrow-up-right"></i> 레시피 보기
+                                        </a>
+                                        <a th:case="'POST'" 
+                                           th:href="@{/community-posts/{id}(id=*{reportedEntityId})}"
+                                           class="btn btn-sm btn-outline-success"
+                                           target="_blank">
+                                            <i class="bi bi-box-arrow-up-right"></i> 게시글 보기
+                                        </a>
+                                        <a th:case="'COMMENT'" 
+                                           class="btn btn-sm btn-outline-info disabled">
+                                            <i class="bi bi-chat-dots"></i> 댓글 (게시글에서 확인)
+                                        </a>
+                                        <a th:case="'GROUP_PURCHASE'" 
+                                           th:href="@{/group-purchases/{id}(id=*{reportedEntityId})}"
+                                           class="btn btn-sm btn-outline-warning"
+                                           target="_blank">
+                                            <i class="bi bi-box-arrow-up-right"></i> 공구 보기
+                                        </a>
+                                        <a th:case="'USER'" 
+                                           th:href="@{/users/profile/{id}(id=*{reportedEntityId})}"
+                                           class="btn btn-sm btn-outline-danger"
+                                           target="_blank">
+                                            <i class="bi bi-box-arrow-up-right"></i> 사용자 프로필 보기
+                                        </a>
+                                    </th:block>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold text-muted">신고 사유</div>
+                            <div class="col-md-9">
+                                <th:block th:switch="*{reportType}">
+                                    <span th:case="'INAPPROPRIATE_CONTENT'" class="badge bg-danger">부적절한 콘텐츠</span>
+                                    <span th:case="'SPAM'" class="badge bg-warning text-dark">스팸/광고</span>
+                                    <span th:case="'ABUSE'" class="badge bg-danger">욕설/비방</span>
+                                    <span th:case="'FALSE_INFORMATION'" class="badge bg-warning text-dark">허위 정보</span>
+                                    <span th:case="'COPYRIGHT'" class="badge bg-info">저작권 침해</span>
+                                    <span th:case="*" class="badge bg-secondary">기타</span>
+                                </th:block>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold text-muted">신고자</div>
+                            <div class="col-md-9">
+                                <a th:href="@{/users/profile/{nickname}(nickname=*{reporterNickname})}"
+                                   th:text="*{reporterNickname}"
+                                   class="text-decoration-none"
+                                   target="_blank">
+                                    신고자
+                                </a>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold text-muted">신고일</div>
+                            <div class="col-md-9" th:text="${#temporals.format(report.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01 12:00:00</div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-3 fw-bold text-muted">신고 내용</div>
+                            <div class="col-md-9">
+                                <div class="bg-light p-3 rounded" style="white-space: pre-wrap;" th:text="*{content}">
+                                    신고 내용이 여기에 표시됩니다.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Response (if processed) -->
+                <div th:if="${report.status != T(com.recipemate.domain.report.entity.ReportStatus).PENDING}" class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">관리자 처리 내역</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3" th:if="${report.resolverNickname}">
+                            <div class="col-md-3 fw-bold text-muted">처리자</div>
+                            <div class="col-md-9">
+                                <a th:href="@{/users/profile/{nickname}(nickname=${report.resolverNickname})}"
+                                   th:text="${report.resolverNickname}"
+                                   class="text-decoration-none"
+                                   target="_blank">
+                                    관리자
+                                </a>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold text-muted">처리일</div>
+                            <div class="col-md-9" th:text="${#temporals.format(report.updatedAt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01 12:00:00</div>
+                        </div>
+                        <div class="row" th:if="${report.adminNotes}">
+                            <div class="col-md-3 fw-bold text-muted">처리 메모</div>
+                            <div class="col-md-9">
+                                <div class="bg-light p-3 rounded" style="white-space: pre-wrap;" th:text="${report.adminNotes}">
+                                    처리 메모가 여기에 표시됩니다.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Deletion Warning (only if PENDING) -->
+                <div th:if="${report.status == T(com.recipemate.domain.report.entity.ReportStatus).PENDING}" class="alert alert-warning border-warning shadow-sm mb-4">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle-fill"></i> 콘텐츠 삭제 안내
+                    </h6>
+                    <p class="mb-2">
+                        <strong>게시글/댓글:</strong> 자동 삭제 가능<br>
+                        <strong>레시피/공구/사용자:</strong> 신중한 검토 후 수동 처리 필요
+                    </p>
+                    <hr>
+                    <small class="text-muted">
+                        삭제된 콘텐츠는 복구할 수 없습니다. 신중히 검토 후 처리해 주세요.
+                    </small>
+                </div>
+
+                <!-- Action Forms (only if PENDING) -->
+                <div th:if="${report.status == T(com.recipemate.domain.report.entity.ReportStatus).PENDING}" class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">신고 처리</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Process Form -->
+                        <form th:action="@{/admin/reports/{id}/process(id=${report.id})}" 
+                              method="post" 
+                              class="mb-4">
+                            <input type="hidden" name="action" value="PROCESS">
+                            <div class="mb-3">
+                                <label for="processNotes" class="form-label fw-bold">
+                                    <i class="bi bi-check-circle text-success"></i> 처리 메모 (선택)
+                                </label>
+                                <textarea class="form-control" 
+                                          id="processNotes" 
+                                          name="adminNotes" 
+                                          rows="3" 
+                                          placeholder="처리 메모를 입력하세요 (선택사항)"></textarea>
+                                <small class="text-muted">
+                                    신고가 타당하여 조치를 취한 경우 사용합니다.
+                                </small>
+                            </div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> 처리 완료
+                            </button>
+                        </form>
+
+                        <hr>
+
+                        <!-- Dismiss Form -->
+                        <form th:action="@{/admin/reports/{id}/process(id=${report.id})}" 
+                              method="post"
+                              class="mb-4">
+                            <input type="hidden" name="action" value="DISMISS">
+                            <div class="mb-3">
+                                <label for="dismissNotes" class="form-label fw-bold">
+                                    <i class="bi bi-x-circle text-secondary"></i> 기각 메모 (선택)
+                                </label>
+                                <textarea class="form-control" 
+                                          id="dismissNotes" 
+                                          name="adminNotes" 
+                                          rows="3" 
+                                          placeholder="기각 사유를 입력하세요 (선택사항)"></textarea>
+                                <small class="text-muted">
+                                    신고가 타당하지 않거나 조치가 불필요한 경우 사용합니다.
+                                </small>
+                            </div>
+                            <button type="submit" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> 기각
+                            </button>
+                        </form>
+
+                        <hr>
+
+                        <!-- Delete Content Form (for POST and COMMENT only) -->
+                        <div th:if="${report.reportedEntityType.name() == 'POST' or report.reportedEntityType.name() == 'COMMENT'}">
+                            <form th:action="@{/admin/reports/{id}/delete-content(id=${report.id})}" 
+                                  method="post"
+                                  onsubmit="return confirm('정말로 이 콘텐츠를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.');">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-danger">
+                                        <i class="bi bi-trash"></i> 콘텐츠 삭제
+                                    </label>
+                                    <div class="alert alert-danger mb-2">
+                                        <small>
+                                            <i class="bi bi-exclamation-triangle"></i> 
+                                            이 작업은 신고된 <span th:text="${report.reportedEntityType.displayName}">콘텐츠</span>를 
+                                            즉시 삭제하고 신고를 자동으로 '처리 완료'로 표시합니다.
+                                        </small>
+                                    </div>
+                                    <textarea class="form-control mb-2" 
+                                              name="adminNotes" 
+                                              rows="2" 
+                                              placeholder="삭제 사유 (선택)"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash"></i> 콘텐츠 삭제 및 처리 완료
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Manual Action Notice (for RECIPE, GROUP_PURCHASE, USER) -->
+                        <div th:if="${report.reportedEntityType.name() != 'POST' and report.reportedEntityType.name() != 'COMMENT'}" 
+                             class="alert alert-info">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-info-circle"></i> 수동 처리 안내
+                            </h6>
+                            <p class="mb-0">
+                                <span th:text="${report.reportedEntityType.displayName}">콘텐츠</span>는 자동 삭제가 지원되지 않습니다. 
+                                신고 내용을 확인한 후 해당 페이지에서 직접 조치를 취해 주세요.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

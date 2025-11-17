@@ -371,6 +371,14 @@
                                 </button>
                             </div>
                             
+                            <!-- 신고 버튼: 주최자가 아닌 사용자만 표시 -->
+                            <div th:if="${groupBuy.isHost == null or !groupBuy.isHost}" class="d-grid gap-2 mb-2">
+                                <a th:href="@{/reports/new(entityType='GROUP_PURCHASE', entityId=${groupBuy.id}, entityName=${groupBuy.title})}" 
+                                   class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-flag"></i> 신고하기
+                                </a>
+                            </div>
+                            
                             <!-- 후기 보기 버튼: COMPLETED 상태일 때만 표시 -->
                             <div th:if="${groupBuy.status.name() == 'COMPLETED'}" class="d-grid gap-2 mb-2">
                                 <a th:href="@{/group-purchases/{id}/reviews(id=${groupBuy.id})}" class="btn btn-info">

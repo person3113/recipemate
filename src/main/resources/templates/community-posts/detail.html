@@ -112,6 +112,13 @@
                                 <i class="bi bi-trash"></i> 삭제
                             </button>
                         </div>
+                        <!-- 다른 사용자의 게시글인 경우 신고 버튼 표시 -->
+                        <div th:unless="${#authentication.principal.username == post.authorEmail}">
+                            <a th:href="@{/reports/new(entityType='POST', entityId=${post.id}, entityName=${post.title})}" 
+                               class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-flag"></i> 신고하기
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

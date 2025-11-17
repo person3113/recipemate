@@ -50,8 +50,9 @@
                 
                 <!-- 댓글 작성자만 보이는 액션 버튼 (삭제된 댓글에는 표시 안함) -->
                 <div sec:authorize="isAuthenticated()" 
-                     th:if="${!comment.isDeleted and #authentication.principal.username == comment.authorEmail}">
-                    <div class="btn-group btn-group-sm">
+                     th:if="${!comment.isDeleted}">
+                    <!-- 본인 댓글: 수정/삭제 버튼 -->
+                    <div th:if="${#authentication.principal.username == comment.authorEmail}" class="btn-group btn-group-sm">
                         <button type="button" 
                                 class="btn btn-outline-secondary"
                                 onclick="toggleEditForm(this)"
@@ -72,6 +73,13 @@
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>
+                    </div>
+                    <!-- 다른 사용자 댓글: 신고 버튼 -->
+                    <div th:unless="${#authentication.principal.username == comment.authorEmail}">
+                        <a th:href="@{/reports/new(entityType='COMMENT', entityId=${comment.id}, entityName='댓글')}" 
+                           class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-flag"></i>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -211,8 +219,9 @@
         
         <!-- 대댓글 작성자만 보이는 액션 버튼 (삭제된 답글에는 표시 안함) -->
         <div sec:authorize="isAuthenticated()" 
-             th:if="${!reply.isDeleted and #authentication.principal.username == reply.authorEmail}">
-            <div class="btn-group btn-group-sm">
+             th:if="${!reply.isDeleted}">
+            <!-- 본인 대댓글: 수정/삭제 버튼 -->
+            <div th:if="${#authentication.principal.username == reply.authorEmail}" class="btn-group btn-group-sm">
                 <button type="button" 
                         class="btn btn-sm btn-outline-secondary"
                         onclick="toggleReplyEditForm(this)"
@@ -233,6 +242,13 @@
                         <i class="bi bi-trash"></i>
                     </button>
                 </form>
+            </div>
+            <!-- 다른 사용자 대댓글: 신고 버튼 -->
+            <div th:unless="${#authentication.principal.username == reply.authorEmail}">
+                <a th:href="@{/reports/new(entityType='COMMENT', entityId=${reply.id}, entityName='답글')}" 
+                   class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-flag"></i>
+                </a>
             </div>
         </div>
     </div>

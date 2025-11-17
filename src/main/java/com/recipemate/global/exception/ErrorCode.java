@@ -78,6 +78,9 @@ public enum ErrorCode {
     EMPTY_CONTENT(HttpStatus.BAD_REQUEST, "DM-003", "메시지 내용은 필수입니다."),
     CONTENT_TOO_LONG(HttpStatus.BAD_REQUEST, "DM-004", "메시지는 최대 1000자까지 입력 가능합니다."),
     UNAUTHORIZED_MESSAGE_ACCESS(HttpStatus.FORBIDDEN, "DM-005", "쪽지 접근 권한이 없습니다."),
+    
+    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT-001", "신고를 찾을 수 없습니다."),
+    ALREADY_PROCESSED_REPORT(HttpStatus.BAD_REQUEST, "REPORT-002", "이미 처리된 신고입니다."),
 
     UNAUTHORIZED(HttpStatus.FORBIDDEN, "COMMON-004", "권한이 없습니다."),
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "COMMON-001", "입력값이 올바르지 않습니다."),

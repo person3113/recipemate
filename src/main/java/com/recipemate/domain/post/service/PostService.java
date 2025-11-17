@@ -214,14 +214,32 @@ public class PostService {
     @Transactional
     @CacheEvict(value = CacheConfig.VIEW_COUNTS_CACHE, allEntries = true)
     public void deletePost(Long userId, Long postId) {
+        log.info("PostService.deletePost 시작 - userId: {}, postId: {}", userId, postId);
+        
         Post post = postRepository.findByIdWithAuthor(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.error("게시글을 찾을 수 없음 - postId: {}", postId);
+                    return new CustomException(ErrorCode.POST_NOT_FOUND);
+                });
 
         if (post.getDeletedAt() != null) {
+            log.error("이미 삭제된 게시글 - postId: {}", postId);
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
 
-        if (!post.getAuthor().getId().equals(userId)) {
+        log.info("사용자 조회 시작 - userId: {}", userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    log.error("사용자를 찾을 수 없음 - userId: {}", userId);
+                    return new CustomException(ErrorCode.USER_NOT_FOUND);
+                });
+
+        log.info("사용자 조회 성공 - user: {}, isAdmin: {}", user.getNickname(), user.isAdmin());
+
+        // 작성자 본인 또는 관리자만 삭제 가능
+        if (!post.getAuthor().getId().equals(userId) && !user.isAdmin()) {
+            log.error("게시글 삭제 권한 없음 - userId: {}, postAuthorId: {}, isAdmin: {}", 
+                    userId, post.getAuthor().getId(), user.isAdmin());
             throw new CustomException(ErrorCode.UNAUTHORIZED_POST_ACCESS);
         }
 
@@ -235,7 +253,7 @@ public class PostService {
         }
         
         post.delete();
-        log.debug("Post deleted with {} images and cache evicted", images.size());
+        log.info("게시글 삭제 완료 - postId: {}, 이미지 수: {}", postId, images.size());
     }
 
     /**

@@ -24,6 +24,10 @@ food:
 cloudinary:
   url: ${CLOUDINARY_URL}
 
+# Kakao Maps API 설정
+kakao:
+  javascript-key: ${KAKAO_JAVASCRIPT_KEY}
+
 # 레시피 동기화 설정
 recipe:
   # 초기 데이터 로드 활성화 여부

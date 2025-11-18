@@ -1,26 +1,32 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout/base :: layout(
+        ~{::title},
+        ~{::main-content},
+        ~{::additional-head},
+        ~{::additional-scripts}
+      )}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RecipeMate - 레시피 기반 공동구매 플랫폼</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" th:href="@{/css/styles.css}">
-    
-    <!-- HTMX -->
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <th:block th:fragment="title">RecipeMate - 레시피 기반 공동구매 플랫폼</th:block>
+    <th:block th:fragment="additional-head">
+        <style>
+            .hero-section {
+                background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
+                color: white;
+                padding: 100px 0;
+            }
+            .feature-card:hover {
+                transform: translateY(-5px);
+                transition: transform 0.3s;
+            }
+            .progress-bar-green { background-color: #4CAF50; }
+            .progress-bar-blue { background-color: #2196F3; }
+            .progress-bar-gray { background-color: #9E9E9E; }
+        </style>
+    </th:block>
 </head>
-<body class="bg-light">
-    <!-- Header Fragment -->
-    <div th:replace="~{fragments/header :: header}"></div>
+<body>
+    <th:block th:fragment="main-content">
     
     <!-- Hero Section -->
     <section class="hero-section text-center">
@@ -213,11 +219,10 @@
             </div>
         </div>
     </section>
+    </th:block>
     
-    <!-- Footer Fragment -->
-    <div th:replace="~{fragments/footer :: footer}"></div>
-    
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <th:block th:fragment="additional-scripts">
+        <!-- No additional scripts needed -->
+    </th:block>
 </body>
 </html>

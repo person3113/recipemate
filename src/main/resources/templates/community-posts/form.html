@@ -1,22 +1,21 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(
+        ~{::title},
+        ~{::main-content},
+        ~{::additional-head},
+        ~{::additional-scripts}
+      )}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${post != null ? '게시글 수정' : '게시글 작성'} + ' - RecipeMate'">게시글 작성 - RecipeMate</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <th:block th:fragment="title">
+        <span th:text="${post != null ? '게시글 수정' : '게시글 작성'}">게시글 작성</span>
+    </th:block>
+    <th:block th:fragment="additional-head">
+        <!-- No additional CSS needed -->
+    </th:block>
 </head>
-<body class="bg-light">
-    <!-- Header Fragment -->
-    <div th:replace="~{fragments/header :: header}"></div>
-    
-    <main class="container my-5">
+<body>
+    <main th:fragment="main-content" class="container my-5">
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <!-- Page Header -->
@@ -177,12 +176,7 @@
         </div>
     </main>
     
-    <!-- Footer Fragment -->
-    <div th:replace="~{fragments/footer :: footer}"></div>
-    
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+    <th:block th:fragment="additional-scripts">
     <!-- Existing Image Deletion Script -->
     <script>
         // 기존 이미지 삭제 마크 (전역 함수로 선언)
@@ -403,5 +397,6 @@
             }
         });
     </script>
+    </th:block>
 </body>
 </html>

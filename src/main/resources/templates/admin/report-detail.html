@@ -1,19 +1,12 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::main-content}, ~{::additional-head}, ~{::additional-scripts})}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>신고 상세 - RecipeMate Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <th:block th:fragment="title">신고 상세 - RecipeMate Admin</th:block>
+    <th:block th:fragment="additional-head"></th:block>
 </head>
 <body>
-    <!-- Header -->
-    <div th:replace="~{fragments/header :: header}"></div>
-
-    <!-- Main Content -->
-    <main class="container my-5">
+    <main th:fragment="main-content" class="container my-5">
         <div class="row">
             <div class="col-lg-8 mx-auto">
                 <!-- Page Header -->
@@ -303,9 +296,6 @@
         </div>
     </main>
 
-    <!-- Footer -->
-    <div th:replace="~{fragments/footer :: footer}"></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <th:block th:fragment="additional-scripts"></th:block>
 </body>
 </html>

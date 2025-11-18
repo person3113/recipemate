@@ -1,22 +1,22 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(
+        ~{::title}, 
+        ~{::main-content}, 
+        ~{::additional-head},
+        ~{::additional-scripts}
+      )}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${groupBuy != null ? '공동구매 수정' : '공동구매 작성'} + ' - RecipeMate'">공동구매 작성 - RecipeMate</title>
+    <th:block th:fragment="title" th:text="${groupBuy != null ? '공동구매 수정' : '공동구매 작성'}">공동구매 작성</th:block>
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <!-- Additional Head Content -->
+    <th:block th:fragment="additional-head">
+        <!-- No additional head content needed -->
+    </th:block>
 </head>
-<body class="bg-light">
-    <!-- Header Fragment -->
-    <div th:replace="~{fragments/header :: header}"></div>
-    
-    <main class="container my-5">
+<body>
+    <!-- Main Content Fragment -->
+    <main th:fragment="main-content" class="container my-5">
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <!-- Page Header -->
@@ -297,13 +297,33 @@
                                 <label for="meetupLocation" class="form-label fw-semibold">
                                     만남 장소 <span class="text-muted small">(직거래 시)</span>
                                 </label>
-                                <input type="text" 
-                                       id="meetupLocation" 
-                                       th:field="*{meetupLocation}"
-                                       class="form-control" 
-                                       placeholder="예: 서울역 3번 출구">
-                                <div class="form-text">
-                                    <i class="bi bi-geo-alt"></i> 구체적인 만남 장소를 입력해주세요.
+                                <div class="input-group mb-2">
+                                    <input type="text" 
+                                           id="meetupLocation" 
+                                           th:field="*{meetupLocation}"
+                                           class="form-control" 
+                                           placeholder="예: 서울역 3번 출구">
+                                    <button type="button" 
+                                            id="searchAddressBtn" 
+                                            class="btn btn-outline-primary"
+                                            style="display: none;">
+                                        <i class="bi bi-search"></i> 주소 검색
+                                    </button>
+                                </div>
+                                <div class="form-text mb-2">
+                                    <i class="bi bi-geo-alt"></i> 구체적인 만남 장소를 입력하세요. 주소 검색으로 지도에 위치를 표시할 수 있습니다.
+                                </div>
+                                
+                                <!-- Hidden inputs for coordinates -->
+                                <input type="hidden" id="latitude" th:field="*{latitude}">
+                                <input type="hidden" id="longitude" th:field="*{longitude}">
+                                
+                                <!-- Map Container -->
+                                <div id="mapContainer" style="display: none;">
+                                    <div id="meetupMap" style="width: 100%; height: 400px; border-radius: 8px; margin-top: 10px;"></div>
+                                    <div class="form-text mt-2">
+                                        <i class="bi bi-info-circle"></i> 지도를 클릭하여 정확한 위치를 지정할 수 있습니다.
+                                    </div>
                                 </div>
                             </div>
                             
@@ -415,446 +435,566 @@
         </div>
     </main>
     
-    <!-- Footer Fragment -->
-    <div th:replace="~{fragments/footer :: footer}"></div>
-    
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Existing Image Deletion Script -->
-    <script>
-        // 기존 이미지 삭제 마크 (전역 함수로 선언)
-        let deletedImagesArray = [];
+    <!-- Additional Scripts Fragment -->
+    <th:block th:fragment="additional-scripts">
+        <!-- Existing Image Deletion Script -->
+        <script>
+            // 기존 이미지 삭제 마크 (전역 함수로 선언)
+            let deletedImagesArray = [];
+            
+            function markImageForDeletion(button, imageUrl) {
+                // 삭제할 이미지 URL을 배열에 추가
+                if (!deletedImagesArray.includes(imageUrl)) {
+                    deletedImagesArray.push(imageUrl);
+                }
+                
+                // Hidden input에 배열을 다중 값으로 추가
+                const deletedImagesInput = document.getElementById('deletedImagesInput');
+                const form = document.getElementById('groupBuyForm');
+                
+                // 기존 hidden input 제거
+                const existingInputs = form.querySelectorAll('input[name="deletedImages"]');
+                existingInputs.forEach(input => input.remove());
+                
+                // 각 URL을 개별 hidden input으로 추가
+                deletedImagesArray.forEach(url => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'deletedImages';
+                    input.value = url;
+                    form.appendChild(input);
+                });
+                
+                // UI에서 카드 제거
+                const card = button.closest('.existing-image-card');
+                if (card) {
+                    card.style.opacity = '0.5';
+                    button.disabled = true;
+                    button.innerHTML = '<i class="bi bi-check"></i> 삭제 예정';
+                    button.classList.remove('btn-danger');
+                    button.classList.add('btn-secondary');
+                }
+            }
+        </script>
         
-        function markImageForDeletion(button, imageUrl) {
-            // 삭제할 이미지 URL을 배열에 추가
-            if (!deletedImagesArray.includes(imageUrl)) {
-                deletedImagesArray.push(imageUrl);
-            }
-            
-            // Hidden input에 배열을 다중 값으로 추가
-            const deletedImagesInput = document.getElementById('deletedImagesInput');
-            const form = document.getElementById('groupBuyForm');
-            
-            // 기존 hidden input 제거
-            const existingInputs = form.querySelectorAll('input[name="deletedImages"]');
-            existingInputs.forEach(input => input.remove());
-            
-            // 각 URL을 개별 hidden input으로 추가
-            deletedImagesArray.forEach(url => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'deletedImages';
-                input.value = url;
-                form.appendChild(input);
-            });
-            
-            // UI에서 카드 제거
-            const card = button.closest('.existing-image-card');
-            if (card) {
-                card.style.opacity = '0.5';
-                button.disabled = true;
-                button.innerHTML = '<i class="bi bi-check"></i> 삭제 예정';
-                button.classList.remove('btn-danger');
-                button.classList.add('btn-secondary');
-            }
-        }
-    </script>
-    
-    <!-- Price Per Person Calculator -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const targetAmountInput = document.getElementById('targetAmount');
-            const targetHeadcountInput = document.getElementById('targetHeadcount');
-            const pricePerPersonAlert = document.getElementById('pricePerPersonAlert');
-            const pricePerPersonDisplay = document.getElementById('pricePerPerson');
-            const deadlineInput = document.getElementById('deadline');
-            const imageFilesInput = document.getElementById('imageFiles');
-            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-            
-            const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-            const MAX_IMAGE_COUNT = 3;
-            let selectedFiles = [];
-            
-            // 1인당 가격 계산
-            function calculatePricePerPerson() {
-                const targetAmount = parseInt(targetAmountInput.value) || 0;
-                const targetHeadcount = parseInt(targetHeadcountInput.value) || 0;
+        <!-- Price Per Person Calculator -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const targetAmountInput = document.getElementById('targetAmount');
+                const targetHeadcountInput = document.getElementById('targetHeadcount');
+                const pricePerPersonAlert = document.getElementById('pricePerPersonAlert');
+                const pricePerPersonDisplay = document.getElementById('pricePerPerson');
+                const deadlineInput = document.getElementById('deadline');
+                const imageFilesInput = document.getElementById('imageFiles');
+                const imagePreviewContainer = document.getElementById('imagePreviewContainer');
                 
-                if (targetAmount > 0 && targetHeadcount > 0) {
-                    const pricePerPerson = Math.ceil(targetAmount / targetHeadcount);
-                    pricePerPersonDisplay.textContent = pricePerPerson.toLocaleString('ko-KR') + '원';
-                    pricePerPersonAlert.style.display = 'block';
-                } else {
-                    pricePerPersonAlert.style.display = 'none';
-                }
-            }
-            
-            // 입력값 변경 시 자동 계산
-            targetAmountInput.addEventListener('input', calculatePricePerPerson);
-            targetHeadcountInput.addEventListener('input', calculatePricePerPerson);
-            
-            // 페이지 로드 시 초기 계산 (수정 모드인 경우)
-            calculatePricePerPerson();
-            
-            // 마감일 최소값/최대값 설정 (현재 시각 ~ 1개월)
-            function setDeadlineConstraints() {
-                const now = new Date();
+                const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+                const MAX_IMAGE_COUNT = 3;
+                let selectedFiles = [];
                 
-                // 최소값: 현재 시각
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-                const hours = String(now.getHours()).padStart(2, '0');
-                const minutes = String(now.getMinutes()).padStart(2, '0');
-                const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
-                deadlineInput.setAttribute('min', minDateTime);
-                
-                // 최대값: 현재 + 1개월
-                const maxDate = new Date(now);
-                maxDate.setMonth(maxDate.getMonth() + 1);
-                const maxYear = maxDate.getFullYear();
-                const maxMonth = String(maxDate.getMonth() + 1).padStart(2, '0');
-                const maxDay = String(maxDate.getDate()).padStart(2, '0');
-                const maxHours = String(maxDate.getHours()).padStart(2, '0');
-                const maxMinutes = String(maxDate.getMinutes()).padStart(2, '0');
-                const maxDateTime = `${maxYear}-${maxMonth}-${maxDay}T${maxHours}:${maxMinutes}`;
-                deadlineInput.setAttribute('max', maxDateTime);
-            }
-            
-            setDeadlineConstraints();
-            
-            // 마감일 유효성 검증 (현재 시각 ~ 1개월 이내)
-            deadlineInput.addEventListener('change', function() {
-                const selectedDate = new Date(this.value);
-                const now = new Date();
-                const maxDate = new Date(now);
-                maxDate.setMonth(maxDate.getMonth() + 1);
-                
-                if (selectedDate <= now) {
-                    alert('마감일은 현재 시각 이후로 설정해주세요.');
-                    this.value = '';
-                    this.focus();
-                } else if (selectedDate > maxDate) {
-                    alert('마감일은 현재로부터 최대 1개월 이내로 설정해주세요.');
-                    this.value = '';
-                    this.focus();
-                }
-            });
-            
-            // 이미지 압축 함수
-            async function compressImage(file, maxWidth = 1024, quality = 0.8) {
-                return new Promise((resolve, reject) => {
-                    // 이미 작은 이미지는 압축하지 않음
-                    if (file.size < 500 * 1024) { // 500KB 미만
-                        resolve(file);
-                        return;
-                    }
+                // 1인당 가격 계산
+                function calculatePricePerPerson() {
+                    const targetAmount = parseInt(targetAmountInput.value) || 0;
+                    const targetHeadcount = parseInt(targetHeadcountInput.value) || 0;
                     
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            let width = img.width;
-                            let height = img.height;
-                            
-                            // 최대 너비 제한
-                            if (width > maxWidth) {
-                                height = (height * maxWidth) / width;
-                                width = maxWidth;
-                            }
-                            
-                            canvas.width = width;
-                            canvas.height = height;
-                            
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-                            
-                            // Blob으로 변환 (JPEG, 품질 80%)
-                            canvas.toBlob((blob) => {
-                                if (blob) {
-                                    const compressedFile = new File([blob], file.name, {
-                                        type: 'image/jpeg',
-                                        lastModified: Date.now()
-                                    });
-                                    console.log(`Image compressed: ${file.name} (${(file.size / 1024).toFixed(1)}KB → ${(blob.size / 1024).toFixed(1)}KB)`);
-                                    resolve(compressedFile);
-                                } else {
-                                    reject(new Error('Failed to compress image'));
+                    if (targetAmount > 0 && targetHeadcount > 0) {
+                        const pricePerPerson = Math.ceil(targetAmount / targetHeadcount);
+                        pricePerPersonDisplay.textContent = pricePerPerson.toLocaleString('ko-KR') + '원';
+                        pricePerPersonAlert.style.display = 'block';
+                    } else {
+                        pricePerPersonAlert.style.display = 'none';
+                    }
+                }
+                
+                // 입력값 변경 시 자동 계산
+                targetAmountInput.addEventListener('input', calculatePricePerPerson);
+                targetHeadcountInput.addEventListener('input', calculatePricePerPerson);
+                
+                // 페이지 로드 시 초기 계산 (수정 모드인 경우)
+                calculatePricePerPerson();
+                
+                // 마감일 최소값/최대값 설정 (현재 시각 ~ 1개월)
+                function setDeadlineConstraints() {
+                    const now = new Date();
+                    
+                    // 최소값: 현재 시각
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                    deadlineInput.setAttribute('min', minDateTime);
+                    
+                    // 최대값: 현재 + 1개월
+                    const maxDate = new Date(now);
+                    maxDate.setMonth(maxDate.getMonth() + 1);
+                    const maxYear = maxDate.getFullYear();
+                    const maxMonth = String(maxDate.getMonth() + 1).padStart(2, '0');
+                    const maxDay = String(maxDate.getDate()).padStart(2, '0');
+                    const maxHours = String(maxDate.getHours()).padStart(2, '0');
+                    const maxMinutes = String(maxDate.getMinutes()).padStart(2, '0');
+                    const maxDateTime = `${maxYear}-${maxMonth}-${maxDay}T${maxHours}:${maxMinutes}`;
+                    deadlineInput.setAttribute('max', maxDateTime);
+                }
+                
+                setDeadlineConstraints();
+                
+                // 마감일 유효성 검증 (현재 시각 ~ 1개월 이내)
+                deadlineInput.addEventListener('change', function() {
+                    const selectedDate = new Date(this.value);
+                    const now = new Date();
+                    const maxDate = new Date(now);
+                    maxDate.setMonth(maxDate.getMonth() + 1);
+                    
+                    if (selectedDate <= now) {
+                        alert('마감일은 현재 시각 이후로 설정해주세요.');
+                        this.value = '';
+                        this.focus();
+                    } else if (selectedDate > maxDate) {
+                        alert('마감일은 현재로부터 최대 1개월 이내로 설정해주세요.');
+                        this.value = '';
+                        this.focus();
+                    }
+                });
+                
+                // 이미지 압축 함수
+                async function compressImage(file, maxWidth = 1024, quality = 0.8) {
+                    return new Promise((resolve, reject) => {
+                        // 이미 작은 이미지는 압축하지 않음
+                        if (file.size < 500 * 1024) { // 500KB 미만
+                            resolve(file);
+                            return;
+                        }
+                        
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                let width = img.width;
+                                let height = img.height;
+                                
+                                // 최대 너비 제한
+                                if (width > maxWidth) {
+                                    height = (height * maxWidth) / width;
+                                    width = maxWidth;
                                 }
-                            }, 'image/jpeg', quality);
+                                
+                                canvas.width = width;
+                                canvas.height = height;
+                                
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, width, height);
+                                
+                                // Blob으로 변환 (JPEG, 품질 80%)
+                                canvas.toBlob((blob) => {
+                                    if (blob) {
+                                        const compressedFile = new File([blob], file.name, {
+                                            type: 'image/jpeg',
+                                            lastModified: Date.now()
+                                        });
+                                        console.log(`Image compressed: ${file.name} (${(file.size / 1024).toFixed(1)}KB → ${(blob.size / 1024).toFixed(1)}KB)`);
+                                        resolve(compressedFile);
+                                    } else {
+                                        reject(new Error('Failed to compress image'));
+                                    }
+                                }, 'image/jpeg', quality);
+                            };
+                            img.onerror = () => reject(new Error('Failed to load image'));
+                            img.src = e.target.result;
                         };
-                        img.onerror = () => reject(new Error('Failed to load image'));
-                        img.src = e.target.result;
-                    };
-                    reader.onerror = () => reject(new Error('Failed to read file'));
-                    reader.readAsDataURL(file);
-                });
-            }
-            
-            // 이미지 파일 검증 및 미리보기
-            if (imageFilesInput && imagePreviewContainer) {
-                imageFilesInput.addEventListener('change', async function(e) {
-                    const files = Array.from(e.target.files);
-                    
-                    // 기존 이미지 개수 계산 (삭제 표시되지 않은 것만)
-                    const existingImageCards = document.querySelectorAll('.existing-image-card');
-                    const existingCount = Array.from(existingImageCards).filter(card => {
-                        return card.style.opacity !== '0.5';
-                    }).length;
-                    
-                    // 총 이미지 개수 검증 (기존 + 새 이미지 <= 3)
-                    if (existingCount + files.length > MAX_IMAGE_COUNT) {
-                        alert(`총 이미지는 최대 ${MAX_IMAGE_COUNT}장까지 가능합니다. (현재 ${existingCount}개 존재, ${files.length}개 추가 시도)`);
-                        e.target.value = '';
-                        return;
-                    }
-                    
-                    // 파일 개수 검증 (새 이미지만)
-                    if (files.length > MAX_IMAGE_COUNT) {
-                        alert(`이미지는 최대 ${MAX_IMAGE_COUNT}장까지 업로드할 수 있습니다.`);
-                        e.target.value = '';
-                        return;
-                    }
-                    
-                    // 파일 크기 및 형식 검증
-                    for (let file of files) {
-                        if (file.size > MAX_FILE_SIZE) {
-                            alert(`${file.name}의 크기가 5MB를 초과합니다. 5MB 이하의 이미지만 업로드 가능합니다.`);
-                            e.target.value = '';
-                            imagePreviewContainer.innerHTML = '';
-                            selectedFiles = [];
-                            return;
-                        }
-                        
-                        if (!['image/jpeg', 'image/png'].includes(file.type)) {
-                            alert(`${file.name}은(는) JPG 또는 PNG 형식이 아닙니다.`);
-                            e.target.value = '';
-                            imagePreviewContainer.innerHTML = '';
-                            selectedFiles = [];
-                            return;
-                        }
-                    }
-                    
-                    // 이미지 압축 (비동기)
-                    const compressedFiles = [];
-                    for (const file of files) {
-                        if (file.type.startsWith('image/')) {
-                            try {
-                                const compressed = await compressImage(file);
-                                compressedFiles.push(compressed);
-                            } catch (error) {
-                                console.error('Image compression failed:', error);
-                                compressedFiles.push(file); // 압축 실패 시 원본 사용
-                            }
-                        } else {
-                            compressedFiles.push(file);
-                        }
-                    }
-                    
-                    // DataTransfer를 사용해 압축된 파일로 교체
-                    const dataTransfer = new DataTransfer();
-                    compressedFiles.forEach(file => dataTransfer.items.add(file));
-                    e.target.files = dataTransfer.files;
-                    
-                    // 유효한 파일들 저장 (압축된 파일)
-                    selectedFiles = compressedFiles;
-                    
-                    // 미리보기 생성
-                    imagePreviewContainer.innerHTML = '';
-                    files.forEach((file, index) => {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const previewCol = document.createElement('div');
-                            previewCol.className = 'col-md-4';
-                            previewCol.innerHTML = `
-                                <div class="card">
-                                    <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;">
-                                    <div class="card-body p-2">
-                                        <p class="small mb-1 text-truncate">${file.name}</p>
-                                        <p class="small text-muted mb-2">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                                        <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-image-btn" data-index="${index}">
-                                            <i class="bi bi-trash"></i> 삭제
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                            imagePreviewContainer.appendChild(previewCol);
-                            
-                            // 삭제 버튼 이벤트 리스너
-                            previewCol.querySelector('.remove-image-btn').addEventListener('click', function() {
-                                const indexToRemove = parseInt(this.dataset.index);
-                                removeImage(indexToRemove);
-                            });
-                        };
-                        reader.readAsDataURL(file);
-                    });
-                });
-                
-                // 이미지 삭제 함수
-                function removeImage(indexToRemove) {
-                    selectedFiles = selectedFiles.filter((_, index) => index !== indexToRemove);
-                    
-                    // FileList를 DataTransfer로 재구성
-                    const dataTransfer = new DataTransfer();
-                    selectedFiles.forEach(file => dataTransfer.items.add(file));
-                    imageFilesInput.files = dataTransfer.files;
-                    
-                    // 미리보기 업데이트
-                    imagePreviewContainer.innerHTML = '';
-                    selectedFiles.forEach((file, index) => {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const previewCol = document.createElement('div');
-                            previewCol.className = 'col-md-4';
-                            previewCol.innerHTML = `
-                                <div class="card">
-                                    <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;">
-                                    <div class="card-body p-2">
-                                        <p class="small mb-1 text-truncate">${file.name}</p>
-                                        <p class="small text-muted mb-2">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                                        <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-image-btn" data-index="${index}">
-                                            <i class="bi bi-trash"></i> 삭제
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                            imagePreviewContainer.appendChild(previewCol);
-                            
-                            previewCol.querySelector('.remove-image-btn').addEventListener('click', function() {
-                                const indexToRemove = parseInt(this.dataset.index);
-                                removeImage(indexToRemove);
-                            });
-                        };
+                        reader.onerror = () => reject(new Error('Failed to read file'));
                         reader.readAsDataURL(file);
                     });
                 }
-            }
-        });
-    </script>
-    
-    <!-- Ingredients Management Script (모든 공구 유형에서 동작) -->
-    <script th:inline="javascript">
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('groupBuyForm');
-            const addIngredientBtn = document.getElementById('addIngredientBtn');
-            const ingredientsList = document.getElementById('ingredientsList');
-            
-            // ingredientIndex 초기화: 레시피 생성 모드(recipe != null && groupBuy == null)와 공구 수정 모드(ingredientsList != null) 구분
-            let ingredientIndex = /*[[${groupBuy == null and recipe != null ? recipe.ingredients.size() : (ingredientsList != null ? ingredientsList.size() : 0)}]]*/ 0;
-            
-            if (!form) {
-                console.error('필수 요소를 찾을 수 없습니다.');
-                return;
-            }
-            
-            // 기존 재료 항목들에 대한 이벤트 리스너 등록
-            document.querySelectorAll('.ingredient-name-input').forEach((nameInput) => {
-                const ingredientItem = nameInput.closest('.ingredient-item');
-                const checkbox = ingredientItem.querySelector('.ingredient-checkbox');
                 
-                // 재료명 변경 시 data-name 속성 업데이트
-                nameInput.addEventListener('input', function() {
-                    checkbox.dataset.name = this.value;
-                });
-            });
-            
-            // 기존 재료 항목들의 제거 버튼에 이벤트 리스너 등록
-            document.querySelectorAll('.remove-ingredient').forEach((removeBtn) => {
-                removeBtn.addEventListener('click', function() {
-                    const ingredientCol = this.closest('.col-md-6');
-                    if (ingredientCol) {
-                        ingredientCol.remove();
-                    }
-                });
-            });
-            
-            // 폼 제출 시 선택된 재료를 JSON으로 변환
-            form.addEventListener('submit', function(e) {
-                const ingredientItems = document.querySelectorAll('.ingredient-item');
-                const selectedIngredients = [];
-                
-                ingredientItems.forEach((item) => {
-                    const checkbox = item.querySelector('.ingredient-checkbox');
-                    if (checkbox && checkbox.checked) {
-                        const nameInput = item.querySelector('.ingredient-name-input');
-                        const measureInput = item.querySelector('.ingredient-measure');
+                // 이미지 파일 검증 및 미리보기
+                if (imageFilesInput && imagePreviewContainer) {
+                    imageFilesInput.addEventListener('change', async function(e) {
+                        const files = Array.from(e.target.files);
                         
-                        selectedIngredients.push({
-                            name: nameInput ? nameInput.value : (checkbox.dataset.name || ''),
-                            measure: measureInput ? measureInput.value : '',
-                            selected: true
+                        // 기존 이미지 개수 계산 (삭제 표시되지 않은 것만)
+                        const existingImageCards = document.querySelectorAll('.existing-image-card');
+                        const existingCount = Array.from(existingImageCards).filter(card => {
+                            return card.style.opacity !== '0.5';
+                        }).length;
+                        
+                        // 총 이미지 개수 검증 (기존 + 새 이미지 <= 3)
+                        if (existingCount + files.length > MAX_IMAGE_COUNT) {
+                            alert(`총 이미지는 최대 ${MAX_IMAGE_COUNT}장까지 가능합니다. (현재 ${existingCount}개 존재, ${files.length}개 추가 시도)`);
+                            e.target.value = '';
+                            return;
+                        }
+                        
+                        // 파일 개수 검증 (새 이미지만)
+                        if (files.length > MAX_IMAGE_COUNT) {
+                            alert(`이미지는 최대 ${MAX_IMAGE_COUNT}장까지 업로드할 수 있습니다.`);
+                            e.target.value = '';
+                            return;
+                        }
+                        
+                        // 파일 크기 및 형식 검증
+                        for (let file of files) {
+                            if (file.size > MAX_FILE_SIZE) {
+                                alert(`${file.name}의 크기가 5MB를 초과합니다. 5MB 이하의 이미지만 업로드 가능합니다.`);
+                                e.target.value = '';
+                                imagePreviewContainer.innerHTML = '';
+                                selectedFiles = [];
+                                return;
+                            }
+                            
+                            if (!['image/jpeg', 'image/png'].includes(file.type)) {
+                                alert(`${file.name}은(는) JPG 또는 PNG 형식이 아닙니다.`);
+                                e.target.value = '';
+                                imagePreviewContainer.innerHTML = '';
+                                selectedFiles = [];
+                                return;
+                            }
+                        }
+                        
+                        // 이미지 압축 (비동기)
+                        const compressedFiles = [];
+                        for (const file of files) {
+                            if (file.type.startsWith('image/')) {
+                                try {
+                                    const compressed = await compressImage(file);
+                                    compressedFiles.push(compressed);
+                                } catch (error) {
+                                    console.error('Image compression failed:', error);
+                                    compressedFiles.push(file); // 압축 실패 시 원본 사용
+                                }
+                            } else {
+                                compressedFiles.push(file);
+                            }
+                        }
+                        
+                        // DataTransfer를 사용해 압축된 파일로 교체
+                        const dataTransfer = new DataTransfer();
+                        compressedFiles.forEach(file => dataTransfer.items.add(file));
+                        e.target.files = dataTransfer.files;
+                        
+                        // 유효한 파일들 저장 (압축된 파일)
+                        selectedFiles = compressedFiles;
+                        
+                        // 미리보기 생성
+                        imagePreviewContainer.innerHTML = '';
+                        files.forEach((file, index) => {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const previewCol = document.createElement('div');
+                                previewCol.className = 'col-md-4';
+                                previewCol.innerHTML = `
+                                    <div class="card">
+                                        <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;">
+                                        <div class="card-body p-2">
+                                            <p class="small mb-1 text-truncate">${file.name}</p>
+                                            <p class="small text-muted mb-2">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                            <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-image-btn" data-index="${index}">
+                                                <i class="bi bi-trash"></i> 삭제
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                                imagePreviewContainer.appendChild(previewCol);
+                                
+                                // 삭제 버튼 이벤트 리스너
+                                previewCol.querySelector('.remove-image-btn').addEventListener('click', function() {
+                                    const indexToRemove = parseInt(this.dataset.index);
+                                    removeImage(indexToRemove);
+                                });
+                            };
+                            reader.readAsDataURL(file);
+                        });
+                    });
+                    
+                    // 이미지 삭제 함수
+                    function removeImage(indexToRemove) {
+                        selectedFiles = selectedFiles.filter((_, index) => index !== indexToRemove);
+                        
+                        // FileList를 DataTransfer로 재구성
+                        const dataTransfer = new DataTransfer();
+                        selectedFiles.forEach(file => dataTransfer.items.add(file));
+                        imageFilesInput.files = dataTransfer.files;
+                        
+                        // 미리보기 업데이트
+                        imagePreviewContainer.innerHTML = '';
+                        selectedFiles.forEach((file, index) => {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const previewCol = document.createElement('div');
+                                previewCol.className = 'col-md-4';
+                                previewCol.innerHTML = `
+                                    <div class="card">
+                                        <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;">
+                                        <div class="card-body p-2">
+                                            <p class="small mb-1 text-truncate">${file.name}</p>
+                                            <p class="small text-muted mb-2">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                            <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-image-btn" data-index="${index}">
+                                                <i class="bi bi-trash"></i> 삭제
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                                imagePreviewContainer.appendChild(previewCol);
+                                
+                                previewCol.querySelector('.remove-image-btn').addEventListener('click', function() {
+                                    const indexToRemove = parseInt(this.dataset.index);
+                                    removeImage(indexToRemove);
+                                });
+                            };
+                            reader.readAsDataURL(file);
                         });
                     }
+                }
+            });
+        </script>
+        
+        <!-- Ingredients Management Script (모든 공구 유형에서 동작) -->
+        <script th:inline="javascript">
+            document.addEventListener('DOMContentLoaded', function() {
+                const form = document.getElementById('groupBuyForm');
+                const addIngredientBtn = document.getElementById('addIngredientBtn');
+                const ingredientsList = document.getElementById('ingredientsList');
+                
+                // ingredientIndex 초기화: 레시피 생성 모드(recipe != null && groupBuy == null)와 공구 수정 모드(ingredientsList != null) 구분
+                let ingredientIndex = /*[[${groupBuy == null and recipe != null ? recipe.ingredients.size() : (ingredientsList != null ? ingredientsList.size() : 0)}]]*/ 0;
+                
+                if (!form) {
+                    console.error('필수 요소를 찾을 수 없습니다.');
+                    return;
+                }
+                
+                // 기존 재료 항목들에 대한 이벤트 리스너 등록
+                document.querySelectorAll('.ingredient-name-input').forEach((nameInput) => {
+                    const ingredientItem = nameInput.closest('.ingredient-item');
+                    const checkbox = ingredientItem.querySelector('.ingredient-checkbox');
+                    
+                    // 재료명 변경 시 data-name 속성 업데이트
+                    nameInput.addEventListener('input', function() {
+                        checkbox.dataset.name = this.value;
+                    });
                 });
                 
-                // 최소 1개 이상의 재료 필수
-                if (selectedIngredients.length === 0) {
-                    e.preventDefault();
-                    alert('최소 1개 이상의 재료를 선택해주세요.');
-                    return false;
-                }
+                // 기존 재료 항목들의 제거 버튼에 이벤트 리스너 등록
+                document.querySelectorAll('.remove-ingredient').forEach((removeBtn) => {
+                    removeBtn.addEventListener('click', function() {
+                        const ingredientCol = this.closest('.col-md-6');
+                        if (ingredientCol) {
+                            ingredientCol.remove();
+                        }
+                    });
+                });
                 
-                // JSON 문자열로 변환하여 hidden input에 저장
-                let selectedIngredientsInput = document.getElementById('selectedIngredientsJson');
-                if (!selectedIngredientsInput) {
-                    selectedIngredientsInput = document.createElement('input');
-                    selectedIngredientsInput.type = 'hidden';
-                    selectedIngredientsInput.id = 'selectedIngredientsJson';
-                    selectedIngredientsInput.name = 'selectedIngredientsJson';
-                    form.appendChild(selectedIngredientsInput);
-                }
-                selectedIngredientsInput.value = JSON.stringify(selectedIngredients);
-            });
-            
-            // 재료 추가 버튼
-            addIngredientBtn.addEventListener('click', function() {
-                const newIngredient = document.createElement('div');
-                newIngredient.className = 'col-md-6';
-                newIngredient.innerHTML = `
-                    <div class="border rounded p-3 ingredient-item">
-                        <div class="form-check mb-2">
-                            <input class="form-check-input ingredient-checkbox" 
-                                   type="checkbox" 
-                                   id="ingredient-${ingredientIndex}"
-                                   data-name=""
-                                   checked>
-                            <label class="form-check-label w-100" for="ingredient-${ingredientIndex}">
-                                <input type="text" 
-                                       class="form-control form-control-sm d-inline-block ingredient-name-input" 
-                                       placeholder="재료명"
-                                       required
-                                       style="width: 100%;">
-                            </label>
+                // 폼 제출 시 선택된 재료를 JSON으로 변환
+                form.addEventListener('submit', function(e) {
+                    const ingredientItems = document.querySelectorAll('.ingredient-item');
+                    const selectedIngredients = [];
+                    
+                    ingredientItems.forEach((item) => {
+                        const checkbox = item.querySelector('.ingredient-checkbox');
+                        if (checkbox && checkbox.checked) {
+                            const nameInput = item.querySelector('.ingredient-name-input');
+                            const measureInput = item.querySelector('.ingredient-measure');
+                            
+                            selectedIngredients.push({
+                                name: nameInput ? nameInput.value : (checkbox.dataset.name || ''),
+                                measure: measureInput ? measureInput.value : '',
+                                selected: true
+                            });
+                        }
+                    });
+                    
+                    // 최소 1개 이상의 재료 필수
+                    if (selectedIngredients.length === 0) {
+                        e.preventDefault();
+                        alert('최소 1개 이상의 재료를 선택해주세요.');
+                        return false;
+                    }
+                    
+                    // JSON 문자열로 변환하여 hidden input에 저장
+                    let selectedIngredientsInput = document.getElementById('selectedIngredientsJson');
+                    if (!selectedIngredientsInput) {
+                        selectedIngredientsInput = document.createElement('input');
+                        selectedIngredientsInput.type = 'hidden';
+                        selectedIngredientsInput.id = 'selectedIngredientsJson';
+                        selectedIngredientsInput.name = 'selectedIngredientsJson';
+                        form.appendChild(selectedIngredientsInput);
+                    }
+                    selectedIngredientsInput.value = JSON.stringify(selectedIngredients);
+                });
+                
+                // 재료 추가 버튼
+                addIngredientBtn.addEventListener('click', function() {
+                    const newIngredient = document.createElement('div');
+                    newIngredient.className = 'col-md-6';
+                    newIngredient.innerHTML = `
+                        <div class="border rounded p-3 ingredient-item">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input ingredient-checkbox" 
+                                       type="checkbox" 
+                                       id="ingredient-${ingredientIndex}"
+                                       data-name=""
+                                       checked>
+                                <label class="form-check-label w-100" for="ingredient-${ingredientIndex}">
+                                    <input type="text" 
+                                           class="form-control form-control-sm d-inline-block ingredient-name-input" 
+                                           placeholder="재료명"
+                                           required
+                                           style="width: 100%;">
+                                </label>
+                            </div>
+                            <input type="text" 
+                                   class="form-control form-control-sm ingredient-measure" 
+                                   id="measure-${ingredientIndex}"
+                                   placeholder="분량 (예: 200g, 2개)">
+                            <button type="button" class="btn btn-sm btn-outline-danger mt-2 remove-ingredient">
+                                <i class="bi bi-trash"></i> 제거
+                            </button>
                         </div>
-                        <input type="text" 
-                               class="form-control form-control-sm ingredient-measure" 
-                               id="measure-${ingredientIndex}"
-                               placeholder="분량 (예: 200g, 2개)">
-                        <button type="button" class="btn btn-sm btn-outline-danger mt-2 remove-ingredient">
-                            <i class="bi bi-trash"></i> 제거
-                        </button>
-                    </div>
-                `;
-                
-                ingredientsList.appendChild(newIngredient);
-                
-                // 재료명 입력 시 data-name 업데이트
-                const nameInput = newIngredient.querySelector('.ingredient-name-input');
-                const checkbox = newIngredient.querySelector('.ingredient-checkbox');
-                nameInput.addEventListener('input', function() {
-                    checkbox.dataset.name = this.value;
+                    `;
+                    
+                    ingredientsList.appendChild(newIngredient);
+                    
+                    // 재료명 입력 시 data-name 업데이트
+                    const nameInput = newIngredient.querySelector('.ingredient-name-input');
+                    const checkbox = newIngredient.querySelector('.ingredient-checkbox');
+                    nameInput.addEventListener('input', function() {
+                        checkbox.dataset.name = this.value;
+                    });
+                    
+                    // 제거 버튼 이벤트 리스너
+                    newIngredient.querySelector('.remove-ingredient').addEventListener('click', function() {
+                        newIngredient.remove();
+                    });
+                    
+                    ingredientIndex++;
                 });
-                
-                // 제거 버튼 이벤트 리스너
-                newIngredient.querySelector('.remove-ingredient').addEventListener('click', function() {
-                    newIngredient.remove();
-                });
-                
-                ingredientIndex++;
             });
-        });
-    </script>
+        </script>
+        
+        <!-- Kakao Map Integration Script -->
+        <script th:inline="javascript">
+            document.addEventListener('DOMContentLoaded', function() {
+                // Check if Kakao Maps API is loaded
+                if (typeof kakao === 'undefined' || !kakao.maps) {
+                    console.log('Kakao Maps API not loaded. Map features will be disabled.');
+                    return;
+                }
+                
+                const meetupLocationInput = document.getElementById('meetupLocation');
+                const searchAddressBtn = document.getElementById('searchAddressBtn');
+                const mapContainer = document.getElementById('mapContainer');
+                const latitudeInput = document.getElementById('latitude');
+                const longitudeInput = document.getElementById('longitude');
+                
+                let map = null;
+                let marker = null;
+                let geocoder = new kakao.maps.services.Geocoder();
+                
+                // Show search button when Kakao Maps is available
+                if (searchAddressBtn) {
+                    searchAddressBtn.style.display = 'inline-block';
+                }
+                
+                // Initialize map with existing coordinates (edit mode)
+                const existingLat = /*[[${formData.latitude}]]*/ null;
+                const existingLng = /*[[${formData.longitude}]]*/ null;
+                
+                if (existingLat && existingLng) {
+                    initializeMap(existingLat, existingLng);
+                }
+                
+                // Search address button click handler
+                searchAddressBtn.addEventListener('click', function() {
+                    const address = meetupLocationInput.value.trim();
+                    
+                    if (!address) {
+                        alert('주소를 입력해주세요.');
+                        meetupLocationInput.focus();
+                        return;
+                    }
+                    
+                    // Geocode the address
+                    geocoder.addressSearch(address, function(result, status) {
+                        if (status === kakao.maps.services.Status.OK) {
+                            const lat = parseFloat(result[0].y);
+                            const lng = parseFloat(result[0].x);
+                            
+                            // Update hidden inputs
+                            latitudeInput.value = lat;
+                            longitudeInput.value = lng;
+                            
+                            // Initialize or update map
+                            if (!map) {
+                                initializeMap(lat, lng);
+                            } else {
+                                updateMapLocation(lat, lng);
+                            }
+                        } else {
+                            alert('주소를 찾을 수 없습니다. 다른 주소로 시도해주세요.');
+                        }
+                    });
+                });
+                
+                // Initialize map
+                function initializeMap(lat, lng) {
+                    mapContainer.style.display = 'block';
+                    
+                    const mapOption = {
+                        center: new kakao.maps.LatLng(lat, lng),
+                        level: 3
+                    };
+                    
+                    map = new kakao.maps.Map(document.getElementById('meetupMap'), mapOption);
+                    
+                    // Add marker
+                    marker = new kakao.maps.Marker({
+                        position: new kakao.maps.LatLng(lat, lng),
+                        map: map
+                    });
+                    
+                    // Map click event - update marker position
+                    kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
+                        const latlng = mouseEvent.latLng;
+                        const newLat = latlng.getLat();
+                        const newLng = latlng.getLng();
+                        
+                        // Update marker position
+                        marker.setPosition(latlng);
+                        
+                        // Update hidden inputs
+                        latitudeInput.value = newLat;
+                        longitudeInput.value = newLng;
+                        
+                        // Reverse geocode to update address
+                        geocoder.coord2Address(newLng, newLat, function(result, status) {
+                            if (status === kakao.maps.services.Status.OK && result[0]) {
+                                const roadAddress = result[0].road_address;
+                                const jibunAddress = result[0].address;
+                                
+                                if (roadAddress) {
+                                    meetupLocationInput.value = roadAddress.address_name;
+                                } else if (jibunAddress) {
+                                    meetupLocationInput.value = jibunAddress.address_name;
+                                }
+                            }
+                        });
+                    });
+                }
+                
+                // Update map location
+                function updateMapLocation(lat, lng) {
+                    const newPosition = new kakao.maps.LatLng(lat, lng);
+                    
+                    // Update map center
+                    map.setCenter(newPosition);
+                    
+                    // Update marker position
+                    marker.setPosition(newPosition);
+                }
+            });
+        </script>
+    </th:block>
 </body>
 </html>

@@ -22,6 +22,7 @@ import com.recipemate.global.exception.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -47,6 +48,9 @@ public class GroupBuyController {
     private final WishlistService wishlistService;
     private final com.recipemate.domain.recipe.service.RecipeService recipeService;
     private final ObjectMapper objectMapper;
+    
+    @Value("${kakao.javascript-key:}")
+    private String kakaoJavascriptKey;
 
     // ========== 페이지 렌더링 엔드포인트 ==========
     
@@ -118,6 +122,9 @@ public class GroupBuyController {
             : groupBuyService.getGroupBuyDetail(purchaseId);
         model.addAttribute("groupBuy", groupBuy);
         
+        // 카카오 지도 API 키 추가
+        model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
+        
         // 레시피 기반 공구인 경우, 레시피가 삭제되었는지 확인
         if (groupBuy.getRecipeApiId() != null) {
             try {
@@ -187,6 +194,10 @@ public class GroupBuyController {
         // 빈 폼 객체 추가 (Thymeleaf th:object를 위해 필수)
         CreateGroupBuyRequest formData = new CreateGroupBuyRequest();
         
+        // 카카오 지도 API 키 추가
+        log.info("Kakao JavaScript Key: {}", kakaoJavascriptKey != null && !kakaoJavascriptKey.isEmpty() ? "Loaded (length: " + kakaoJavascriptKey.length() + ")" : "NOT LOADED or EMPTY");
+        model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
+        
         // 레시피 기반 공구인 경우 레시피 정보 조회 및 초기값 설정
         if (recipeApiId != null && !recipeApiId.isBlank()) {
             try {
@@ -232,6 +243,9 @@ public class GroupBuyController {
     public String editPage(@PathVariable Long purchaseId, Model model) {
         GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
         model.addAttribute("groupBuy", groupBuy);
+        
+        // 카카오 지도 API 키 추가
+        model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
         
         // 기존 데이터로 폼 객체 초기화 (Thymeleaf th:field가 값을 채우기 위해 필요)
         UpdateGroupBuyRequest formData = new UpdateGroupBuyRequest();
@@ -313,6 +327,7 @@ public class GroupBuyController {
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
             model.addAttribute("formData", request); // Thymeleaf th:object를 위해 필수
             model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
+            model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
             // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
             return "group-purchases/form";
         }
@@ -329,6 +344,7 @@ public class GroupBuyController {
                     model.addAttribute("formData", request);
                     model.addAttribute("errorMessage", "선택된 재료가 없습니다. 최소 1개 이상의 재료를 선택해주세요.");
                     model.addAttribute("categories", GroupBuyCategory.values());
+                    model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
                     return "group-purchases/form";
                 }
                 
@@ -340,12 +356,14 @@ public class GroupBuyController {
                 model.addAttribute("formData", request);
                 model.addAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
                 model.addAttribute("categories", GroupBuyCategory.values());
+                model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
                 return "group-purchases/form";
             }
         } else {
             model.addAttribute("formData", request);
             model.addAttribute("errorMessage", "선택된 재료 정보가 없습니다. 최소 1개 이상의 재료를 선택해주세요.");
             model.addAttribute("categories", GroupBuyCategory.values());
+            model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
             return "group-purchases/form";
         }
         
@@ -374,6 +392,7 @@ public class GroupBuyController {
             model.addAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
             model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
+            model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
             // 레시피 정보 다시 조회해서 모델에 추가
             if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
                 try {
@@ -400,6 +419,7 @@ public class GroupBuyController {
                     model.addAttribute("formData", request);
                     model.addAttribute("errorMessage", "선택된 재료가 없습니다. 최소 1개 이상의 재료를 선택해주세요.");
                     model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
+                    model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
                     // 레시피 정보 다시 조회해서 모델에 추가
                     if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
                         try {
@@ -422,6 +442,7 @@ public class GroupBuyController {
                 model.addAttribute("formData", request);
                 model.addAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
                 model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
+                model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
                 // 레시피 정보 다시 조회해서 모델에 추가
                 if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
                     try {
@@ -438,6 +459,7 @@ public class GroupBuyController {
             model.addAttribute("formData", request);
             model.addAttribute("errorMessage", "선택된 재료 정보가 없습니다.");
             model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
+            model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
             // 레시피 정보 다시 조회해서 모델에 추가
             if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
                 try {
@@ -478,6 +500,7 @@ public class GroupBuyController {
             model.addAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
             model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
+            model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
             // 기존 공동구매 정보 조회해서 모델에 추가
             GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
             model.addAttribute("groupBuy", groupBuy);
@@ -500,6 +523,7 @@ public class GroupBuyController {
                 model.addAttribute("formData", request);
                 model.addAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
                 model.addAttribute("categories", GroupBuyCategory.values());
+                model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
                 GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
                 model.addAttribute("groupBuy", groupBuy);
                 model.addAttribute("existingImages", groupBuy.getImageUrls());

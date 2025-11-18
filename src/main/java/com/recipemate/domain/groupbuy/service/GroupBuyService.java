@@ -81,7 +81,9 @@ public class GroupBuyService {
                 isParticipantListPublic,
                 request.getRecipeApiId(),
                 request.getRecipeName(),
-                request.getRecipeImageUrl()
+                request.getRecipeImageUrl(),
+                request.getLatitude(),
+                request.getLongitude()
             );
         } else {
             groupBuy = GroupBuy.createGeneral(
@@ -96,7 +98,9 @@ public class GroupBuyService {
                 request.getDeliveryMethod(),
                 request.getMeetupLocation(),
                 request.getParcelFee(),
-                isParticipantListPublic
+                isParticipantListPublic,
+                request.getLatitude(),
+                request.getLongitude()
             );
         }
         
@@ -185,6 +189,8 @@ public class GroupBuyService {
             .recipeName(recipeName)
             .recipeImageUrl(recipeImageUrl)
             .selectedIngredients(request.getSelectedIngredients())
+            .latitude(request.getLatitude())
+            .longitude(request.getLongitude())
             .build();
     }
 
@@ -402,7 +408,9 @@ public class GroupBuyService {
             request.getDeliveryMethod(),
             request.getMeetupLocation(),
             request.getParcelFee(),
-            request.getIsParticipantListPublic() != null ? request.getIsParticipantListPublic() : false
+            request.getIsParticipantListPublic() != null ? request.getIsParticipantListPublic() : false,
+            request.getLatitude(),
+            request.getLongitude()
         );
         
         // 재료 정보가 있으면 업데이트 (null이면 기존 값 유지)
@@ -596,6 +604,8 @@ public class GroupBuyService {
             .imageUrls(imageUrls)
             .averageRating(averageRating)
             .reviewCount(reviewCount)
+            .latitude(groupBuy.getLatitude())
+            .longitude(groupBuy.getLongitude())
             .createdAt(groupBuy.getCreatedAt())
             .updatedAt(groupBuy.getUpdatedAt())
             .build();
@@ -635,6 +645,8 @@ public class GroupBuyService {
             .imageUrls(imageUrls)
             .averageRating(averageRating)
             .reviewCount((int) reviewCount)
+            .latitude(groupBuy.getLatitude())
+            .longitude(groupBuy.getLongitude())
             .createdAt(groupBuy.getCreatedAt())
             .updatedAt(groupBuy.getUpdatedAt())
             .build();
@@ -673,6 +685,8 @@ public class GroupBuyService {
             .recipeName(groupBuy.getRecipeName())
             .recipeImageUrl(groupBuy.getRecipeImageUrl())
             .imageUrls(imageUrls)
+            .latitude(groupBuy.getLatitude())
+            .longitude(groupBuy.getLongitude())
             .createdAt(groupBuy.getCreatedAt())
             .updatedAt(groupBuy.getUpdatedAt())
             .isHost(isHost)

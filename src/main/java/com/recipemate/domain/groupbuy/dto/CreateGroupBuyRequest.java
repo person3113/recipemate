@@ -51,6 +51,10 @@ public class CreateGroupBuyRequest {
     @Size(max = 200, message = "직거래 장소는 200자 이내여야 합니다")
     private String meetupLocation;
 
+    private Double latitude;
+
+    private Double longitude;
+
     @Min(value = 0, message = "택배비는 0원 이상이어야 합니다")
     private Integer parcelFee;
 

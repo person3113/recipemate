@@ -1,44 +1,42 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(
+        ~{::title},
+        ~{::main-content},
+        ~{::additional-head},
+        ~{::additional-scripts}
+      )}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${review != null ? '후기 수정' : '후기 작성'} + ' - RecipeMate'">후기 작성 - RecipeMate</title>
+    <th:block th:fragment="title">
+        <span th:text="${review != null ? '후기 수정' : '후기 작성'} + ' - RecipeMate'">후기 작성 - RecipeMate</span>
+    </th:block>
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" th:href="@{/css/styles.css}">
-    
-    <style>
-        .star-rating {
-            font-size: 2rem;
-            cursor: pointer;
-        }
-        
-        .star-rating .star {
-            color: #ddd;
-            transition: color 0.2s;
-        }
-        
-        .star-rating .star.active,
-        .star-rating .star:hover,
-        .star-rating .star:hover ~ .star {
-            color: #ffc107;
-        }
-        
-        .star-rating .star:hover ~ .star {
-            color: #ddd;
-        }
-    </style>
+    <th:block th:fragment="additional-head">
+        <style>
+            .star-rating {
+                font-size: 2rem;
+                cursor: pointer;
+            }
+            
+            .star-rating .star {
+                color: #ddd;
+                transition: color 0.2s;
+            }
+            
+            .star-rating .star.active,
+            .star-rating .star:hover,
+            .star-rating .star:hover ~ .star {
+                color: #ffc107;
+            }
+            
+            .star-rating .star:hover ~ .star {
+                color: #ddd;
+            }
+        </style>
+    </th:block>
 </head>
-<body class="bg-light">
-    <!-- Header Fragment -->
-    <div th:replace="~{fragments/header :: header}"></div>
-    
-    <main class="container my-5">
+<body>
+    <main th:fragment="main-content" class="container my-5">
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <!-- Page Header -->
@@ -175,72 +173,71 @@
         </div>
     </main>
     
-    <!-- Footer Fragment -->
-    <div th:replace="~{fragments/footer :: footer}"></div>
-    
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Star Rating Script -->
-    <script th:inline="javascript">
-        document.addEventListener('DOMContentLoaded', function() {
-            const stars = document.querySelectorAll('.star');
-            const ratingInput = document.getElementById('rating');
-            const ratingText = document.getElementById('ratingText');
-            
-            // 초기 별점 설정 (수정 모드일 경우)
-            const initialRating = /*[[${formData?.rating}]]*/ null;
-            if (initialRating) {
-                setRating(initialRating);
-            }
-            
-            // 별 클릭 이벤트
-            stars.forEach(star => {
-                star.addEventListener('click', function() {
-                    const value = parseInt(this.getAttribute('data-value'));
-                    setRating(value);
+    <th:block th:fragment="additional-scripts">
+        <!-- Star Rating Script -->
+        <script th:inline="javascript">
+            document.addEventListener('DOMContentLoaded', function() {
+                const stars = document.querySelectorAll('.star');
+                const ratingInput = document.getElementById('rating');
+                const ratingText = document.getElementById('ratingText');
+                
+                // 초기 별점 설정 (수정 모드일 경우)
+                const initialRating = /*[[${formData?.rating}]]*/ null;
+                if (initialRating) {
+                    setRating(initialRating);
+                }
+                
+                // 별 클릭 이벤트
+                stars.forEach(star => {
+                    star.addEventListener('click', function() {
+                        const value = parseInt(this.getAttribute('data-value'));
+                        setRating(value);
+                    });
+                    
+                    star.addEventListener('mouseenter', function() {
+                        const value = parseInt(this.getAttribute('data-value'));
+                        highlightStars(value);
+                    });
                 });
                 
-                star.addEventListener('mouseenter', function() {
-                    const value = parseInt(this.getAttribute('data-value'));
+                // 마우스가 별 영역을 벗어날 때 원래 선택된 별점으로 복원
+                const starRatingContainer = document.querySelector('.star-rating');
+                if (starRatingContainer) {
+                    starRatingContainer.addEventListener('mouseleave', function() {
+                        const currentRating = ratingInput.value ? parseInt(ratingInput.value) : 0;
+                        highlightStars(currentRating);
+                    });
+                }
+                
+                function setRating(value) {
+                    ratingInput.value = value;
                     highlightStars(value);
-                });
+                    updateRatingText(value);
+                }
+                
+                function highlightStars(value) {
+                    stars.forEach(star => {
+                        const starValue = parseInt(star.getAttribute('data-value'));
+                        if (starValue <= value) {
+                            star.classList.add('active');
+                        } else {
+                            star.classList.remove('active');
+                        }
+                    });
+                }
+                
+                function updateRatingText(value) {
+                    const messages = {
+                        1: '1점 - 매우 불만족',
+                        2: '2점 - 불만족',
+                        3: '3점 - 보통',
+                        4: '4점 - 만족',
+                        5: '5점 - 매우 만족'
+                    };
+                    ratingText.textContent = messages[value] || '별점을 선택해주세요 (1~5점)';
+                }
             });
-            
-            // 마우스가 별 영역을 벗어날 때 원래 선택된 별점으로 복원
-            document.querySelector('.star-rating').addEventListener('mouseleave', function() {
-                const currentRating = ratingInput.value ? parseInt(ratingInput.value) : 0;
-                highlightStars(currentRating);
-            });
-            
-            function setRating(value) {
-                ratingInput.value = value;
-                highlightStars(value);
-                updateRatingText(value);
-            }
-            
-            function highlightStars(value) {
-                stars.forEach(star => {
-                    const starValue = parseInt(star.getAttribute('data-value'));
-                    if (starValue <= value) {
-                        star.classList.add('active');
-                    } else {
-                        star.classList.remove('active');
-                    }
-                });
-            }
-            
-            function updateRatingText(value) {
-                const messages = {
-                    1: '1점 - 매우 불만족',
-                    2: '2점 - 불만족',
-                    3: '3점 - 보통',
-                    4: '4점 - 만족',
-                    5: '5점 - 매우 만족'
-                };
-                ratingText.textContent = messages[value] || '별점을 선택해주세요 (1~5점)';
-            }
-        });
-    </script>
+        </script>
+    </th:block>
 </body>
 </html>

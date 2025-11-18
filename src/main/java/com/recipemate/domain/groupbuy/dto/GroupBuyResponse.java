@@ -27,6 +27,8 @@ public class GroupBuyResponse {
     private LocalDateTime deadline;
     private DeliveryMethod deliveryMethod;
     private String meetupLocation;
+    private Double latitude;
+    private Double longitude;
     private Integer parcelFee;
     private Boolean isParticipantListPublic;
     private GroupBuyStatus status;
@@ -72,6 +74,8 @@ public class GroupBuyResponse {
                 .deadline(groupBuy.getDeadline())
                 .deliveryMethod(groupBuy.getDeliveryMethod())
                 .meetupLocation(groupBuy.getMeetupLocation())
+                .latitude(groupBuy.getLatitude())
+                .longitude(groupBuy.getLongitude())
                 .parcelFee(groupBuy.getParcelFee())
                 .isParticipantListPublic(groupBuy.getParticipantListPublic())
                 .status(groupBuy.getStatus())
@@ -108,6 +112,8 @@ public class GroupBuyResponse {
                 .deadline(groupBuy.getDeadline())
                 .deliveryMethod(groupBuy.getDeliveryMethod())
                 .meetupLocation(groupBuy.getMeetupLocation())
+                .latitude(groupBuy.getLatitude())
+                .longitude(groupBuy.getLongitude())
                 .parcelFee(groupBuy.getParcelFee())
                 .isParticipantListPublic(groupBuy.getParticipantListPublic())
                 .status(groupBuy.getStatus())

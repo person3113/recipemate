@@ -85,6 +85,12 @@ public class GroupBuy extends BaseEntity {
     private String meetupLocation;
 
     @Column
+    private Double latitude;
+
+    @Column
+    private Double longitude;
+
+    @Column
     private Integer parcelFee;
 
     @Builder.Default
@@ -118,7 +124,8 @@ public class GroupBuy extends BaseEntity {
     public static GroupBuy createGeneral(
         User host, String title, String content, String ingredients, GroupBuyCategory category, Integer targetAmount,
         Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
-        String meetupLocation, Integer parcelFee, boolean isParticipantListPublic
+        String meetupLocation, Integer parcelFee, boolean isParticipantListPublic,
+        Double latitude, Double longitude
     ) {
         validateCreateArgs(targetAmount, targetHeadcount, deadline);
         return GroupBuy.builder()
@@ -137,6 +144,8 @@ public class GroupBuy extends BaseEntity {
             .parcelFee(parcelFee)
             .isParticipantListPublic(isParticipantListPublic)
             .status(GroupBuyStatus.RECRUITING)
+            .latitude(latitude)
+            .longitude(longitude)
             .build();
     }
 
@@ -144,7 +153,8 @@ public class GroupBuy extends BaseEntity {
         User host, String title, String content, String ingredients, GroupBuyCategory category, Integer targetAmount,
         Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
         String meetupLocation, Integer parcelFee, boolean isParticipantListPublic,
-        String recipeApiId, String recipeName, String recipeImageUrl
+        String recipeApiId, String recipeName, String recipeImageUrl,
+        Double latitude, Double longitude
     ) {
         validateCreateArgs(targetAmount, targetHeadcount, deadline);
         return GroupBuy.builder()
@@ -166,6 +176,8 @@ public class GroupBuy extends BaseEntity {
             .recipeApiId(recipeApiId)
             .recipeName(recipeName)
             .recipeImageUrl(recipeImageUrl)
+            .latitude(latitude)
+            .longitude(longitude)
             .build();
     }
 
@@ -185,7 +197,8 @@ public class GroupBuy extends BaseEntity {
     public void update(
         String title, String content, GroupBuyCategory category, Integer targetAmount,
         Integer targetHeadcount, LocalDateTime deadline, DeliveryMethod deliveryMethod,
-        String meetupLocation, Integer parcelFee, boolean isParticipantListPublic
+        String meetupLocation, Integer parcelFee, boolean isParticipantListPublic,
+        Double latitude, Double longitude
     ) {
         // 목표 인원 검증: 현재 참여 인원보다 작을 수 없음
         if (targetHeadcount != null && targetHeadcount < this.currentHeadcount) {
@@ -204,6 +217,8 @@ public class GroupBuy extends BaseEntity {
         this.meetupLocation = meetupLocation;
         this.parcelFee = parcelFee;
         this.isParticipantListPublic = isParticipantListPublic;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
     
     /**

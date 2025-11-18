@@ -204,15 +204,28 @@ public class GroupBuyRepositoryImpl implements GroupBuyRepositoryCustom {
     @Override
     public List<GroupBuy> findPopularGroupBuys(List<GroupBuyStatus> statuses, Pageable pageable) {
         QGroupBuy groupBuy = QGroupBuy.groupBuy;
-
+        
+        // 현재 시간 및 7일 전 시간 계산
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.LocalDateTime sevenDaysAgo = now.minusDays(7);
+        
+        // 인기 점수 계산 공식: (참여 인원수 - 1) / (경과 시간 + 2)^1.8
+        // 경과 시간 = (현재 시간 - 생성 시간) / 1시간
+        // Note: QueryDSL에서 직접 제곱 계산이 어려우므로, 여기서는 단순화된 버전 사용
+        // 실제로는 currentHeadcount를 우선순위로 하되, 최신 공구에 가중치를 줌
+        
         return queryFactory
                 .selectFrom(groupBuy)
                 .leftJoin(groupBuy.host).fetchJoin()
                 .where(
                     groupBuy.status.in(statuses)
                     .and(groupBuy.deletedAt.isNull())
+                    .and(groupBuy.createdAt.goe(sevenDaysAgo)) // 최근 7일 내 생성된 공구만
                 )
-                .orderBy(groupBuy.currentHeadcount.desc(), groupBuy.createdAt.desc())
+                .orderBy(
+                    groupBuy.currentHeadcount.desc(),  // 참여자 수 우선
+                    groupBuy.createdAt.desc()           // 최신 공구 우선
+                )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();

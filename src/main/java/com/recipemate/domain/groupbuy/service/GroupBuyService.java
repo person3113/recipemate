@@ -505,6 +505,63 @@ public class GroupBuyService {
     }
 
     /**
+     * 마감 임박 공구 목록 조회 (48시간 이내 마감)
+     * RECRUITING 상태이며 마감일이 48시간 이내인 공구만 조회합니다.
+     * 
+     * @param limit 조회할 공구 개수
+     * @return 마감 임박 공구 목록
+     */
+    public List<GroupBuyResponse> findImminentGroupPurchases(int limit) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime deadline48Hours = now.plusHours(48);
+        
+        // 마감일이 48시간 이내이고 IMMINENT 상태인 공구 조회
+        List<GroupBuy> imminentGroupBuys = groupBuyRepository.findImminentGroupBuys(
+            now, 
+            deadline48Hours
+        );
+        
+        // limit만큼만 반환
+        List<GroupBuy> limitedGroupBuys = imminentGroupBuys.stream()
+            .limit(limit)
+            .toList();
+        
+        // N+1 문제 해결: 모든 공구의 이미지를 한 번에 조회
+        List<Long> groupBuyIds = limitedGroupBuys.stream()
+                .map(GroupBuy::getId)
+                .toList();
+        
+        List<GroupBuyImage> allImages = groupBuyImageRepository.findByGroupBuyIdInOrderByGroupBuyIdAndDisplayOrder(groupBuyIds);
+        
+        // GroupBuy ID별로 이미지를 그룹화
+        java.util.Map<Long, List<String>> imageMap = allImages.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                    img -> img.getGroupBuy().getId(),
+                    java.util.stream.Collectors.mapping(GroupBuyImage::getImageUrl, java.util.stream.Collectors.toList())
+                ));
+        
+        // N+1 문제 해결: 모든 공구의 리뷰 통계를 한 번에 조회
+        java.util.Map<Long, com.recipemate.domain.review.dto.ReviewStatsDto> reviewStatsMap = 
+            reviewRepository.findReviewStatsByGroupBuyIds(groupBuyIds)
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                    com.recipemate.domain.review.dto.ReviewStatsDto::getGroupBuyId, 
+                    java.util.function.Function.identity()
+                ));
+        
+        // Response DTO로 변환
+        return limitedGroupBuys.stream()
+                .map(groupBuy -> {
+                    List<String> imageUrls = imageMap.getOrDefault(groupBuy.getId(), List.of());
+                    com.recipemate.domain.review.dto.ReviewStatsDto stats = reviewStatsMap.get(groupBuy.getId());
+                    Double avgRating = stats != null ? stats.getAverageRating() : 0.0;
+                    int reviewCount = stats != null ? stats.getReviewCount().intValue() : 0;
+                    return mapToResponseWithStats(groupBuy, imageUrls, avgRating, reviewCount);
+                })
+                .toList();
+    }
+
+    /**
      * 인기 공구 목록 조회 (참여자 수 기준)
      * RECRUITING, IMMINENT 상태의 공구만 조회하며, 5분간 캐싱됩니다.
      * 

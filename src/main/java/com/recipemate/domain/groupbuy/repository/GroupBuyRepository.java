@@ -43,9 +43,8 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, JpaSp
                                            @Param("status") GroupBuyStatus status, 
                                            Pageable pageable);
 
-    @Query("SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.status = :status AND g.deadline BETWEEN :start AND :end ORDER BY g.deadline ASC")
-    List<GroupBuy> findImminentGroupBuys(@Param("status") GroupBuyStatus status,
-                                         @Param("start") LocalDateTime start,
+    @Query("SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.status = 'IMMINENT' AND g.deadline BETWEEN :start AND :end ORDER BY g.deadline ASC")
+    List<GroupBuy> findImminentGroupBuys(@Param("start") LocalDateTime start,
                                          @Param("end") LocalDateTime end);
 
     @Query(value = "SELECT g FROM GroupBuy g JOIN FETCH g.host WHERE g.recipeApiId IS NOT NULL AND g.status = :status ORDER BY g.createdAt DESC",

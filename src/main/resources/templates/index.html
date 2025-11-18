@@ -22,6 +22,12 @@
             .progress-bar-green { background-color: #4CAF50; }
             .progress-bar-blue { background-color: #2196F3; }
             .progress-bar-gray { background-color: #9E9E9E; }
+            .image-placeholder {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
         </style>
     </th:block>
 </head>
@@ -40,6 +46,152 @@
                 <a th:href="@{/recipes}" class="btn btn-outline-light btn-lg px-5">
                     <i class="bi bi-book"></i> 레시피 찾기
                 </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Popular Recipes Carousel Section -->
+    <section th:if="${popularRecipes != null and !popularRecipes.isEmpty()}" class="py-5 bg-light">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold mb-0"><i class="bi bi-star-fill text-warning"></i> 인기 레시피</h2>
+                <a th:href="@{/recipes}" class="text-primary text-decoration-none fw-semibold">
+                    전체 보기 <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            
+            <!-- 캐러셀 너비 제한 및 중앙 정렬 -->
+            <div class="row justify-content-center">
+                <div class="col-lg-10 col-xl-9">
+                    <div id="popularRecipesCarousel" class="carousel slide position-relative" data-bs-ride="carousel" data-bs-interval="5000" style="padding: 0 50px;">
+                <div class="carousel-indicators">
+                    <button th:each="recipe, iterStat : ${popularRecipes}" 
+                            type="button" 
+                            data-bs-target="#popularRecipesCarousel" 
+                            th:attr="data-bs-slide-to=${iterStat.index}"
+                            th:classappend="${iterStat.index == 0} ? 'active' : ''"
+                            th:aria-label="'Slide ' + ${iterStat.index + 1}">
+                    </button>
+                </div>
+                <div class="carousel-inner">
+                    <div th:each="recipe, iterStat : ${popularRecipes}" 
+                         class="carousel-item" 
+                         th:classappend="${iterStat.index == 0} ? 'active' : ''">
+                        <div class="card border-0 shadow-lg">
+                            <div class="row g-0">
+                                <!-- Recipe Image -->
+                                <div class="col-md-6">
+                                    <div th:if="${recipe.imageUrl != null}" class="h-100">
+                                        <img th:src="${recipe.imageUrl}" 
+                                             th:alt="${recipe.name}"
+                                             class="img-fluid w-100 h-100 object-fit-cover"
+                                             style="max-height: 300px;">
+                                    </div>
+                                    <div th:unless="${recipe.imageUrl != null}" 
+                                         class="image-placeholder h-100 text-white" 
+                                         style="min-height: 300px;">
+                                        <i class="bi bi-egg-fried display-3"></i>
+                                    </div>
+                                </div>
+                                
+                                <!-- Recipe Info -->
+                                <div class="col-md-6 d-flex align-items-center">
+                                    <div class="card-body p-4">
+                                        <span class="badge bg-warning text-dark mb-2">
+                                            <i class="bi bi-star-fill"></i> 인기
+                                        </span>
+                                        <span th:if="${recipe.category != null}" 
+                                              class="badge bg-primary mb-2 ms-2" 
+                                              th:text="${recipe.category}">
+                                            카테고리
+                                        </span>
+                                        <h4 class="card-title fw-bold mb-2" th:text="${recipe.name}">레시피 이름</h4>
+                                        <p class="text-muted mb-3 small">
+                                            <i class="bi bi-people-fill"></i> 
+                                            <span th:text="'공구 연결 수 기준 인기 레시피'">인기 레시피</span>
+                                        </p>
+                                        
+                                        <div class="d-grid gap-2">
+                                            <a th:href="@{/recipes/{id}(id=${recipe.id})}" 
+                                               class="btn btn-primary">
+                                                <i class="bi bi-book"></i> 레시피 자세히 보기
+                                            </a>
+                                            <a th:href="@{/group-purchases/new(recipeId=${recipe.id})}" 
+                                               class="btn btn-outline-primary">
+                                                <i class="bi bi-basket3"></i> 이 레시피로 공구 만들기
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="carousel-control-prev position-absolute" type="button" data-bs-target="#popularRecipesCarousel" data-bs-slide="prev" style="left: 0; width: 50px;">
+                    <span class="carousel-control-prev-icon bg-dark rounded-circle p-2" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next position-absolute" type="button" data-bs-target="#popularRecipesCarousel" data-bs-slide="next" style="right: 0; width: 50px;">
+                    <span class="carousel-control-next-icon bg-dark rounded-circle p-2" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Imminent Group Buys Banner Section -->
+    <section th:if="${imminentGroupBuys != null and !imminentGroupBuys.isEmpty()}" class="py-4 bg-warning">
+        <div class="container">
+            <div class="d-flex align-items-center mb-3">
+                <h3 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-alarm-fill"></i> 마감 임박! 서두르세요
+                </h3>
+                <span class="badge bg-danger ms-3 fs-6">48시간 이내 마감</span>
+            </div>
+            
+            <div class="row g-3">
+                <div th:each="groupBuy : ${imminentGroupBuys}" class="col-md-4">
+                    <div class="card h-100 border-danger border-3 shadow">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title fw-bold mb-0" th:text="${groupBuy.title}">공구 제목</h5>
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-alarm"></i> 임박
+                                </span>
+                            </div>
+                            
+                            <p class="text-muted small mb-2">
+                                <i class="bi bi-clock"></i> 
+                                마감: <span th:text="${#temporals.format(groupBuy.deadline, 'MM-dd HH:mm')}">날짜</span>
+                            </p>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between text-sm text-muted mb-1">
+                                    <small th:text="${groupBuy.currentHeadcount} + '/' + ${groupBuy.targetHeadcount} + '명'">0/10명</small>
+                                    <small th:text="${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)} + '%'">0%</small>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-danger" 
+                                         th:style="'width: ' + ${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)} + '%'">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-danger fw-bold fs-5" 
+                                      th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')} + '원'">
+                                    10,000원
+                                </span>
+                                <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" 
+                                   class="btn btn-danger btn-sm">
+                                    <i class="bi bi-lightning-fill"></i> 빠른 참여
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -107,7 +259,7 @@
             <div th:if="${hotGroupBuys != null and !hotGroupBuys.isEmpty()}" class="row g-4">
                 <div th:each="groupBuy : ${hotGroupBuys}" class="col-md-4">
                     <div class="card h-100 shadow-sm">
-                        <div class="card-img-top bg-gradient p-5 text-center text-white" style="background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);">
+                        <div class="card-img-top image-placeholder p-5 text-center text-white">
                             <i class="bi bi-basket3 display-1"></i>
                         </div>
                         <div class="card-body">
@@ -156,50 +308,67 @@
         </div>
     </section>
     
-    <!-- Random Recipe Section -->
+    <!-- Random Recipes Section -->
     <section class="py-5 bg-white">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="fw-bold mb-0"><i class="bi bi-dice-5"></i> 오늘의 추천 레시피</h2>
-                <a th:href="@{/recipes/random}" class="text-primary text-decoration-none fw-semibold">
-                    다른 레시피 보기 <i class="bi bi-arrow-repeat"></i>
+                <a th:href="@{/recipes}" class="text-primary text-decoration-none fw-semibold">
+                    더 많은 레시피 보기 <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
             
-            <div th:if="${randomRecipe != null}" class="card shadow-sm overflow-hidden">
-                <div class="row g-0">
-                    <!-- Recipe Image -->
-                    <div class="col-md-5">
-                        <div th:if="${randomRecipe.imageUrl != null}" class="h-100">
-                            <img th:src="${randomRecipe.imageUrl}" 
-                                 th:alt="${randomRecipe.name}"
-                                 class="img-fluid h-100 w-100 object-fit-cover">
+            <div th:if="${randomRecipes != null and !randomRecipes.isEmpty()}" class="row g-4">
+                <div th:each="recipe : ${randomRecipes}" class="col-md-4">
+                    <div class="card h-100 shadow-sm">
+                        <!-- Recipe Image -->
+                        <div th:if="${recipe.imageUrl != null}">
+                            <img th:src="${recipe.imageUrl}" 
+                                 th:alt="${recipe.name}"
+                                 class="card-img-top object-fit-cover"
+                                 style="height: 200px;">
                         </div>
-                        <div th:unless="${randomRecipe.imageUrl != null}" class="bg-gradient h-100 d-flex align-items-center justify-content-center text-white" style="background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%); min-height: 300px;">
-                            <i class="bi bi-egg-fried display-1"></i>
+                        <div th:unless="${recipe.imageUrl != null}" 
+                             class="card-img-top image-placeholder text-white" 
+                             style="height: 200px;">
+                            <i class="bi bi-egg-fried display-4"></i>
                         </div>
-                    </div>
-                    
-                    <!-- Recipe Info -->
-                    <div class="col-md-7">
-                        <div class="card-body p-4">
-                            <span class="badge bg-primary mb-3" th:text="${randomRecipe.category}">카테고리</span>
-                            <h3 class="card-title fw-bold mb-3" th:text="${randomRecipe.name}">레시피 이름</h3>
-                            <p class="card-text text-muted mb-4" th:if="${randomRecipe.ingredients != null}" th:text="'재료: ' + ${randomRecipe.ingredients}">재료 목록</p>
+                        
+                        <!-- Recipe Info -->
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-2">
+                                <span th:if="${recipe.category != null}" 
+                                      class="badge bg-primary mb-2" 
+                                      th:text="${recipe.category}">
+                                    카테고리
+                                </span>
+                                <span class="badge bg-success mb-2 ms-1">
+                                    <i class="bi bi-dice-5"></i> 추천
+                                </span>
+                            </div>
+                            <h5 class="card-title fw-bold mb-3" th:text="${recipe.name}">레시피 이름</h5>
                             
-                            <div class="d-grid gap-2">
-                                <a th:href="@{/recipes/{id}(id=${randomRecipe.id})}" 
-                                   class="btn btn-primary">
-                                    <i class="bi bi-book"></i> 레시피 상세보기
+                            <div class="mt-auto d-grid gap-2">
+                                <a th:href="@{/recipes/{id}(id=${recipe.id})}" 
+                                   class="btn btn-primary btn-sm">
+                                    <i class="bi bi-book"></i> 레시피 보기
                                 </a>
-                                <a th:href="@{/group-purchases/new(recipeId=${randomRecipe.id})}" 
-                                   class="btn btn-outline-primary">
-                                    <i class="bi bi-basket3"></i> 이 레시피로 공구 만들기
+                                <a th:href="@{/group-purchases/new(recipeId=${recipe.id})}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-basket3"></i> 공구 만들기
                                 </a>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+            
+            <div th:if="${randomRecipes == null or randomRecipes.isEmpty()}" class="text-center py-5">
+                <i class="bi bi-egg-fried display-1 text-muted"></i>
+                <p class="fs-5 text-muted mt-3">추천 레시피를 불러올 수 없습니다.</p>
+                <a th:href="@{/recipes}" class="btn btn-primary mt-3">
+                    <i class="bi bi-book"></i> 전체 레시피 보기
+                </a>
             </div>
         </div>
     </section>

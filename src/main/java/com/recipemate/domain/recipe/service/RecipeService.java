@@ -141,6 +141,55 @@ public class RecipeService {
     }
 
     /**
+     * 인기 레시피 조회 (DB 기반)
+     * 연결된 공동구매 수가 많은 순으로 인기 레시피 조회
+     * @param size 조회할 레시피 개수
+     * @return 인기 레시피 목록
+     */
+    @Cacheable(value = CacheConfig.RECIPES_CACHE, key = "'popular:' + #size")
+    public RecipeListResponse findPopularRecipes(int size) {
+        validateRandomCount(size); // 동일한 유효성 검증 재사용
+        
+        log.info("DB 기반 인기 레시피 조회 요청: size={}", size);
+        
+        // QueryDSL을 사용한 인기 레시피 조회 (연결된 공구 수 기준)
+        com.recipemate.domain.recipe.entity.QRecipe recipe = 
+            com.recipemate.domain.recipe.entity.QRecipe.recipe;
+        com.recipemate.domain.groupbuy.entity.QGroupBuy groupBuy = 
+            com.recipemate.domain.groupbuy.entity.QGroupBuy.groupBuy;
+        
+        // GroupBuy와 join 후 count가 높은 순으로 정렬
+        // author를 fetchJoin으로 함께 조회하여 N+1 문제 방지
+        List<Recipe> popularRecipes = queryFactory
+                .select(recipe)
+                .from(recipe)
+                .leftJoin(recipe.author).fetchJoin()
+                .leftJoin(groupBuy).on(groupBuy.recipeApiId.eq(
+                    com.querydsl.core.types.dsl.Expressions.stringTemplate(
+                        "CASE WHEN {0} = 'MEAL_DB' THEN CONCAT('meal-', {1}) " +
+                        "WHEN {0} = 'FOOD_SAFETY' THEN CONCAT('food-', {1}) " +
+                        "ELSE CAST({2} as string) END",
+                        recipe.sourceApi, recipe.sourceApiId, recipe.id
+                    )
+                ).and(groupBuy.deletedAt.isNull()))
+                .groupBy(recipe.id)
+                .orderBy(groupBuy.id.count().desc(), recipe.lastSyncedAt.desc())
+                .limit(size)
+                .fetch();
+        
+        // RecipeSimpleInfo로 변환
+        List<RecipeListResponse.RecipeSimpleInfo> recipes = popularRecipes.stream()
+                .map(this::convertRecipeEntityToSimpleInfo)
+                .collect(Collectors.toList());
+        
+        return RecipeListResponse.builder()
+                .recipes(recipes)
+                .totalCount(recipes.size())
+                .source("database")
+                .build();
+    }
+
+    /**
      * 랜덤 레시피 조회 (DB 기반)
      * DB에 저장된 레시피 중에서 랜덤으로 조회
      * 매번 새로운 랜덤 레시피를 제공하기 위해 캐싱하지 않음

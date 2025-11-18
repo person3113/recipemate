@@ -61,15 +61,18 @@ public class WishlistService {
         userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 찜 목록 조회
-        List<Wishlist> wishlists = wishlistRepository.findByUserIdOrderByWishedAtDesc(userId, pageable);
-        
+        // 찜 목록 조회 (삭제되지 않은 공구만, 취소된 공구는 포함)
+        List<Wishlist> wishlists = wishlistRepository.findByUserIdWithNonDeletedGroupBuys(userId, pageable);
+
+        // 전체 개수 조회 (삭제되지 않은 공구만)
+        long total = wishlistRepository.countByUserIdWithNonDeletedGroupBuys(userId);
+
         // DTO 변환
         List<WishlistResponse> responses = wishlists.stream()
                 .map(WishlistResponse::from)
                 .collect(Collectors.toList());
 
-        // Page 객체 생성 (전체 개수는 별도 카운트 쿼리 필요하지만, 간단하게 구현)
-        return new PageImpl<>(responses, pageable, responses.size());
+        // Page 객체 생성
+        return new PageImpl<>(responses, pageable, total);
     }
 }

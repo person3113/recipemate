@@ -19,6 +19,7 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final PersistentTokenRepository persistentTokenRepository;
     private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
+    private final CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -40,7 +41,8 @@ public class SecurityConfig {
                             "/css/**",            // Static CSS
                             "/js/**",             // Static JS
                             "/images/**",         // Static images
-                            "/h2-console/**"      // H2 console
+                            "/h2-console/**",     // H2 console
+                            "/.well-known/**"     // Browser internal requests (prevent SavedRequest storage)
                         ).permitAll()
                         
                         // Auth pages and API endpoints
@@ -52,7 +54,8 @@ public class SecurityConfig {
                             "/auth/logout",          // Logout API
                             "/auth/check-email",     // Email validation (htmx)
                             "/auth/check-nickname",  // Nickname validation (htmx)
-                            "/auth/password/**"      // Password reset (all endpoints)
+                            "/auth/password/**",     // Password reset (all endpoints)
+                            "/error"                 // Error page (prevent SavedRequest storage)
                         ).permitAll()
                         
                         // Public pages (anyone can view)
@@ -97,6 +100,7 @@ public class SecurityConfig {
                         .loginProcessingUrl("/auth/login")
                         .usernameParameter("email")
                         .passwordParameter("password")
+                        .successHandler(customAuthenticationSuccessHandler)
                         .failureHandler(customAuthenticationFailureHandler)
                         .permitAll()
                 )

@@ -82,10 +82,11 @@
                                 <!-- Recipe Image -->
                                 <div class="col-md-6">
                                     <div th:if="${recipe.imageUrl != null}" class="h-100">
-                                        <img th:src="${recipe.imageUrl}" 
+                                        <img th:data-src="${recipe.imageUrl}" 
                                              th:alt="${recipe.name}"
-                                             class="img-fluid w-100 h-100 object-fit-cover"
-                                             style="max-height: 300px;">
+                                             class="img-fluid w-100 h-100 object-fit-cover lazy-load"
+                                             style="max-height: 300px;"
+                                             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E">
                                     </div>
                                     <div th:unless="${recipe.imageUrl != null}" 
                                          class="image-placeholder h-100 text-white" 
@@ -323,10 +324,11 @@
                     <div class="card h-100 shadow-sm">
                         <!-- Recipe Image -->
                         <div th:if="${recipe.imageUrl != null}">
-                            <img th:src="${recipe.imageUrl}" 
+                            <img th:data-src="${recipe.imageUrl}" 
                                  th:alt="${recipe.name}"
-                                 class="card-img-top object-fit-cover"
-                                 style="height: 200px;">
+                                 class="card-img-top object-fit-cover lazy-load"
+                                 style="height: 200px;"
+                                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E">
                         </div>
                         <div th:unless="${recipe.imageUrl != null}" 
                              class="card-img-top image-placeholder text-white" 

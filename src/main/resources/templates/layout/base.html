@@ -16,9 +16,13 @@
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
-    <!-- Kakao Maps SDK -->
+    <!-- Kakao Maps SDK (async loading to avoid parser-blocking warning) -->
     <script th:if="${kakaoJavascriptKey != null and !kakaoJavascriptKey.isEmpty()}" 
-            th:src="|//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJavascriptKey}&libraries=services|"></script>
+            th:src="|//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJavascriptKey}&libraries=services&autoload=false|"
+            defer></script>
+    
+    <!-- Daum Postcode API for address search -->
+    <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" defer></script>
     
     <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/styles.css}">

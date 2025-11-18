@@ -835,13 +835,7 @@
         <!-- Kakao Map Display Script -->
         <script th:inline="javascript">
             /*<![CDATA[*/
-            document.addEventListener('DOMContentLoaded', function() {
-                // Check if Kakao Maps API is loaded
-                if (typeof kakao === 'undefined' || !kakao.maps) {
-                    console.log('Kakao Maps API not loaded. Map display will be skipped.');
-                    return;
-                }
-
+            function initDetailMap() {
                 const mapContainer = document.getElementById('detailMap');
 
                 if (!mapContainer) {
@@ -881,6 +875,20 @@
                         infowindow.open(map, marker);
                     }
                 }
+            }
+
+            // Wait for Kakao Maps SDK to be fully loaded
+            document.addEventListener('DOMContentLoaded', function() {
+                // Check if Kakao Maps API is loaded
+                if (typeof kakao === 'undefined' || typeof kakao.maps === 'undefined') {
+                    console.log('Kakao Maps API not loaded. Map display will be skipped.');
+                    return;
+                }
+
+                // Use kakao.maps.load() for proper SDK initialization
+                kakao.maps.load(function() {
+                    initDetailMap();
+                });
             });
             /*]]>*/
         </script>

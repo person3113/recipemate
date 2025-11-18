@@ -302,27 +302,36 @@
                                            id="meetupLocation" 
                                            th:field="*{meetupLocation}"
                                            class="form-control" 
-                                           placeholder="예: 서울역 3번 출구">
+                                           placeholder="주소 검색 버튼을 눌러 주소를 선택하세요"
+                                           readonly>
                                     <button type="button" 
                                             id="searchAddressBtn" 
-                                            class="btn btn-outline-primary"
-                                            style="display: none;">
+                                            class="btn btn-primary">
                                         <i class="bi bi-search"></i> 주소 검색
                                     </button>
                                 </div>
-                                <div class="form-text mb-2">
-                                    <i class="bi bi-geo-alt"></i> 구체적인 만남 장소를 입력하세요. 주소 검색으로 지도에 위치를 표시할 수 있습니다.
+                                <div class="form-text mb-3">
+                                    <i class="bi bi-info-circle"></i> 주소 검색 후 지도에서 정확한 위치를 클릭하여 지정할 수 있습니다.
                                 </div>
                                 
                                 <!-- Hidden inputs for coordinates -->
                                 <input type="hidden" id="latitude" th:field="*{latitude}">
                                 <input type="hidden" id="longitude" th:field="*{longitude}">
                                 
+                                <!-- Map Toggle Button -->
+                                <button type="button" 
+                                        id="toggleMapBtn" 
+                                        class="btn btn-outline-secondary btn-sm mb-2" 
+                                        onclick="toggleMapDisplay()">
+                                    <i class="bi bi-map" id="mapToggleIcon"></i>
+                                    <span id="mapToggleText">지도 보기</span>
+                                </button>
+                                
                                 <!-- Map Container -->
                                 <div id="mapContainer" style="display: none;">
-                                    <div id="meetupMap" style="width: 100%; height: 400px; border-radius: 8px; margin-top: 10px;"></div>
+                                    <div id="meetupMap" style="width: 100%; height: 400px; border-radius: 8px; border: 1px solid #dee2e6;"></div>
                                     <div class="form-text mt-2">
-                                        <i class="bi bi-info-circle"></i> 지도를 클릭하여 정확한 위치를 지정할 수 있습니다.
+                                        <i class="bi bi-hand-index"></i> 지도를 클릭하여 정확한 위치를 지정할 수 있습니다.
                                     </div>
                                 </div>
                             </div>
@@ -873,95 +882,110 @@
             });
         </script>
         
-        <!-- Kakao Map Integration Script -->
+        <!-- Kakao Map Integration Script with Daum Postcode API -->
         <script th:inline="javascript">
-            document.addEventListener('DOMContentLoaded', function() {
-                // Check if Kakao Maps API is loaded
+            // Global variables for map
+            let map = null;
+            let marker = null;
+            let geocoder = null;
+            let isMapInitialized = false;
+            
+            // Toggle map display
+            function toggleMapDisplay() {
+                const mapContainer = document.getElementById('mapContainer');
+                const mapToggleIcon = document.getElementById('mapToggleIcon');
+                const mapToggleText = document.getElementById('mapToggleText');
+                
+                if (mapContainer.style.display === 'none') {
+                    mapContainer.style.display = 'block';
+                    mapToggleIcon.className = 'bi bi-map-fill';
+                    mapToggleText.textContent = '지도 숨기기';
+                    
+                    // Initialize map if not already initialized
+                    if (!isMapInitialized) {
+                        initializeDefaultMap();
+                    } else {
+                        // If map is already initialized, update the center to current coordinates
+                        const latitudeInput = document.getElementById('latitude');
+                        const longitudeInput = document.getElementById('longitude');
+                        const currentLat = latitudeInput.value ? parseFloat(latitudeInput.value) : null;
+                        const currentLng = longitudeInput.value ? parseFloat(longitudeInput.value) : null;
+                        
+                        if (currentLat && currentLng) {
+                            const newPosition = new kakao.maps.LatLng(currentLat, currentLng);
+                            map.setCenter(newPosition);
+                            
+                            // Update or create marker
+                            if (!marker) {
+                                marker = new kakao.maps.Marker({
+                                    position: newPosition,
+                                    map: map
+                                });
+                            } else {
+                                marker.setPosition(newPosition);
+                            }
+                        }
+                    }
+                } else {
+                    mapContainer.style.display = 'none';
+                    mapToggleIcon.className = 'bi bi-map';
+                    mapToggleText.textContent = '지도 보기';
+                }
+            }
+            
+            // Initialize map with default location (Seoul City Hall) or existing coordinates
+            function initializeDefaultMap() {
+                // Wait for Kakao Maps API to load
                 if (typeof kakao === 'undefined' || !kakao.maps) {
-                    console.log('Kakao Maps API not loaded. Map features will be disabled.');
+                    console.log('Kakao Maps API not loaded yet. Retrying...');
+                    setTimeout(initializeDefaultMap, 100);
                     return;
                 }
                 
-                const meetupLocationInput = document.getElementById('meetupLocation');
-                const searchAddressBtn = document.getElementById('searchAddressBtn');
-                const mapContainer = document.getElementById('mapContainer');
-                const latitudeInput = document.getElementById('latitude');
-                const longitudeInput = document.getElementById('longitude');
-                
-                let map = null;
-                let marker = null;
-                let geocoder = new kakao.maps.services.Geocoder();
-                
-                // Show search button when Kakao Maps is available
-                if (searchAddressBtn) {
-                    searchAddressBtn.style.display = 'inline-block';
-                }
-                
-                // Initialize map with existing coordinates (edit mode)
-                const existingLat = /*[[${formData.latitude}]]*/ null;
-                const existingLng = /*[[${formData.longitude}]]*/ null;
-                
-                if (existingLat && existingLng) {
-                    initializeMap(existingLat, existingLng);
-                }
-                
-                // Search address button click handler
-                searchAddressBtn.addEventListener('click', function() {
-                    const address = meetupLocationInput.value.trim();
+                // Initialize kakao.maps.load
+                kakao.maps.load(function() {
+                    const latitudeInput = document.getElementById('latitude');
+                    const longitudeInput = document.getElementById('longitude');
                     
-                    if (!address) {
-                        alert('주소를 입력해주세요.');
-                        meetupLocationInput.focus();
-                        return;
-                    }
+                    // Get current coordinates from input fields (for both create and edit mode)
+                    const currentLat = latitudeInput.value ? parseFloat(latitudeInput.value) : null;
+                    const currentLng = longitudeInput.value ? parseFloat(longitudeInput.value) : null;
                     
-                    // Geocode the address
-                    geocoder.addressSearch(address, function(result, status) {
-                        if (status === kakao.maps.services.Status.OK) {
-                            const lat = parseFloat(result[0].y);
-                            const lng = parseFloat(result[0].x);
-                            
-                            // Update hidden inputs
-                            latitudeInput.value = lat;
-                            longitudeInput.value = lng;
-                            
-                            // Initialize or update map
-                            if (!map) {
-                                initializeMap(lat, lng);
-                            } else {
-                                updateMapLocation(lat, lng);
-                            }
-                        } else {
-                            alert('주소를 찾을 수 없습니다. 다른 주소로 시도해주세요.');
-                        }
-                    });
-                });
-                
-                // Initialize map
-                function initializeMap(lat, lng) {
-                    mapContainer.style.display = 'block';
+                    // Use current coordinates if available, otherwise use default (Seoul City Hall)
+                    let defaultLat = currentLat || 37.5665; // Seoul City Hall
+                    let defaultLng = currentLng || 126.9780;
                     
                     const mapOption = {
-                        center: new kakao.maps.LatLng(lat, lng),
+                        center: new kakao.maps.LatLng(defaultLat, defaultLng),
                         level: 3
                     };
                     
                     map = new kakao.maps.Map(document.getElementById('meetupMap'), mapOption);
+                    geocoder = new kakao.maps.services.Geocoder();
                     
-                    // Add marker
-                    marker = new kakao.maps.Marker({
-                        position: new kakao.maps.LatLng(lat, lng),
-                        map: map
-                    });
+                    // Add marker if there are current coordinates
+                    if (currentLat && currentLng) {
+                        marker = new kakao.maps.Marker({
+                            position: new kakao.maps.LatLng(defaultLat, defaultLng),
+                            map: map
+                        });
+                    }
                     
-                    // Map click event - update marker position
+                    // Map click event - add/move marker and update address
                     kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
                         const latlng = mouseEvent.latLng;
                         const newLat = latlng.getLat();
                         const newLng = latlng.getLng();
                         
-                        // Update marker position
-                        marker.setPosition(latlng);
+                        // Create or update marker
+                        if (!marker) {
+                            marker = new kakao.maps.Marker({
+                                position: latlng,
+                                map: map
+                            });
+                        } else {
+                            marker.setPosition(latlng);
+                        }
                         
                         // Update hidden inputs
                         latitudeInput.value = newLat;
@@ -970,6 +994,7 @@
                         // Reverse geocode to update address
                         geocoder.coord2Address(newLng, newLat, function(result, status) {
                             if (status === kakao.maps.services.Status.OK && result[0]) {
+                                const meetupLocationInput = document.getElementById('meetupLocation');
                                 const roadAddress = result[0].road_address;
                                 const jibunAddress = result[0].address;
                                 
@@ -981,17 +1006,127 @@
                             }
                         });
                     });
+                    
+                    isMapInitialized = true;
+                });
+            }
+            
+            // Update map location with coordinates
+            function updateMapLocation(lat, lng) {
+                const newPosition = new kakao.maps.LatLng(lat, lng);
+                
+                // Ensure map is visible
+                const mapContainer = document.getElementById('mapContainer');
+                if (mapContainer.style.display === 'none') {
+                    toggleMapDisplay();
                 }
                 
-                // Update map location
-                function updateMapLocation(lat, lng) {
-                    const newPosition = new kakao.maps.LatLng(lat, lng);
-                    
-                    // Update map center
-                    map.setCenter(newPosition);
-                    
-                    // Update marker position
+                // Wait for map to be initialized
+                if (!isMapInitialized) {
+                    setTimeout(function() {
+                        updateMapLocation(lat, lng);
+                    }, 100);
+                    return;
+                }
+                
+                // Update map center
+                map.setCenter(newPosition);
+                
+                // Create or update marker
+                if (!marker) {
+                    marker = new kakao.maps.Marker({
+                        position: newPosition,
+                        map: map
+                    });
+                } else {
                     marker.setPosition(newPosition);
+                }
+            }
+            
+            // Daum Postcode API integration
+            function execDaumPostcode() {
+                new daum.Postcode({
+                    oncomplete: function(data) {
+                        // Get selected address
+                        const fullAddress = data.roadAddress || data.jibunAddress;
+                        
+                        // Update address input
+                        const meetupLocationInput = document.getElementById('meetupLocation');
+                        meetupLocationInput.value = fullAddress;
+                        
+                        // Geocode the address to get coordinates
+                        if (geocoder) {
+                            geocoder.addressSearch(fullAddress, function(result, status) {
+                                if (status === kakao.maps.services.Status.OK) {
+                                    const lat = parseFloat(result[0].y);
+                                    const lng = parseFloat(result[0].x);
+                                    
+                                    // Update hidden inputs
+                                    document.getElementById('latitude').value = lat;
+                                    document.getElementById('longitude').value = lng;
+                                    
+                                    // Update map
+                                    updateMapLocation(lat, lng);
+                                }
+                            });
+                        } else {
+                            // Wait for geocoder to be initialized
+                            setTimeout(function() {
+                                execDaumPostcode();
+                            }, 100);
+                        }
+                    },
+                    theme: {
+                        searchBgColor: "#FF6B35", // primary color
+                        queryTextColor: "#FFFFFF"
+                    }
+                }).open();
+            }
+            
+            // Initialize on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                const searchAddressBtn = document.getElementById('searchAddressBtn');
+                const mapContainer = document.getElementById('mapContainer');
+                
+                // Check if Kakao Maps API is available
+                if (typeof kakao === 'undefined' || !kakao.maps) {
+                    console.log('Kakao Maps API not loaded. Map features will be disabled.');
+                    searchAddressBtn.disabled = true;
+                    searchAddressBtn.innerHTML = '<i class="bi bi-exclamation-circle"></i> 지도 서비스 이용 불가';
+                    return;
+                }
+                
+                // Check if Daum Postcode API is available
+                if (typeof daum === 'undefined' || !daum.Postcode) {
+                    console.log('Daum Postcode API not loaded. Falling back to text input.');
+                    const meetupLocationInput = document.getElementById('meetupLocation');
+                    meetupLocationInput.removeAttribute('readonly');
+                    meetupLocationInput.placeholder = '주소를 직접 입력하세요';
+                }
+                
+                // Initialize geocoder when Kakao Maps is loaded
+                kakao.maps.load(function() {
+                    geocoder = new kakao.maps.services.Geocoder();
+                });
+                
+                // Add click event to search button
+                searchAddressBtn.addEventListener('click', function() {
+                    if (typeof daum !== 'undefined' && daum.Postcode) {
+                        execDaumPostcode();
+                    } else {
+                        alert('주소 검색 서비스를 사용할 수 없습니다.');
+                    }
+                });
+                
+                // If editing with existing coordinates, show map
+                const existingLat = /*[[${formData.latitude}]]*/ null;
+                const existingLng = /*[[${formData.longitude}]]*/ null;
+                
+                if (existingLat && existingLng) {
+                    mapContainer.style.display = 'block';
+                    document.getElementById('mapToggleIcon').className = 'bi bi-map-fill';
+                    document.getElementById('mapToggleText').textContent = '지도 숨기기';
+                    initializeDefaultMap();
                 }
             });
         </script>

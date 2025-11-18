@@ -257,6 +257,8 @@ public class GroupBuyController {
         formData.setDeadline(groupBuy.getDeadline());
         formData.setDeliveryMethod(groupBuy.getDeliveryMethod());
         formData.setMeetupLocation(groupBuy.getMeetupLocation());
+        formData.setLatitude(groupBuy.getLatitude());
+        formData.setLongitude(groupBuy.getLongitude());
         formData.setParcelFee(groupBuy.getParcelFee());
         formData.setIsParticipantListPublic(groupBuy.getIsParticipantListPublic());
         

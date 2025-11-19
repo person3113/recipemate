@@ -192,16 +192,6 @@ public class GroupBuyController {
         @RequestParam(required = false) String redirectUrl,
         Model model
     ) {
-        // Flash 속성에서 폼 데이터가 없으면 새로 생성
-        CreateGroupBuyRequest formData;
-        if (!model.containsAttribute("createGroupBuyRequest")) {
-            formData = new CreateGroupBuyRequest();
-            model.addAttribute("createGroupBuyRequest", formData);
-        } else {
-            // Flash 속성이 있으면 그것을 사용 (PRG 패턴에서 리다이렉트된 경우)
-            formData = (CreateGroupBuyRequest) model.asMap().get("createGroupBuyRequest");
-        }
-        
         // 카카오 지도 API 키 추가
         log.info("Kakao JavaScript Key: {}", kakaoJavascriptKey != null && !kakaoJavascriptKey.isEmpty() ? "Loaded (length: " + kakaoJavascriptKey.length() + ")" : "NOT LOADED or EMPTY");
         model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
@@ -209,11 +199,10 @@ public class GroupBuyController {
         // redirectUrl 추가 (취소 버튼에서 사용)
         model.addAttribute("redirectUrl", redirectUrl);
         
-        // 레시피 기반 공구인 경우 레시피 정보 조회 및 초기값 설정 (최초 접근 시에만)
-        if (recipeApiId != null && !recipeApiId.isBlank() && !model.containsAttribute("createGroupBuyRequest")) {
+        // 레시피 기반 공구인 경우 레시피 정보 조회
+        com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = null;
+        if (recipeApiId != null && !recipeApiId.isBlank()) {
             try {
-                com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe;
-
                 // ✅ recipeApiId가 순수 숫자인지 확인 (사용자 레시피 = DB ID)
                 if (recipeApiId.matches("\\d+")) {
                     // 숫자만 있으면 DB ID로 조회
@@ -225,8 +214,22 @@ public class GroupBuyController {
                 }
 
                 model.addAttribute("recipe", recipe);
-                
-                // 레시피 정보로 폼 초기값 설정
+                log.info("레시피 정보 로드 완료 - recipeApiId: {}, 재료 개수: {}", 
+                    recipeApiId, recipe.getIngredients() != null ? recipe.getIngredients().size() : 0);
+            } catch (CustomException e) {
+                // 레시피를 찾을 수 없는 경우 에러 메시지 추가
+                log.error("레시피 정보 로드 실패 - recipeApiId: {}, error: {}", recipeApiId, e.getMessage());
+                model.addAttribute("errorMessage", "레시피 정보를 불러올 수 없습니다.");
+            }
+        }
+        
+        // Flash 속성에서 폼 데이터가 없으면 새로 생성
+        CreateGroupBuyRequest formData;
+        if (!model.containsAttribute("createGroupBuyRequest")) {
+            formData = new CreateGroupBuyRequest();
+            
+            // 레시피 정보로 폼 초기값 설정 (레시피가 로드된 경우에만)
+            if (recipe != null) {
                 formData.setTitle(recipe.getName() + " 재료 공동구매");
                 formData.setContent(recipe.getName() + " 레시피에 필요한 재료들을 공동구매합니다!\n\n아래 재료들을 함께 구매하면 더 저렴하게 구입할 수 있습니다.");
                 formData.setRecipeApiId(recipe.getId());
@@ -235,10 +238,12 @@ public class GroupBuyController {
                 
                 // 레시피 기반 공구는 항상 RECIPE 카테고리 사용
                 formData.setCategory(GroupBuyCategory.RECIPE);
-            } catch (CustomException e) {
-                // 레시피를 찾을 수 없는 경우 에러 메시지 추가
-                model.addAttribute("errorMessage", "레시피 정보를 불러올 수 없습니다.");
             }
+            
+            model.addAttribute("createGroupBuyRequest", formData);
+        } else {
+            // Flash 속성이 있으면 그것을 사용 (PRG 패턴에서 리다이렉트된 경우)
+            formData = (CreateGroupBuyRequest) model.asMap().get("createGroupBuyRequest");
         }
         
         model.addAttribute("formData", formData);

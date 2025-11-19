@@ -129,61 +129,6 @@
         </div>
     </section>
     
-    <!-- Imminent Group Buys Banner Section -->
-    <section th:if="${imminentGroupBuys != null and !imminentGroupBuys.isEmpty()}" class="py-4 bg-warning">
-        <div class="container">
-            <div class="d-flex align-items-center mb-3">
-                <h3 class="fw-bold mb-0 text-dark">
-                    <i class="bi bi-alarm-fill"></i> 마감 임박! 서두르세요
-                </h3>
-                <span class="badge bg-danger ms-3 fs-6">48시간 이내 마감</span>
-            </div>
-            
-            <div class="row g-3">
-                <div th:each="groupBuy : ${imminentGroupBuys}" class="col-md-4">
-                    <div class="card h-100 border-danger border-3 shadow">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h5 class="card-title fw-bold mb-0" th:text="${groupBuy.title}">공구 제목</h5>
-                                <span class="badge bg-danger">
-                                    <i class="bi bi-alarm"></i> 임박
-                                </span>
-                            </div>
-                            
-                            <p class="text-muted small mb-2">
-                                <i class="bi bi-clock"></i> 
-                                마감: <span th:text="${#temporals.format(groupBuy.deadline, 'MM-dd HH:mm')}">날짜</span>
-                            </p>
-                            
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between text-sm text-muted mb-1">
-                                    <small th:text="${groupBuy.currentHeadcount} + '/' + ${groupBuy.targetHeadcount} + '명'">0/10명</small>
-                                    <small th:text="${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)} + '%'">0%</small>
-                                </div>
-                                <div class="progress" style="height: 8px;">
-                                    <div class="progress-bar bg-danger" 
-                                         th:style="'width: ' + ${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)} + '%'">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-danger fw-bold fs-5" 
-                                      th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')} + '원'">
-                                    10,000원
-                                </span>
-                                <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" 
-                                   class="btn btn-danger btn-sm">
-                                    <i class="bi bi-lightning-fill"></i> 빠른 참여
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
     <!-- Features Section -->
     <section class="py-5 bg-white">
         <div class="container">
@@ -236,68 +181,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Hot Group Purchases Section -->
-    <section class="py-5">
-        <div class="container">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="fw-bold mb-0"><i class="bi bi-fire text-danger"></i> 인기 공동구매</h2>
-                <a th:href="@{/group-purchases/list}" class="text-primary text-decoration-none fw-semibold">
-                    전체 보기 <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
-            
-            <div th:if="${hotGroupBuys != null and !hotGroupBuys.isEmpty()}" class="row g-4">
-                <div th:each="groupBuy : ${hotGroupBuys}" class="col-md-4">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-img-top image-placeholder p-5 text-center text-white">
-                            <i class="bi bi-basket3 display-1"></i>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h5 class="card-title fw-bold mb-0" th:text="${groupBuy.title}">공구 제목</h5>
-                                 <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge bg-success">모집중</span>
-                                <span th:if="${groupBuy.status.name() == 'IMMINENT'}" class="badge bg-warning">임박</span>
-                                <span th:if="${groupBuy.status.name() == 'CLOSED'}" class="badge bg-secondary">마감</span>
-                                 <span th:if="${groupBuy.status.name() == 'COMPLETED'}" class="badge bg-info">모집 성공</span>
-                                <span th:if="${groupBuy.status.name() == 'CANCELLED'}" class="badge bg-danger">취소</span>
-                            </div>
-                            <p class="card-text text-muted small" th:text="${groupBuy.content}">공구 설명</p>
-                            
-                            <!-- Progress Bar -->
-                            <div class="mb-3">
-                                <div class="d-flex justify-between text-sm text-muted mb-1">
-                                    <small th:text="${groupBuy.currentHeadcount} + '/' + ${groupBuy.targetHeadcount} + '명'">0/10명</small>
-                                    <small th:text="${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)} + '%'">0%</small>
-                                </div>
-                                <div class="progress" style="height: 8px;">
-                                    <div class="progress-bar" 
-                                         th:classappend="${groupBuy.currentHeadcount >= groupBuy.targetHeadcount} ? 'progress-bar-green' : (${groupBuy.currentHeadcount >= groupBuy.targetHeadcount * 0.6} ? 'progress-bar-blue' : 'progress-bar-gray')"
-                                         th:style="'width: ' + ${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)} + '%'">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-primary fw-bold fs-5" th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')} + '원'">10,000원</span>
-                                <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" class="btn btn-primary btn-sm">
-                                    자세히 보기
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div th:if="${hotGroupBuys == null or hotGroupBuys.isEmpty()}" class="text-center py-5">
-                <i class="bi bi-basket3 display-1 text-muted"></i>
-                <p class="fs-5 text-muted mt-3">현재 진행 중인 공동구매가 없습니다.</p>
-                <a th:href="@{/group-purchases/new}" class="btn btn-primary mt-3">
-                    <i class="bi bi-plus-circle"></i> 첫 공동구매 시작하기
-                </a>
             </div>
         </div>
     </section>
@@ -369,6 +252,123 @@
                 <p class="fs-5 text-muted mt-3">추천 레시피를 불러올 수 없습니다.</p>
                 <a th:href="@{/recipes}" class="btn btn-primary mt-3">
                     <i class="bi bi-book"></i> 전체 레시피 보기
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Imminent Group Buys Banner Section -->
+    <section th:if="${imminentGroupBuys != null and !imminentGroupBuys.isEmpty()}" class="py-4 bg-warning">
+        <div class="container">
+            <div class="d-flex align-items-center mb-3">
+                <h3 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-alarm-fill"></i> 마감 임박! 서두르세요
+                </h3>
+                <span class="badge bg-danger ms-3 fs-6">48시간 이내 마감</span>
+            </div>
+            
+            <div class="row g-3">
+                <div th:each="groupBuy : ${imminentGroupBuys}" class="col-md-4">
+                    <div class="card h-100 border-danger border-3 shadow">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title fw-bold mb-0" th:text="${groupBuy.title}">공구 제목</h5>
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-alarm"></i> 임박
+                                </span>
+                            </div>
+                            
+                            <p class="text-muted small mb-2">
+                                <i class="bi bi-clock"></i> 
+                                마감: <span th:text="${#temporals.format(groupBuy.deadline, 'MM-dd HH:mm')}">날짜</span>
+                            </p>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between text-sm text-muted mb-1">
+                                    <small th:text="${groupBuy.currentHeadcount} + '/' + ${groupBuy.targetHeadcount} + '명'">0/10명</small>
+                                    <small th:text="${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)} + '%'">0%</small>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-danger" 
+                                         th:style="'width: ' + ${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)} + '%'">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-danger fw-bold fs-5" 
+                                      th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')} + '원'">
+                                    10,000원
+                                </span>
+                                <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" 
+                                   class="btn btn-danger btn-sm">
+                                    <i class="bi bi-lightning-fill"></i> 빠른 참여
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Hot Group Purchases Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold mb-0"><i class="bi bi-fire text-danger"></i> 인기 공동구매</h2>
+                <a th:href="@{/group-purchases/list}" class="text-primary text-decoration-none fw-semibold">
+                    전체 보기 <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div th:if="${hotGroupBuys != null and !hotGroupBuys.isEmpty()}" class="row g-4">
+                <div th:each="groupBuy : ${hotGroupBuys}" class="col-md-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-img-top image-placeholder p-5 text-center text-white">
+                            <i class="bi bi-basket3 display-1"></i>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title fw-bold mb-0" th:text="${groupBuy.title}">공구 제목</h5>
+                                 <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge bg-success">모집중</span>
+                                <span th:if="${groupBuy.status.name() == 'IMMINENT'}" class="badge bg-warning">임박</span>
+                                <span th:if="${groupBuy.status.name() == 'CLOSED'}" class="badge bg-secondary">마감</span>
+                                 <span th:if="${groupBuy.status.name() == 'COMPLETED'}" class="badge bg-info">모집 성공</span>
+                                <span th:if="${groupBuy.status.name() == 'CANCELLED'}" class="badge bg-danger">취소</span>
+                            </div>
+                            <p class="card-text text-muted small" th:text="${groupBuy.content}">공구 설명</p>
+                            
+                            <!-- Progress Bar -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-between text-sm text-muted mb-1">
+                                    <small th:text="${groupBuy.currentHeadcount} + '/' + ${groupBuy.targetHeadcount} + '명'">0/10명</small>
+                                    <small th:text="${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)} + '%'">0%</small>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" 
+                                         th:classappend="${groupBuy.currentHeadcount >= groupBuy.targetHeadcount} ? 'progress-bar-green' : (${groupBuy.currentHeadcount >= groupBuy.targetHeadcount * 0.6} ? 'progress-bar-blue' : 'progress-bar-gray')"
+                                         th:style="'width: ' + ${#numbers.formatInteger((groupBuy.currentHeadcount * 100 / groupBuy.targetHeadcount), 0)} + '%'">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-primary fw-bold fs-5" th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')} + '원'">10,000원</span>
+                                <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" class="btn btn-primary btn-sm">
+                                    자세히 보기
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div th:if="${hotGroupBuys == null or hotGroupBuys.isEmpty()}" class="text-center py-5">
+                <i class="bi bi-basket3 display-1 text-muted"></i>
+                <p class="fs-5 text-muted mt-3">현재 진행 중인 공동구매가 없습니다.</p>
+                <a th:href="@{/group-purchases/new}" class="btn btn-primary mt-3">
+                    <i class="bi bi-plus-circle"></i> 첫 공동구매 시작하기
                 </a>
             </div>
         </div>

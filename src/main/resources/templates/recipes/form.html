@@ -233,7 +233,10 @@
 
                             <!-- 버튼 -->
                             <div class="d-flex justify-content-between">
-                                <div th:replace="~{fragments/back-button :: cancel-button(url='/recipes')}"></div>
+                                <a th:href="${redirectUrl != null and !redirectUrl.isEmpty() ? redirectUrl : (isEdit ? '/recipes/' + recipeId : '/recipes')}" 
+                                   class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> 취소
+                                </a>
                                 <button type="submit" class="btn btn-primary btn-lg">
                                     <i class="bi bi-check-circle"></i>
                                     <span th:text="${isEdit ? '수정 완료' : '등록하기'}">등록하기</span>

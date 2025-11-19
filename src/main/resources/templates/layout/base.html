@@ -27,30 +27,6 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/styles.css}">
     
-    <style>
-        :root {
-            --primary-color: #FF6B35;
-            --success-color: #4CAF50;
-            --info-color: #2196F3;
-            --danger-color: #F44336;
-            --neutral-color: #9E9E9E;
-        }
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        .btn-primary:hover {
-            background-color: #E55A2A;
-            border-color: #E55A2A;
-        }
-        .text-primary {
-            color: var(--primary-color) !important;
-        }
-        .bg-primary {
-            background-color: var(--primary-color) !important;
-        }
-    </style>
-    
     <!-- Additional Head Content (per-page CSS, meta tags, etc.) -->
     <th:block th:replace="${additionalHead} ?: ~{}"></th:block>
 </head>

@@ -21,17 +21,9 @@
 <body>
     <main th:fragment="main-content" class="container my-5">
         <!-- Page Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h1 class="fw-bold mb-2"><i class="bi bi-chat-dots"></i> 커뮤니티</h1>
-                <p class="text-muted">레시피와 공동구매에 대한 이야기를 나눠보세요</p>
-            </div>
-            <a sec:authorize="isAuthenticated()" th:href="@{/community-posts/new}" class="btn btn-primary">
-                <i class="bi bi-pencil"></i> 글쓰기
-            </a>
-            <a sec:authorize="!isAuthenticated()" th:href="@{/auth/login(continue=${currentUri})}" class="btn btn-primary">
-                <i class="bi bi-box-arrow-in-right"></i> 로그인하고 글쓰기
-            </a>
+        <div class="mb-4">
+            <h1 class="fw-bold mb-2"><i class="bi bi-chat-dots"></i> 커뮤니티</h1>
+            <p class="text-muted">레시피와 공동구매에 대한 이야기를 나눠보세요</p>
         </div>
         
         <!-- Flash Messages -->
@@ -94,28 +86,41 @@
             </div>
         </div>
         
-        <!-- Sort Options -->
-        <div class="d-flex justify-content-end align-items-center gap-3 mb-3">
-            <a th:href="@{/community-posts/list(category=${currentCategory}, keyword=${keyword}, sort='latest', dir=(${currentSort == 'latest' && currentDir == 'desc'} ? 'asc' : 'desc'))}"
-               class="text-decoration-none" th:classappend="${currentSort == 'latest' || currentSort == null} ? 'fw-bold text-primary' : 'text-muted'">
-                최신순
-                <i th:if="${currentSort == 'latest' || currentSort == null}" class="bi" th:classappend="${currentDir == 'desc' || currentDir == null} ? 'bi-sort-down' : 'bi-sort-up'"></i>
-            </a>
-            <a th:href="@{/community-posts/list(category=${currentCategory}, keyword=${keyword}, sort='views', dir=(${currentSort == 'views' && currentDir == 'desc'} ? 'asc' : 'desc'))}"
-               class="text-decoration-none" th:classappend="${currentSort == 'views'} ? 'fw-bold text-primary' : 'text-muted'">
-                조회수순
-                <i th:if="${currentSort == 'views'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
-            </a>
-            <a th:href="@{/community-posts/list(category=${currentCategory}, keyword=${keyword}, sort='likes', dir=(${currentSort == 'likes' && currentDir == 'desc'} ? 'asc' : 'desc'))}"
-               class="text-decoration-none" th:classappend="${currentSort == 'likes'} ? 'fw-bold text-primary' : 'text-muted'">
-                좋아요순
-                <i th:if="${currentSort == 'likes'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
-            </a>
-            <a th:href="@{/community-posts/list(category=${currentCategory}, keyword=${keyword}, sort='comments', dir=(${currentSort == 'comments' && currentDir == 'desc'} ? 'asc' : 'desc'))}"
-               class="text-decoration-none" th:classappend="${currentSort == 'comments'} ? 'fw-bold text-primary' : 'text-muted'">
-                댓글많은순
-                <i th:if="${currentSort == 'comments'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
-            </a>
+        <!-- Action Buttons and Sort Options -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <!-- Left: Write Post Button -->
+            <div>
+                <a sec:authorize="isAuthenticated()" th:href="@{/community-posts/new}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> 글쓰기
+                </a>
+                <a sec:authorize="!isAuthenticated()" th:href="@{/auth/login(continue=${currentUri})}" class="btn btn-primary">
+                    <i class="bi bi-box-arrow-in-right"></i> 로그인하고 글쓰기
+                </a>
+            </div>
+            
+            <!-- Right: Sort Options -->
+            <div class="d-flex align-items-center gap-3">
+                <a th:href="@{/community-posts/list(category=${currentCategory}, keyword=${keyword}, sort='latest', dir=(${currentSort == 'latest' && currentDir == 'desc'} ? 'asc' : 'desc'))}"
+                   class="text-decoration-none" th:classappend="${currentSort == 'latest' || currentSort == null} ? 'fw-bold text-primary' : 'text-muted'">
+                    최신순
+                    <i th:if="${currentSort == 'latest' || currentSort == null}" class="bi" th:classappend="${currentDir == 'desc' || currentDir == null} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+                </a>
+                <a th:href="@{/community-posts/list(category=${currentCategory}, keyword=${keyword}, sort='views', dir=(${currentSort == 'views' && currentDir == 'desc'} ? 'asc' : 'desc'))}"
+                   class="text-decoration-none" th:classappend="${currentSort == 'views'} ? 'fw-bold text-primary' : 'text-muted'">
+                    조회수순
+                    <i th:if="${currentSort == 'views'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+                </a>
+                <a th:href="@{/community-posts/list(category=${currentCategory}, keyword=${keyword}, sort='likes', dir=(${currentSort == 'likes' && currentDir == 'desc'} ? 'asc' : 'desc'))}"
+                   class="text-decoration-none" th:classappend="${currentSort == 'likes'} ? 'fw-bold text-primary' : 'text-muted'">
+                    좋아요순
+                    <i th:if="${currentSort == 'likes'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+                </a>
+                <a th:href="@{/community-posts/list(category=${currentCategory}, keyword=${keyword}, sort='comments', dir=(${currentSort == 'comments' && currentDir == 'desc'} ? 'asc' : 'desc'))}"
+                   class="text-decoration-none" th:classappend="${currentSort == 'comments'} ? 'fw-bold text-primary' : 'text-muted'">
+                    댓글많은순
+                    <i th:if="${currentSort == 'comments'}" class="bi" th:classappend="${currentDir == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+                </a>
+            </div>
         </div>
         
         <!-- Post List -->

@@ -12,33 +12,6 @@
     <th:block th:fragment="additional-head">
         <meta name="_csrf" th:content="${_csrf?.token}"/>
         <meta name="_csrf_header" th:content="${_csrf?.headerName}"/>
-        <style>
-            /* Detail page specific styles */
-            .group-purchase-img {
-                max-height: 400px;
-                object-fit: cover;
-            }
-            .text-pre-wrap {
-                white-space: pre-wrap;
-                word-wrap: break-word;
-            }
-            .difficulty-icon {
-                font-size: 0.5rem;
-            }
-            .floating-buttons {
-                position: sticky;
-                top: 20px;
-            }
-            .progress-bar-green {
-                background-color: var(--success-color, #4CAF50);
-            }
-            .progress-bar-blue {
-                background-color: var(--info-color, #2196F3);
-            }
-            .progress-bar-gray {
-                background-color: var(--neutral-color, #9E9E9E);
-            }
-        </style>
     </th:block>
 </head>
 <body>
@@ -75,10 +48,16 @@
 
                         <h1 class="fw-bold mb-4" th:text="${groupBuy.title}">공동구매 제목</h1>
 
+                        <!-- Deadline -->
+                        <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
+                            <span class="text-muted"><i class="bi bi-calendar-event"></i> 마감일</span>
+                            <span class="fw-semibold" th:text="${#temporals.format(groupBuy.deadline, 'yyyy-MM-dd HH:mm')}">2024-12-31 23:59</span>
+                        </div>
+
                         <!-- Progress Bar -->
                         <div class="mb-4">
                             <div class="d-flex justify-content-between text-sm mb-2">
-                                <span class="text-muted">참여 인원</span>
+                                <span class="text-muted"><i class="bi bi-people"></i> 참여 인원</span>
                                 <span class="fw-semibold">
                                     <span th:text="${groupBuy.currentHeadcount}">0</span> /
                                     <span th:text="${groupBuy.targetHeadcount}">10</span>명
@@ -315,96 +294,11 @@
 
             <!-- Sidebar -->
             <div class="col-lg-4">
-                <!-- Purchase Info Card -->
-                <div class="card shadow-sm mb-4 floating-buttons">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0 fw-bold">구매 정보</h5>
-                    </div>
+                <!-- Action Buttons Card (Sticky) -->
+                <div class="card shadow-sm mb-3 action-buttons-sticky">
                     <div class="card-body">
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted">목표 금액</span>
-                                <span class="fs-4 fw-bold text-primary" th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')} + '원'">10,000원</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted">현재 금액</span>
-                                <span class="fs-5 fw-semibold text-success" th:text="${groupBuy.currentAmount != null ? #numbers.formatInteger(groupBuy.currentAmount, 0, 'COMMA') : '0'} + '원'">0원</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded mb-2">
-                                <span class="text-muted small">
-                                    <i class="bi bi-percent"></i> 달성률
-                                </span>
-                                <span class="fw-semibold text-info" th:text="${groupBuy.currentAmount != null and groupBuy.targetAmount > 0 ? #numbers.formatInteger((groupBuy.currentAmount * 100 / groupBuy.targetAmount), 0) : '0'} + '%'">0%</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
-                                <span class="text-muted small">
-                                    <i class="bi bi-calculator"></i> 1인당 예상 가격
-                                </span>
-                                <span class="fw-semibold text-success" th:text="${#numbers.formatInteger(groupBuy.targetAmount / groupBuy.targetHeadcount, 0, 'COMMA')} + '원'">1,000원</span>
-                            </div>
-                        </div>
-
-                        <hr>
-
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted"><i class="bi bi-people"></i> 목표 인원</span>
-                                <span class="fw-semibold" th:text="${groupBuy.targetHeadcount} + '명'">10명</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted"><i class="bi bi-person-check"></i> 현재 인원</span>
-                                <span class="fw-semibold" th:text="${groupBuy.currentHeadcount} + '명'">5명</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted"><i class="bi bi-calendar-event"></i> 마감일</span>
-                                <span class="fw-semibold" th:text="${#temporals.format(groupBuy.deadline, 'yyyy-MM-dd')}">2024-01-01</span>
-                            </div>
-                        </div>
-
-                        <hr>
-
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted"><i class="bi bi-truck"></i> 배송 방법</span>
-                                <span class="fw-semibold" th:text="${groupBuy.deliveryMethod.displayName}">택배/직거래</span>
-                            </div>
-                            <div th:if="${(groupBuy.deliveryMethod.name() == 'DIRECT' or groupBuy.deliveryMethod.name() == 'BOTH') and groupBuy.meetupLocation != null and !#strings.isEmpty(groupBuy.meetupLocation)}" class="d-flex justify-content-between mb-2">
-                                <span class="text-muted"><i class="bi bi-geo-alt"></i> 만남 장소</span>
-                                <span class="fw-semibold small" th:text="${groupBuy.meetupLocation}">장소</span>
-                            </div>
-
-                            <!-- Map Display (if coordinates exist) -->
-                            <div th:if="${groupBuy.latitude != null and groupBuy.longitude != null}" class="mt-3">
-                                <div id="detailMap" style="width: 100%; height: 250px; border-radius: 8px;"></div>
-                                <p class="small text-muted mt-2 mb-0">
-                                    <i class="bi bi-info-circle"></i> 만남 장소 위치
-                                </p>
-                            </div>
-
-                            <div th:if="${(groupBuy.deliveryMethod.name() == 'PARCEL' or groupBuy.deliveryMethod.name() == 'BOTH') and groupBuy.parcelFee != null}" class="d-flex justify-content-between mb-2">
-                                <span class="text-muted"><i class="bi bi-cash"></i> 택배비</span>
-                                <span class="fw-semibold" th:text="${#numbers.formatInteger(groupBuy.parcelFee, 0, 'COMMA')} + '원'">3,000원</span>
-                            </div>
-                        </div>
-
-                        <!-- Action Buttons -->
+                        <!-- 로그인한 사용자 -->
                         <div sec:authorize="isAuthenticated()">
-                            <!-- 찜하기 버튼 -->
-                            <div class="d-grid gap-2 mb-2">
-                                <button type="button" id="wishlistBtn" class="btn btn-outline-danger" onclick="toggleWishlist()">
-                                    <i id="wishlistIcon" class="bi bi-heart"></i>
-                                    <span id="wishlistText">찜 추가</span>
-                                </button>
-                            </div>
-
-                            <!-- 신고 버튼: 주최자가 아닌 사용자만 표시 -->
-                            <div th:if="${groupBuy.isHost == null or !groupBuy.isHost}" class="d-grid gap-2 mb-2">
-                                <a th:href="@{/reports/new(entityType='GROUP_PURCHASE', entityId=${groupBuy.id}, entityName=${groupBuy.title})}"
-                                   class="btn btn-outline-danger btn-sm">
-                                    <i class="bi bi-flag"></i> 신고하기
-                                </a>
-                            </div>
-
                             <!-- 참여하기 버튼: 모집중 또는 마감임박이고, 참여자가 아닐 때만 표시 -->
                             <div th:if="${(groupBuy.status.name() == 'RECRUITING' or groupBuy.status.name() == 'IMMINENT') and groupBuy.isParticipant != null and !groupBuy.isParticipant}" class="d-grid gap-2 mb-2">
                                 <button type="button" class="btn btn-primary btn-lg" id="participateBtn">
@@ -417,40 +311,141 @@
                                     <i class="bi bi-x-circle"></i> 참여 취소
                                 </button>
                             </div>
+                            
+                            <!-- 찜하기 버튼 -->
+                            <div class="d-grid gap-2 mb-2">
+                                <button type="button" id="wishlistBtn" class="btn btn-outline-danger" onclick="toggleWishlist()">
+                                    <i id="wishlistIcon" class="bi bi-heart"></i>
+                                    <span id="wishlistText">찜 추가</span>
+                                </button>
+                            </div>
 
-                            <!-- 주최자 전용 기능 버튼 -->
-                            <div th:if="${groupBuy.isHost != null and groupBuy.isHost}" class="border-top pt-3 mt-3">
-                                <h6 class="text-muted fw-bold mb-3">
-                                    <i class="bi bi-gear"></i> 주최자 메뉴
-                                </h6>
-                                <div class="d-grid gap-2">
-                                    <!-- 참여자 관리: RECRUITING 또는 IMMINENT 상태일 때만 표시 -->
-                                    <a th:if="${groupBuy.status.name() == 'RECRUITING' or groupBuy.status.name() == 'IMMINENT'}"
-                                       th:href="@{/group-purchases/{id}/participants(id=${groupBuy.id})}"
-                                       class="btn btn-outline-primary">
-                                        <i class="bi bi-people"></i> 참여자 관리
-                                    </a>
-                                    <!-- 공구 수정: RECRUITING 상태일 때만 표시 -->
-                                    <a th:if="${groupBuy.status.name() == 'RECRUITING'}"
-                                       th:href="@{/group-purchases/{id}/edit(id=${groupBuy.id})}"
-                                       class="btn btn-outline-secondary">
-                                        <i class="bi bi-pencil-square"></i> 공구 수정
-                                    </a>
-                                    <!-- 공구 취소: RECRUITING 상태일 때만 표시 -->
-                                    <button th:if="${groupBuy.status.name() == 'RECRUITING'}"
-                                            type="button"
-                                            class="btn btn-outline-danger"
-                                            id="cancelGroupBuyBtn">
-                                        <i class="bi bi-x-circle"></i> 공구 취소
-                                    </button>
-                                </div>
+                            <!-- 신고 버튼: 주최자가 아닌 사용자만 표시 -->
+                            <div th:if="${groupBuy.isHost == null or !groupBuy.isHost}" class="d-grid gap-2">
+                                <a th:href="@{/reports/new(entityType='GROUP_PURCHASE', entityId=${groupBuy.id}, entityName=${groupBuy.title})}"
+                                   class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-flag"></i> 신고하기
+                                </a>
                             </div>
                         </div>
 
+                        <!-- 비로그인 사용자 -->
                         <div sec:authorize="!isAuthenticated()">
                             <a th:href="@{/auth/login(continue=${currentUri})}" class="btn btn-primary btn-lg w-100">
                                 <i class="bi bi-box-arrow-in-right"></i> 로그인하고 참여하기
                             </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Card with Tabs -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-white">
+                        <ul class="nav nav-tabs card-header-tabs" id="infoTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="price-tab" data-bs-toggle="tab" data-bs-target="#price-content"
+                                        type="button" role="tab" aria-controls="price-content" aria-selected="true">
+                                    <i class="bi bi-cash-coin"></i> 가격
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="delivery-tab" data-bs-toggle="tab" data-bs-target="#delivery-content"
+                                        type="button" role="tab" aria-controls="delivery-content" aria-selected="false">
+                                    <i class="bi bi-truck"></i> 배송
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="infoTabsContent">
+                            <!-- Price Tab -->
+                            <div class="tab-pane fade show active" id="price-content" role="tabpanel" aria-labelledby="price-tab">
+                                <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                                    <span class="text-muted">1인당 예상 가격</span>
+                                    <span class="fs-4 fw-bold text-primary" th:text="${#numbers.formatInteger(groupBuy.targetAmount / groupBuy.targetHeadcount, 0, 'COMMA')} + '원'">1,000원</span>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <div class="text-center p-2 bg-light rounded">
+                                            <small class="text-muted d-block">목표 금액</small>
+                                            <strong th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')} + '원'">10,000원</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-center p-2 bg-light rounded">
+                                            <small class="text-muted d-block">현재 금액</small>
+                                            <strong class="text-success" th:text="${groupBuy.currentAmount != null ? #numbers.formatInteger(groupBuy.currentAmount, 0, 'COMMA') : '0'} + '원'">0원</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                                    <span class="text-muted small">
+                                        <i class="bi bi-percent"></i> 달성률
+                                    </span>
+                                    <span class="fw-semibold text-info" th:text="${groupBuy.currentAmount != null and groupBuy.targetAmount > 0 ? #numbers.formatInteger((groupBuy.currentAmount * 100 / groupBuy.targetAmount), 0) : '0'} + '%'">0%</span>
+                                </div>
+                            </div>
+
+                            <!-- Delivery Tab -->
+                            <div class="tab-pane fade" id="delivery-content" role="tabpanel" aria-labelledby="delivery-tab">
+                                <div class="d-flex justify-content-between align-items-start mb-3 pb-2 border-bottom">
+                                    <span class="text-muted">배송 방법</span>
+                                    <span class="fw-semibold" th:text="${groupBuy.deliveryMethod.displayName}">택배/직거래</span>
+                                </div>
+                                <div th:if="${(groupBuy.deliveryMethod.name() == 'DIRECT' or groupBuy.deliveryMethod.name() == 'BOTH') and groupBuy.meetupLocation != null and !#strings.isEmpty(groupBuy.meetupLocation)}" class="mb-3 pb-2 border-bottom">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <span class="text-muted"><i class="bi bi-geo-alt"></i> 만남 장소</span>
+                                        <span class="fw-semibold text-end" style="max-width: 60%;" th:text="${groupBuy.meetupLocation}">장소</span>
+                                    </div>
+                                </div>
+
+                                <!-- Map Display (if coordinates exist) -->
+                                <div th:if="${groupBuy.latitude != null and groupBuy.longitude != null}" class="mb-3">
+                                    <div id="detailMap" style="width: 100%; height: 200px; border-radius: 8px;"></div>
+                                    <p class="small text-muted text-center mt-2 mb-0">
+                                        <i class="bi bi-info-circle"></i> 만남 장소 위치
+                                    </p>
+                                </div>
+
+                                <div th:if="${(groupBuy.deliveryMethod.name() == 'PARCEL' or groupBuy.deliveryMethod.name() == 'BOTH') and groupBuy.parcelFee != null}">
+                                    <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                                        <span class="text-muted"><i class="bi bi-cash"></i> 택배비</span>
+                                        <span class="fw-semibold" th:text="${#numbers.formatInteger(groupBuy.parcelFee, 0, 'COMMA')} + '원'">3,000원</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Host Menu Card (주최자 전용) -->
+                <div sec:authorize="isAuthenticated()" th:if="${groupBuy.isHost != null and groupBuy.isHost}" class="card shadow-sm border-primary mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0 fw-bold">
+                            <i class="bi bi-gear"></i> 주최자 메뉴
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <!-- 참여자 관리: RECRUITING 또는 IMMINENT 상태일 때만 표시 -->
+                            <a th:if="${groupBuy.status.name() == 'RECRUITING' or groupBuy.status.name() == 'IMMINENT'}"
+                               th:href="@{/group-purchases/{id}/participants(id=${groupBuy.id})}"
+                               class="btn btn-outline-primary">
+                                <i class="bi bi-people"></i> 참여자 관리
+                            </a>
+                            <!-- 공구 수정: RECRUITING 상태일 때만 표시 -->
+                            <a th:if="${groupBuy.status.name() == 'RECRUITING'}"
+                               th:href="@{/group-purchases/{id}/edit(id=${groupBuy.id})}"
+                               class="btn btn-outline-secondary">
+                                <i class="bi bi-pencil-square"></i> 공구 수정
+                            </a>
+                            <!-- 공구 취소: RECRUITING 상태일 때만 표시 -->
+                            <button th:if="${groupBuy.status.name() == 'RECRUITING'}"
+                                    type="button"
+                                    class="btn btn-outline-danger"
+                                    id="cancelGroupBuyBtn">
+                                <i class="bi bi-x-circle"></i> 공구 취소
+                            </button>
                         </div>
                     </div>
                 </div>

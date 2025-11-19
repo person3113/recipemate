@@ -81,7 +81,7 @@ a:hover {
 .hero-section {
     background: linear-gradient(135deg, var(--primary-color) 0%, #FF8C5A 100%);
     color: white;
-    padding: 80px 0;
+    padding: 100px 0;
 }
 
 /* Feature Cards */
@@ -93,6 +93,11 @@ a:hover {
 .feature-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Section Icon Large (for feature sections) */
+.section-icon-large {
+    font-size: 4rem;
 }
 
 /* Recipe Item Cards */
@@ -195,6 +200,7 @@ main {
     display: flex;
     align-items: center;
     justify-content: center;
+    color: white;
 }
 
 /* Dropdown Menu */
@@ -295,22 +301,40 @@ main {
     font-size: 0.5rem;
 }
 
-/* Floating Action Buttons - 데스크톱에서만 상단 고정 */
+/* Action Buttons Sticky - 데스크톱에서만 상단 고정 */
 @media (min-width: 992px) {
-    .floating-buttons {
+    .action-buttons-sticky {
         position: sticky;
-        top: 20px;
+        top: 80px;
+        z-index: 100;
+    }
+}
+
+/* Action Buttons - 모바일에서 하단 고정 */
+@media (max-width: 991.98px) {
+    .action-buttons-sticky {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1030;
+        margin-bottom: 0 !important;
+        border-radius: 0;
+        border-top: 2px solid #dee2e6;
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+        background-color: white;
+    }
+    
+    /* 콘텐츠가 하단 버튼에 가려지지 않도록 main 영역에 padding-bottom 추가 */
+    main.container {
+        padding-bottom: 180px;
     }
 }
 
 /* Group Purchase Detail Styles */
 .group-purchase-img {
-    max-height: 500px;
+    max-height: 400px;
     object-fit: cover;
-}
-
-.progress-bar-info {
-    background-color: #2196F3;
 }
 
 /* Comment Styles */
@@ -396,48 +420,13 @@ main {
     }
 }
 
-/* 공구 상세 페이지 - 구매 정보 박스 반응형 처리 */
-@media (max-width: 991.98px) {
-    .floating-buttons {
-        position: fixed;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: calc(100% - 2rem);
-        max-width: 720px;
-        z-index: 1030;
-        margin-bottom: 0 !important;
-        border-radius: 0;
-        border-top: 2px solid #dee2e6;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-        max-height: 200px;
-        overflow-y: auto;
-    }
-    
-    /* 구매 정보 헤더는 모바일에서 숨김 */
-    .floating-buttons .card-header {
-        display: none;
-    }
-    
-    /* 구매 정보 상세는 모바일에서 숨기고 버튼만 표시 */
-    .floating-buttons .card-body > div:not(:last-child) {
-        display: none;
-    }
-    
-    /* 버튼 영역의 hr도 숨김 */
-    .floating-buttons .card-body hr {
-        display: none;
-    }
-    
-    /* 버튼 영역만 표시 */
-    .floating-buttons .card-body {
-        padding: 1rem;
-    }
-    
-    /* 콘텐츠가 하단 버튼에 가려지지 않도록 main 영역에 padding-bottom 추가 */
-    main.container {
-        padding-bottom: 220px;
-    }
+/* Section Visual Separation */
+section {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+section:first-of-type {
+    border-top: none;
 }
 
 /* Hover Link Styles */
@@ -498,4 +487,167 @@ main {
 .search-autocomplete-dropdown ul li:hover i {
     color: var(--primary-color);
 }
+
+/* Additional Utility Classes */
+
+/* Height Utilities */
+.h-150 {
+    height: 150px;
+}
+
+.h-200 {
+    height: 200px;
+}
+
+.h-300 {
+    height: 300px;
+}
+
+/* Max-height utilities for images */
+.max-h-200 {
+    max-height: 200px;
+}
+
+.max-h-300 {
+    max-height: 300px;
+}
+
+.max-h-500 {
+    max-height: 500px;
+}
+
+/* Progress bar height */
+.progress-sm {
+    height: 8px;
+}
+
+.progress-md {
+    height: 10px;
+}
+
+.progress-lg {
+    height: 12px;
+}
+
+.progress-xl {
+    height: 20px;
+}
+
+/* Icon sizes */
+.icon-sm {
+    font-size: 2rem;
+}
+
+.icon-md {
+    font-size: 3rem;
+}
+
+.icon-lg {
+    font-size: 4rem;
+}
+
+.icon-xl {
+    font-size: 5rem;
+}
+
+/* Step number badge */
+.step-number-badge {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.step-number-badge-lg {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Avatar sizes */
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+}
+
+.avatar-md {
+    width: 80px;
+    height: 80px;
+}
+
+.avatar-lg {
+    width: 100px;
+    height: 100px;
+}
+
+.avatar-xl {
+    width: 120px;
+    height: 120px;
+}
+
+/* Object fit utilities */
+.object-fit-cover {
+    object-fit: cover;
+}
+
+.object-fit-contain {
+    object-fit: contain;
+}
+
+/* Map container */
+.map-container {
+    width: 100%;
+    height: 400px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.map-container-sm {
+    width: 100%;
+    height: 200px;
+    border-radius: 8px;
+}
+
+/* Gradient backgrounds */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #FF8C5A 100%);
+}
+
+/* Min-height utilities */
+.min-h-200 {
+    min-height: 200px;
+}
+
+.min-h-300 {
+    min-height: 300px;
+}
+
+/* Toast positioning */
+.toast-top-right {
+    top: 80px;
+    z-index: 1050;
+}
+
+/* Carousel padding for controls */
+.carousel-with-controls {
+    padding: 0 50px;
+}
+
+/* Width utilities for specific layouts */
+.w-rating-label {
+    width: 50px;
+}
+
+.w-rating-count {
+    width: 60px;
+}
+
+/* Hidden display */
+.d-none-default {
+    display: none;
+}
+
 

@@ -36,20 +36,8 @@
 </head>
 <body>
     <main th:fragment="main-content" class="container py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="mb-0">레시피 탐색</h1>
-            <!-- 레시피 작성 버튼 (로그인한 사용자만 표시) -->
-            <a sec:authorize="isAuthenticated()"
-               th:href="@{/recipes/new}"
-               class="btn btn-primary">
-                <i class="bi bi-plus-lg"></i> 내 레시피 작성하기
-            </a>
-            <!-- 레시피 작성 버튼 (비로그인 사용자) -->
-            <a sec:authorize="!isAuthenticated()"
-               th:href="@{/auth/login(continue=${currentUri})}"
-               class="btn btn-primary">
-                <i class="bi bi-box-arrow-in-right"></i> 로그인하고 레시피 작성하기
-            </a>
+        <div class="mb-4">
+            <h1>레시피 탐색</h1>
         </div>
 
         <!-- Filter Indicators -->
@@ -75,19 +63,25 @@
         </div>
         
         <!-- Search Form -->
-        <div class="card mb-4">
+        <div class="card mb-4 shadow-sm">
             <div class="card-body">
                 <form method="get" action="/recipes" class="row g-3">
+                    <!-- 키워드 검색 -->
                     <div class="col-md-3">
-                        <input type="text" name="keyword" class="form-control" 
+                        <label for="keyword" class="form-label small text-muted">키워드</label>
+                        <input type="text" name="keyword" id="keyword" class="form-control" 
                                th:value="${keyword}" placeholder="레시피 검색 (예: chicken, 김치찌개)">
                     </div>
+                    <!-- 재료 검색 -->
                     <div class="col-md-3">
-                        <input type="text" name="ingredients" class="form-control" 
-                               th:value="${ingredients}" placeholder="재료명 검색 (예: 당근, 양파, 소고기)">
+                        <label for="ingredients" class="form-label small text-muted">재료</label>
+                        <input type="text" name="ingredients" id="ingredients" class="form-control" 
+                               th:value="${ingredients}" placeholder="재료명 검색 (예: 당근, 양파)">
                     </div>
-                    <div class="col-md-4">
-                        <select name="category" class="form-select">
+                    <!-- 카테고리 선택 -->
+                    <div class="col-md-3">
+                        <label for="category" class="form-label small text-muted">카테고리</label>
+                        <select name="category" id="category" class="form-select">
                             <option value="">전체 카테고리</option>
                             <option th:each="cat : ${categories}" 
                                     th:value="${cat.name}" 
@@ -95,8 +89,9 @@
                                     th:selected="${category != null and category == cat.name}"></option>
                         </select>
                     </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-primary">
+                    <!-- 검색 버튼 -->
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
                             <i class="bi bi-search"></i> 검색
                         </button>
                     </div>
@@ -104,30 +99,45 @@
             </div>
         </div>
         
-        <!-- Sort Options -->
-        <div class="d-flex justify-content-end align-items-center gap-3 mb-3">
-            <a th:href="@{/recipes(keyword=${!#strings.isEmpty(keyword) ? keyword : null}, ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null}, category=${!#strings.isEmpty(category) ? category : null}, sort='latest', direction=(${sort == 'latest' || sort == null} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
-               class="text-decoration-none" th:classappend="${sort == 'latest' || sort == null} ? 'fw-bold text-primary' : 'text-muted'">
-                최신순
-                <i th:if="${sort == 'latest' || sort == null}" class="bi" th:classappend="${direction == 'desc' || direction == null} ? 'bi-sort-down' : 'bi-sort-up'"></i>
-            </a>
-            <a th:href="@{/recipes(keyword=${!#strings.isEmpty(keyword) ? keyword : null}, ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null}, category=${!#strings.isEmpty(category) ? category : null}, sort='name', direction=(${sort == 'name'} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'asc'))}"
-               class="text-decoration-none" th:classappend="${sort == 'name'} ? 'fw-bold text-primary' : 'text-muted'">
-                이름순
-                <i th:if="${sort == 'name'}" class="bi" th:classappend="${direction == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
-            </a>
-            <a th:href="@{/recipes(keyword=${!#strings.isEmpty(keyword) ? keyword : null}, ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null}, category=${!#strings.isEmpty(category) ? category : null}, sort='popularity', direction=(${sort == 'popularity'} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
-               class="text-decoration-none" th:classappend="${sort == 'popularity'} ? 'fw-bold text-primary' : 'text-muted'">
-                인기순
-                <i th:if="${sort == 'popularity'}" class="bi" th:classappend="${direction == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
-            </a>
-        </div>
-        
-        <!-- Quick Links -->
-        <div class="mb-4">
-            <a href="/recipes/random" class="btn btn-outline-primary me-2">
-                <i class="bi bi-shuffle"></i> 랜덤 레시피 보기
-            </a>
+        <!-- Action Buttons and Sort Options -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <!-- Left: Quick Actions -->
+            <div class="d-flex gap-2">
+                <!-- 레시피 작성 버튼 (로그인한 사용자만 표시) -->
+                <a sec:authorize="isAuthenticated()"
+                   th:href="@{/recipes/new}"
+                   class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i> 내 레시피 작성하기
+                </a>
+                <!-- 레시피 작성 버튼 (비로그인 사용자) -->
+                <a sec:authorize="!isAuthenticated()"
+                   th:href="@{/auth/login(continue=${currentUri})}"
+                   class="btn btn-primary">
+                    <i class="bi bi-box-arrow-in-right"></i> 로그인하고 레시피 작성하기
+                </a>
+                <a href="/recipes/random" class="btn btn-outline-primary">
+                    <i class="bi bi-shuffle"></i> 랜덤 레시피 보기
+                </a>
+            </div>
+            
+            <!-- Right: Sort Options -->
+            <div class="d-flex align-items-center gap-3">
+                <a th:href="@{/recipes(keyword=${!#strings.isEmpty(keyword) ? keyword : null}, ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null}, category=${!#strings.isEmpty(category) ? category : null}, sort='latest', direction=(${sort == 'latest' || sort == null} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
+                   class="text-decoration-none" th:classappend="${sort == 'latest' || sort == null} ? 'fw-bold text-primary' : 'text-muted'">
+                    최신순
+                    <i th:if="${sort == 'latest' || sort == null}" class="bi" th:classappend="${direction == 'desc' || direction == null} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+                </a>
+                <a th:href="@{/recipes(keyword=${!#strings.isEmpty(keyword) ? keyword : null}, ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null}, category=${!#strings.isEmpty(category) ? category : null}, sort='name', direction=(${sort == 'name'} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'asc'))}"
+                   class="text-decoration-none" th:classappend="${sort == 'name'} ? 'fw-bold text-primary' : 'text-muted'">
+                    이름순
+                    <i th:if="${sort == 'name'}" class="bi" th:classappend="${direction == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+                </a>
+                <a th:href="@{/recipes(keyword=${!#strings.isEmpty(keyword) ? keyword : null}, ingredients=${!#strings.isEmpty(ingredients) ? ingredients : null}, category=${!#strings.isEmpty(category) ? category : null}, sort='popularity', direction=(${sort == 'popularity'} ? (${direction == 'asc'} ? 'desc' : 'asc') : 'desc'))}"
+                   class="text-decoration-none" th:classappend="${sort == 'popularity'} ? 'fw-bold text-primary' : 'text-muted'">
+                    인기순
+                    <i th:if="${sort == 'popularity'}" class="bi" th:classappend="${direction == 'desc'} ? 'bi-sort-down' : 'bi-sort-up'"></i>
+                </a>
+            </div>
         </div>
         
         <!-- Recipe List -->

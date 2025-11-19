@@ -430,6 +430,16 @@
                 <p class="text-muted">다른 키워드로 검색해보세요.</p>
             </div>
             <div th:unless="${posts.empty}">
+                <div class="alert alert-light d-flex align-items-center justify-content-between mb-3">
+                    <span class="small text-muted">
+                        <i class="bi bi-funnel me-1"></i>
+                        더 다양한 필터와 정렬 옵션이 필요하신가요?
+                    </span>
+                    <a th:href="@{/community-posts/list(keyword=${keyword})}" 
+                       class="btn btn-sm btn-outline-warning">
+                        <i class="bi bi-search me-1"></i>커뮤니티 상세 검색으로 이동
+                    </a>
+                </div>
                 <div class="list-group">
                     <div th:each="post : ${posts}" 
                        class="list-group-item list-group-item-action"

@@ -9,26 +9,7 @@
 <head>
     <th:block th:fragment="title">RecipeMate - 레시피 기반 공동구매 플랫폼</th:block>
     <th:block th:fragment="additional-head">
-        <style>
-            .hero-section {
-                background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
-                color: white;
-                padding: 100px 0;
-            }
-            .feature-card:hover {
-                transform: translateY(-5px);
-                transition: transform 0.3s;
-            }
-            .progress-bar-green { background-color: #4CAF50; }
-            .progress-bar-blue { background-color: #2196F3; }
-            .progress-bar-gray { background-color: #9E9E9E; }
-            .image-placeholder {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-        </style>
+        <!-- No additional head content needed - all styles moved to styles.css -->
     </th:block>
 </head>
 <body>
@@ -212,7 +193,9 @@
                 <div class="col-md-4">
                     <div class="card feature-card h-100 border-0 shadow-sm">
                         <div class="card-body text-center p-4">
-                            <div class="display-1 mb-3">🍳</div>
+                            <div class="mb-3">
+                                <i class="bi bi-book-half section-icon-large text-primary"></i>
+                            </div>
                             <h5 class="card-title fw-bold mb-3">레시피 기반 공구</h5>
                             <p class="card-text text-muted">
                                 레시피에 필요한 식재료를 한 번에 구매하세요. 
@@ -226,7 +209,9 @@
                 <div class="col-md-4">
                     <div class="card feature-card h-100 border-0 shadow-sm">
                         <div class="card-body text-center p-4">
-                            <div class="display-1 mb-3">💰</div>
+                            <div class="mb-3">
+                                <i class="bi bi-tags-fill section-icon-large text-primary"></i>
+                            </div>
                             <h5 class="card-title fw-bold mb-3">합리적인 가격</h5>
                             <p class="card-text text-muted">
                                 대량 구매로 단가를 낮추고, 
@@ -240,7 +225,9 @@
                 <div class="col-md-4">
                     <div class="card feature-card h-100 border-0 shadow-sm">
                         <div class="card-body text-center p-4">
-                            <div class="display-1 mb-3">🤝</div>
+                            <div class="mb-3">
+                                <i class="bi bi-people-fill section-icon-large text-primary"></i>
+                            </div>
                             <h5 class="card-title fw-bold mb-3">신뢰할 수 있는 커뮤니티</h5>
                             <p class="card-text text-muted">
                                 매너온도 시스템으로 신뢰도를 관리하고, 
@@ -272,10 +259,10 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <h5 class="card-title fw-bold mb-0" th:text="${groupBuy.title}">공구 제목</h5>
-                                <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge" style="background-color: #2196F3;">모집중</span>
+                                 <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge bg-success">모집중</span>
                                 <span th:if="${groupBuy.status.name() == 'IMMINENT'}" class="badge bg-warning">임박</span>
                                 <span th:if="${groupBuy.status.name() == 'CLOSED'}" class="badge bg-secondary">마감</span>
-                                <span th:if="${groupBuy.status.name() == 'COMPLETED'}" class="badge bg-success">완료</span>
+                                 <span th:if="${groupBuy.status.name() == 'COMPLETED'}" class="badge bg-info">모집 성공</span>
                                 <span th:if="${groupBuy.status.name() == 'CANCELLED'}" class="badge bg-danger">취소</span>
                             </div>
                             <p class="card-text text-muted small" th:text="${groupBuy.content}">공구 설명</p>

@@ -10,12 +10,15 @@
         <div class="row">
             <div class="col-lg-8 mx-auto">
                 <!-- Page Header -->
-                <div class="mb-4">
-                    <h1 class="display-6 fw-bold">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h1 class="display-6 fw-bold mb-0">
                         <i class="bi bi-thermometer-half text-primary"></i> 매너온도 조정
                     </h1>
-                    <p class="text-muted">사용자의 매너온도를 상승 또는 차감할 수 있습니다.</p>
+                    <a href="/admin" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 관리자 대시보드
+                    </a>
                 </div>
+                <p class="text-muted mb-4">사용자의 매너온도를 상승 또는 차감할 수 있습니다.</p>
 
                 <!-- Messages -->
                 <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
@@ -154,9 +157,6 @@
                             <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-primary" id="submitBtn">
                                     <i class="bi bi-check-circle"></i> 조정하기
-                                </button>
-                                <button type="button" class="btn btn-secondary" onclick="history.back()">
-                                    <i class="bi bi-x-circle"></i> 취소
                                 </button>
                             </div>
                         </form>

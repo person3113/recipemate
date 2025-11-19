@@ -27,11 +27,7 @@
         </div>
         
         <!-- Back Button -->
-        <div class="mb-3">
-            <a th:href="@{/community-posts/list}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> 목록으로
-            </a>
-        </div>
+        <div th:replace="~{fragments/back-button :: simple-button(url=${redirectUrl != null and !redirectUrl.isEmpty() ? redirectUrl : '/community-posts/list'}, text=${redirectUrl != null and !redirectUrl.isEmpty() ? '이전으로' : '목록으로'}, cssClass='mb-3')}"></div>
         
         <!-- Post Detail Card -->
         <div th:if="${post}" class="card shadow-sm mb-4">

@@ -11,18 +11,23 @@
     <main th:fragment="main-content" class="container my-5">
         <div class="row">
             <div class="col-lg-10 mx-auto">
-                <!-- Page Header -->
-                <div class="mb-4 d-flex justify-content-between align-items-center">
+                <!-- Page Header with Back Button and Add Button -->
+                <div class="d-flex align-items-center justify-content-between mb-3">
                     <div>
-                        <h1 class="display-6 fw-bold">
+                        <h1 class="display-6 fw-bold mb-0">
                             <i class="bi bi-geo-alt text-primary"></i> 배송지 관리
                         </h1>
-                        <p class="text-muted">택배 배송 공구 참여 시 사용할 배송지를 관리하세요.</p>
                     </div>
-                    <a th:href="@{/users/me/addresses/new}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> 배송지 추가
-                    </a>
+                    <div class="d-flex gap-2">
+                        <a th:href="@{/users/me/addresses/new}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> 배송지 추가
+                        </a>
+                        <a href="/users/me" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> 돌아가기
+                        </a>
+                    </div>
                 </div>
+                <p class="text-muted mb-4">택배 배송 공구 참여 시 사용할 배송지를 관리하세요.</p>
 
                 <!-- Success/Error Messages -->
                 <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
@@ -119,13 +124,6 @@
                             <li>최소 1개 이상의 기본 배송지가 있어야 합니다.</li>
                         </ul>
                     </div>
-                </div>
-
-                <!-- Back Button -->
-                <div class="mt-4 text-center">
-                    <a th:href="@{/users/me}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> 마이페이지로 돌아가기
-                    </a>
                 </div>
             </div>
         </div>

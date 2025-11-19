@@ -19,9 +19,7 @@
                                 </h1>
                                 <h5 class="text-muted mb-0" th:text="${groupBuy.title}">공구 제목</h5>
                             </div>
-                            <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left"></i> 공구로 돌아가기
-                            </a>
+                            <div th:replace="~{fragments/back-button :: simple-button(url=@{/group-purchases/{id}(id=${groupBuy.id})}, text='공구로 돌아가기', cssClass='mb-3')}"></div>
                         </div>
                         
                         <!-- 공구 요약 정보 -->

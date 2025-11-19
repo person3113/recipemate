@@ -13,12 +13,15 @@
         <div class="row">
             <div class="col-lg-8 mx-auto">
                 <!-- Page Header -->
-                <div class="mb-4">
-                    <h1 class="display-5 fw-bold">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h1 class="display-5 fw-bold mb-0">
                         <i class="bi bi-gear text-primary"></i> 프로필 및 계정 설정
                     </h1>
-                    <p class="text-muted">프로필 정보와 비밀번호를 관리하세요.</p>
+                    <a href="/users/me" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 돌아가기
+                    </a>
                 </div>
+                <p class="text-muted mb-4">프로필 정보와 비밀번호를 관리하세요.</p>
 
                 <!-- Messages -->
                 <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">

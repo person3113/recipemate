@@ -11,14 +11,17 @@
     <main th:fragment="main-content" class="container my-5">
         <div class="row">
             <div class="col-lg-8 mx-auto">
-                <!-- Page Header -->
-                <div class="mb-4">
-                    <h1 class="display-6 fw-bold">
+                <!-- Page Header with Back Button -->
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h1 class="display-6 fw-bold mb-0">
                         <i class="bi bi-geo-alt text-primary"></i>
                         <span th:text="${address != null ? '배송지 수정' : '배송지 등록'}">배송지 등록</span>
                     </h1>
-                    <p class="text-muted">택배 배송 공구 참여 시 사용할 배송지 정보를 입력하세요.</p>
+                    <a href="/users/me/addresses" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 돌아가기
+                    </a>
                 </div>
+                <p class="text-muted mb-4">택배 배송 공구 참여 시 사용할 배송지 정보를 입력하세요.</p>
 
                 <!-- Error Messages -->
                 <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -147,13 +150,6 @@
                             </div>
                         </form>
                     </div>
-                </div>
-
-                <!-- Back Button -->
-                <div class="mt-4 text-center">
-                    <a th:href="@{/users/me/addresses}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> 배송지 목록으로 돌아가기
-                    </a>
                 </div>
             </div>
         </div>

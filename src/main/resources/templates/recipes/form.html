@@ -233,9 +233,7 @@
 
                             <!-- 버튼 -->
                             <div class="d-flex justify-content-between">
-                                <button type="button" class="btn btn-secondary" onclick="history.back()">
-                                    <i class="bi bi-arrow-left"></i> 취소
-                                </button>
+                                <div th:replace="~{fragments/back-button :: cancel-button(url='/recipes')}"></div>
                                 <button type="submit" class="btn btn-primary btn-lg">
                                     <i class="bi bi-check-circle"></i>
                                     <span th:text="${isEdit ? '수정 완료' : '등록하기'}">등록하기</span>

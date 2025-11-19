@@ -11,13 +11,16 @@
     <main th:fragment="main-content" class="container my-5">
         <div class="row">
             <div class="col-lg-8 mx-auto">
-                <!-- Page Header -->
-                <div class="mb-4">
-                    <h1 class="display-6 fw-bold">
+                <!-- Page Header with Back Button -->
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h1 class="display-6 fw-bold mb-0">
                         <i class="bi bi-coin text-warning"></i> 포인트 충전
                     </h1>
-                    <p class="text-muted">공동구매 참여에 필요한 포인트를 충전하세요.</p>
+                    <a href="/users/me/points" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 돌아가기
+                    </a>
                 </div>
+                <p class="text-muted mb-4">공동구매 참여에 필요한 포인트를 충전하세요.</p>
 
                 <!-- Current Points Card -->
                 <div class="card shadow-sm mb-4 border-warning">
@@ -136,13 +139,6 @@
                             <li>출석 체크: 5P</li>
                         </ul>
                     </div>
-                </div>
-
-                <!-- Back Button -->
-                <div class="mt-4 text-center">
-                    <a th:href="@{/users/me/points}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> 포인트 내역으로 돌아가기
-                    </a>
                 </div>
             </div>
         </div>

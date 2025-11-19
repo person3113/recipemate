@@ -89,9 +89,7 @@
                                 <button type="submit" class="btn btn-danger" id="submitBtn">
                                     <i class="bi bi-flag"></i> 신고 제출
                                 </button>
-                                <button type="button" class="btn btn-secondary" onclick="history.back()">
-                                    <i class="bi bi-x-circle"></i> 취소
-                                </button>
+                                <div th:replace="~{fragments/back-button :: cancel-button(url='/')}"></div>
                             </div>
                         </form>
                     </div>

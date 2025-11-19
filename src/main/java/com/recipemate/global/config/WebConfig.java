@@ -6,13 +6,27 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.filter.HiddenHttpMethodFilter;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * 웹 서버 설정
  * Tomcat의 멀티파트 요청 제한 등을 커스터마이징
  */
 @Configuration
-public class WebConfig {
+public class WebConfig implements WebMvcConfigurer {
+    
+    private final RequestAttributeInterceptor requestAttributeInterceptor;
+    
+    public WebConfig(RequestAttributeInterceptor requestAttributeInterceptor) {
+        this.requestAttributeInterceptor = requestAttributeInterceptor;
+    }
+    
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(requestAttributeInterceptor)
+                .addPathPatterns("/**");
+    }
 
     /**
      * Tomcat 멀티파트 요청 제한 설정

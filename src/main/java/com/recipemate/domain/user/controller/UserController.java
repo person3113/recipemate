@@ -325,6 +325,11 @@ public class UserController {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         
+        // Flash 속성으로 전달된 입력값이 있는지 확인 (PRG 패턴)
+        if (!model.containsAttribute("amount")) {
+            model.addAttribute("amount", null);
+        }
+        
         model.addAttribute("currentPoints", user.getPoints());
         return "user/point-charge";
     }
@@ -332,6 +337,7 @@ public class UserController {
     /**
      * 포인트 충전 처리
      * POST /users/me/points/charge
+     * PRG (Post-Redirect-Get) 패턴: 검증 실패 시 입력값 유지
      */
     @PostMapping("/me/points/charge")
     public String chargePoints(
@@ -343,12 +349,14 @@ public class UserController {
         
         // 최소 충전 금액 검증
         if (amount < 1000) {
+            redirectAttributes.addFlashAttribute("amount", amount);
             redirectAttributes.addFlashAttribute("error", "최소 충전 금액은 1,000포인트입니다.");
             return "redirect:/users/me/points/charge";
         }
         
         // 최대 충전 금액 검증
         if (amount > 1000000) {
+            redirectAttributes.addFlashAttribute("amount", amount);
             redirectAttributes.addFlashAttribute("error", "최대 충전 금액은 1,000,000포인트입니다.");
             return "redirect:/users/me/points/charge";
         }
@@ -362,6 +370,7 @@ public class UserController {
             redirectAttributes.addFlashAttribute("message", 
                 String.format("%,d포인트가 충전되었습니다.", amount));
         } catch (CustomException e) {
+            redirectAttributes.addFlashAttribute("amount", amount);
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             return "redirect:/users/me/points/charge";
         }
@@ -378,6 +387,7 @@ public class UserController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) GroupBuyStatus status,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            jakarta.servlet.http.HttpServletRequest request,
             Model model) {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -389,8 +399,15 @@ public class UserController {
             groupBuys = groupBuyRepository.findByHostIdAndNotDeleted(user.getId(), pageable);
         }
         
+        // 현재 URL을 모델에 추가 (리다이렉션에 사용)
+        String currentUrl = request.getRequestURI();
+        if (request.getQueryString() != null) {
+            currentUrl += "?" + request.getQueryString();
+        }
+        
         model.addAttribute("groupBuys", groupBuys);
         model.addAttribute("currentStatus", status);
+        model.addAttribute("currentUrl", currentUrl);
         return "user/my-group-purchases";
     }
 
@@ -441,6 +458,7 @@ public class UserController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "posts") String tab,
             @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
+            jakarta.servlet.http.HttpServletRequest request,
             Model model) {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -456,7 +474,14 @@ public class UserController {
             model.addAttribute("likedPosts", likedPosts);
         }
         
+        // 현재 URL을 모델에 추가 (리다이렉션에 사용)
+        String currentUrl = request.getRequestURI();
+        if (request.getQueryString() != null) {
+            currentUrl += "?" + request.getQueryString();
+        }
+        
         model.addAttribute("currentTab", tab);
+        model.addAttribute("currentUrl", currentUrl);
         return "user/my-community-activity";
     }
 

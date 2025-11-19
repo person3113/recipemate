@@ -101,10 +101,10 @@
                     <div sec:authorize="isAuthenticated()">
                         <!-- 현재 로그인한 사용자가 작성자인 경우에만 수정/삭제 버튼 표시 -->
                         <div th:if="${#authentication.principal.username == post.authorEmail}">
-                            <a th:href="@{/community-posts/{id}/edit(id=${post.id})}" class="btn btn-outline-secondary">
+                            <a th:href="@{/community-posts/{id}/edit(id=${post.id}, redirectUrl=${currentUrl})}" class="btn btn-outline-secondary">
                                 <i class="bi bi-pencil"></i> 수정
                             </a>
-                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <button type="button" class="btn btn-outline-danger" id="deleteBtn">
                                 <i class="bi bi-trash"></i> 삭제
                             </button>
                         </div>
@@ -133,10 +133,9 @@
                 <p class="mt-2 text-muted">댓글을 불러오는 중...</p>
             </div>
         </div>
-    </main>
-    
-    <!-- Delete Confirmation Modal -->
-    <div sec:authorize="isAuthenticated()" class="modal fade" id="deleteModal" tabindex="-1">
+
+        <!-- Delete Confirmation Modal -->
+        <div sec:authorize="isAuthenticated()" class="modal fade" id="deleteModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -151,16 +150,54 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
                     <form method="post" th:action="@{/community-posts/{id}/delete(id=${post.id})}" class="d-inline">
                         <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <input type="hidden" name="redirectUrl" th:value="${currentUrl}"/>
                         <button type="submit" class="btn btn-danger">삭제</button>
                     </form>
                 </div>
             </div>
         </div>
+    </div>
     </main>
     
     <th:block th:fragment="additional-scripts">
     <!-- Comment Scripts -->
     <div th:replace="~{fragments/comments :: comment-scripts}"></div>
+    
+    <!-- Bootstrap Modal Initialization -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        function initializeModals() {
+            if (typeof bootstrap === 'undefined') {
+                setTimeout(initializeModals, 100);
+                return;
+            }
+            
+            const deleteModalEl = document.getElementById('deleteModal');
+            const deleteBtn = document.getElementById('deleteBtn');
+            
+            if (deleteModalEl) {
+                const deleteModal = new bootstrap.Modal(deleteModalEl);
+                
+                deleteModalEl.addEventListener('hide.bs.modal', function() {
+                    document.activeElement?.blur();
+                });
+                
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', function() {
+                        deleteModal.show();
+                    });
+                }
+            }
+        }
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeModals);
+        } else {
+            initializeModals();
+        }
+        /*]]>*/
+    </script>
     </th:block>
 </body>
 </html>

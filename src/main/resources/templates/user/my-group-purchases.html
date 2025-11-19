@@ -13,7 +13,7 @@
             <div class="col-lg-10 mx-auto">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h1 class="h3 mb-0"><i class="bi bi-shop"></i> 내가 만든 공동구매</h1>
-                    <a th:href="@{/group-purchases/new}" class="btn btn-primary">
+                    <a th:href="@{/group-purchases/new(redirectUrl=${currentUrl})}" class="btn btn-primary">
                         <i class="bi bi-plus-circle"></i> 새 공구 만들기
                     </a>
                 </div>
@@ -148,7 +148,7 @@
                                             
                                             <!-- Edit Button (Only for RECRUITING status) -->
                                             <a th:if="${groupBuy.status.name() == 'RECRUITING'}" 
-                                               th:href="@{/group-purchases/{id}/edit(id=${groupBuy.id})}" 
+                                               th:href="@{/group-purchases/{id}/edit(id=${groupBuy.id}, redirectUrl=${currentUrl})}" 
                                                class="btn btn-outline-warning">
                                                 <i class="bi bi-pencil"></i> 수정
                                             </a>
@@ -159,6 +159,7 @@
                                                   method="post"
                                                   onsubmit="return confirm('정말로 이 공동구매를 취소하시겠습니까?\n참여자들에게 알림이 전송됩니다.');">
                                                 <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                                <input type="hidden" name="redirectUrl" th:value="${currentUrl}"/>
                                                 <button type="submit" class="btn btn-outline-danger w-100">
                                                     <i class="bi bi-x-circle"></i> 공구 취소
                                                 </button>
@@ -188,7 +189,7 @@
                         <i class="bi bi-shop-window display-1 text-muted"></i>
                         <h5 class="mt-3">생성한 공동구매가 없습니다</h5>
                         <p class="text-muted">첫 공동구매를 시작해보세요!</p>
-                        <a th:href="@{/group-purchases/new}" class="btn btn-primary mt-3">
+                        <a th:href="@{/group-purchases/new(redirectUrl=${currentUrl})}" class="btn btn-primary mt-3">
                             <i class="bi bi-plus-circle"></i> 새 공구 만들기
                         </a>
                     </div>

@@ -63,7 +63,7 @@
                                    class="btn btn-sm btn-outline-primary flex-fill">
                                     <i class="bi bi-eye"></i> 보기
                                 </a>
-                                <a th:href="@{/recipes/{id}/edit(id=${recipe.id})}"
+                                <a th:href="@{/recipes/{id}/edit(id=${recipe.id}, redirectUrl='/users/me/recipes')}"
                                    class="btn btn-sm btn-outline-warning flex-fill">
                                     <i class="bi bi-pencil"></i> 수정
                                 </a>

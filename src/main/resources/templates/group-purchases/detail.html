@@ -411,13 +411,13 @@
 
                             <!-- 참여하기 버튼: 모집중 또는 마감임박이고, 참여자가 아닐 때만 표시 -->
                             <div th:if="${(groupBuy.status.name() == 'RECRUITING' or groupBuy.status.name() == 'IMMINENT') and groupBuy.isParticipant != null and !groupBuy.isParticipant}" class="d-grid gap-2 mb-2">
-                                <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#participateModal">
+                                <button type="button" class="btn btn-primary btn-lg" id="participateBtn">
                                     <i class="bi bi-basket3"></i> 참여하기
                                 </button>
                             </div>
                             <!-- 참여 취소 버튼: 참여자이고, 취소 가능할 때만 표시 -->
                             <div th:if="${groupBuy.isParticipant != null and groupBuy.isParticipant and groupBuy.isCancellable != null and groupBuy.isCancellable}" class="d-grid gap-2 mb-2">
-                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                                <button type="button" class="btn btn-outline-danger" id="cancelBtn">
                                     <i class="bi bi-x-circle"></i> 참여 취소
                                 </button>
                             </div>
@@ -444,8 +444,7 @@
                                     <button th:if="${groupBuy.status.name() == 'RECRUITING'}"
                                             type="button"
                                             class="btn btn-outline-danger"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#cancelGroupBuyModal">
+                                            id="cancelGroupBuyBtn">
                                         <i class="bi bi-x-circle"></i> 공구 취소
                                     </button>
                                 </div>
@@ -453,7 +452,7 @@
                         </div>
 
                         <div sec:authorize="!isAuthenticated()">
-                            <a th:href="@{/auth/login}" class="btn btn-primary btn-lg w-100">
+                            <a th:href="@{/auth/login(continue=${currentUri})}" class="btn btn-primary btn-lg w-100">
                                 <i class="bi bi-box-arrow-in-right"></i> 로그인하고 참여하기
                             </a>
                         </div>
@@ -461,10 +460,9 @@
                 </div>
             </div>
         </div>
-    </main>
 
-    <!-- Participate Modal -->
-    <div sec:authorize="isAuthenticated()" class="modal fade" id="participateModal" tabindex="-1">
+        <!-- Participate Modal -->
+        <div sec:authorize="isAuthenticated()" class="modal fade" id="participateModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -600,6 +598,7 @@
             </div>
         </div>
     </div>
+    </main>
 
     <th:block th:fragment="additional-scripts">
         <script sec:authorize="isAuthenticated()" th:inline="javascript">
@@ -654,38 +653,102 @@
                 document.getElementById('totalPayment').value = totalPayment;
             }
 
-            // Validate form before submission
-            const participateForm = document.getElementById('participateForm');
-            if (participateForm) {
-                participateForm.addEventListener('submit', function(e) {
-                    const totalPayment = parseInt(document.getElementById('totalPayment').value) || 0;
-                    const deliveryMethod = document.getElementById('deliveryMethod').value;
-                    const addressId = document.getElementById('addressId').value;
+            // Wait for Bootstrap to be fully loaded
+            function initializeModals() {
+                if (typeof bootstrap === 'undefined') {
+                    setTimeout(initializeModals, 100);
+                    return;
+                }
 
-                    // Check if user has enough points
-                    if (totalPayment > userPoints) {
-                        e.preventDefault();
-                        alert('포인트가 부족합니다. 현재 보유: ' + userPoints.toLocaleString('ko-KR') + 'P, 필요: ' + totalPayment.toLocaleString('ko-KR') + 'P');
-                        return false;
-                    }
+                // Get modal elements
+                const participateModalEl = document.getElementById('participateModal');
+                const cancelModalEl = document.getElementById('cancelModal');
+                const cancelGroupBuyModalEl = document.getElementById('cancelGroupBuyModal');
 
-                    // Check if address is selected for PARCEL delivery
-                    if (deliveryMethod === 'PARCEL' && !addressId) {
-                        e.preventDefault();
-                        alert('배송지를 선택해주세요.');
-                        return false;
-                    }
+                // Initialize Bootstrap modal instances
+                let participateModal = null;
+                let cancelModal = null;
+                let cancelGroupBuyModal = null;
 
-                    return true;
-                });
+                if (participateModalEl) {
+                    participateModal = new bootstrap.Modal(participateModalEl);
+                    participateModalEl.addEventListener('shown.bs.modal', function() {
+                        calculateTotalPayment();
+                    });
+                    participateModalEl.addEventListener('hide.bs.modal', function() {
+                        document.activeElement?.blur();
+                    });
+                }
+
+                if (cancelModalEl) {
+                    cancelModal = new bootstrap.Modal(cancelModalEl);
+                    cancelModalEl.addEventListener('hide.bs.modal', function() {
+                        document.activeElement?.blur();
+                    });
+                }
+
+                if (cancelGroupBuyModalEl) {
+                    cancelGroupBuyModal = new bootstrap.Modal(cancelGroupBuyModalEl);
+                    cancelGroupBuyModalEl.addEventListener('hide.bs.modal', function() {
+                        document.activeElement?.blur();
+                    });
+                }
+
+                // Attach click event listeners to buttons
+                const participateBtn = document.getElementById('participateBtn');
+                const cancelBtn = document.getElementById('cancelBtn');
+                const cancelGroupBuyBtn = document.getElementById('cancelGroupBuyBtn');
+
+                if (participateBtn && participateModal) {
+                    participateBtn.addEventListener('click', function() {
+                        participateModal.show();
+                    });
+                }
+
+                if (cancelBtn && cancelModal) {
+                    cancelBtn.addEventListener('click', function() {
+                        cancelModal.show();
+                    });
+                }
+
+                if (cancelGroupBuyBtn && cancelGroupBuyModal) {
+                    cancelGroupBuyBtn.addEventListener('click', function() {
+                        cancelGroupBuyModal.show();
+                    });
+                }
+
+                // Validate form before submission
+                const participateForm = document.getElementById('participateForm');
+                if (participateForm) {
+                    participateForm.addEventListener('submit', function(e) {
+                        const totalPayment = parseInt(document.getElementById('totalPayment').value) || 0;
+                        const deliveryMethod = document.getElementById('deliveryMethod').value;
+                        const addressId = document.getElementById('addressId').value;
+
+                        // Check if user has enough points
+                        if (totalPayment > userPoints) {
+                            e.preventDefault();
+                            alert('포인트가 부족합니다. 현재 보유: ' + userPoints.toLocaleString('ko-KR') + 'P, 필요: ' + totalPayment.toLocaleString('ko-KR') + 'P');
+                            return false;
+                        }
+
+                        // Check if address is selected for PARCEL delivery
+                        if (deliveryMethod === 'PARCEL' && !addressId) {
+                            e.preventDefault();
+                            alert('배송지를 선택해주세요.');
+                            return false;
+                        }
+
+                        return true;
+                    });
+                }
             }
 
-            // Initialize calculation when modal opens
-            const participateModal = document.getElementById('participateModal');
-            if (participateModal) {
-                participateModal.addEventListener('shown.bs.modal', function() {
-                    calculateTotalPayment();
-                });
+            // Wait for both DOM and Bootstrap to be ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeModals);
+            } else {
+                initializeModals();
             }
             /*]]>*/
         </script>
@@ -762,7 +825,8 @@
                         showToast(message);
                     } else if (response.status === 401) {
                         alert('로그인이 필요합니다.');
-                        window.location.href = '/auth/login';
+                        const currentPath = window.location.pathname;
+                        window.location.href = `/auth/login?continue=${encodeURIComponent(currentPath)}`;
                     } else if (response.status === 403) {
                         alert('인증에 실패했습니다. 페이지를 새로고침해주세요.');
                     } else {

@@ -104,6 +104,7 @@ public class PostController {
             @PathVariable Long postId, 
             @AuthenticationPrincipal UserDetails userDetails,
             HttpSession session,
+            jakarta.servlet.http.HttpServletRequest request,
             Model model
     ) {
         // 세션에서 조회한 게시글 ID 목록 가져오기
@@ -129,7 +130,15 @@ public class PostController {
         } else {
             post = postService.getPostDetail(postId);
         }
+        
+        // 현재 URL을 모델에 추가 (리다이렉션에 사용)
+        String currentUrl = request.getRequestURI();
+        if (request.getQueryString() != null) {
+            currentUrl += "?" + request.getQueryString();
+        }
+        
         model.addAttribute("post", post);
+        model.addAttribute("currentUrl", currentUrl);
         return "community-posts/detail";
     }
     
@@ -138,8 +147,11 @@ public class PostController {
      */
     @GetMapping("/new")
     public String createPage(Model model) {
-        // 빈 폼 객체 추가 (Thymeleaf th:object를 위해 필수)
-        model.addAttribute("formData", new CreatePostRequest());
+        // Flash 속성으로 전달된 폼 데이터가 있는지 확인 (PRG 패턴)
+        if (!model.containsAttribute("formData")) {
+            // 빈 폼 객체 추가 (Thymeleaf th:object를 위해 필수)
+            model.addAttribute("formData", new CreatePostRequest());
+        }
         // PostCategory enum 값들을 모델에 추가
         model.addAttribute("categories", PostCategory.values());
         return "community-posts/form";
@@ -149,17 +161,28 @@ public class PostController {
      * 게시글 수정 페이지 렌더링
      */
     @GetMapping("/{postId}/edit")
-    public String editPage(@PathVariable Long postId, Model model) {
+    public String editPage(
+            @PathVariable Long postId,
+            @RequestParam(required = false) String redirectUrl,
+            Model model) {
         PostResponse post = postService.getPostDetail(postId);
         model.addAttribute("post", post);
         
-        // 기존 데이터로 폼 객체 초기화 (Thymeleaf th:field가 값을 채우기 위해 필요)
-        UpdatePostRequest formData = new UpdatePostRequest();
-        formData.setTitle(post.getTitle());
-        formData.setContent(post.getContent());
-        formData.setCategory(post.getCategory());
-
-        model.addAttribute("formData", formData);
+        // Flash 속성으로 전달된 폼 데이터가 있는지 확인 (PRG 패턴)
+        if (!model.containsAttribute("formData")) {
+            // 기존 데이터로 폼 객체 초기화 (Thymeleaf th:field가 값을 채우기 위해 필요)
+            UpdatePostRequest formData = new UpdatePostRequest();
+            formData.setTitle(post.getTitle());
+            formData.setContent(post.getContent());
+            formData.setCategory(post.getCategory());
+            model.addAttribute("formData", formData);
+        }
+        
+        // redirectUrl 전달 (수정 후 돌아갈 페이지)
+        if (redirectUrl != null && !redirectUrl.isBlank()) {
+            model.addAttribute("redirectUrl", redirectUrl);
+        }
+        
         // PostCategory enum 값들을 모델에 추가
         model.addAttribute("categories", PostCategory.values());
         return "community-posts/form";
@@ -169,6 +192,7 @@ public class PostController {
 
     /**
      * 게시글 생성 폼 제출
+     * PRG (Post-Redirect-Get) 패턴 적용: 유효성 검증 실패 시에도 리다이렉트
      */
     @PostMapping
     public String createPost(
@@ -178,15 +202,15 @@ public class PostController {
             Model model,
             RedirectAttributes redirectAttributes
     ) {
-        // 1. 유효성 검증 실패 처리
+        // 1. 유효성 검증 실패 처리 (PRG 패턴 적용)
         if (bindingResult.hasErrors()) {
-            model.addAttribute("formData", request);
-            model.addAttribute("errorMessage", 
+            // Flash 속성에 폼 데이터와 검증 오류 저장
+            redirectAttributes.addFlashAttribute("formData", request);
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.formData", bindingResult);
+            redirectAttributes.addFlashAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
-            // PostCategory enum 값들을 모델에 추가
-            model.addAttribute("categories", PostCategory.values());
-            // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
-            return "community-posts/form";
+            // 게시글 작성 페이지로 리다이렉트 (새로고침 시 폼 재제출 방지)
+            return "redirect:/community-posts/new";
         }
         
         try {
@@ -197,38 +221,41 @@ public class PostController {
             redirectAttributes.addFlashAttribute("successMessage", "게시글이 성공적으로 작성되었습니다.");
             return "redirect:/community-posts/" + response.getId();
         } catch (IllegalArgumentException e) {
-            // 이미지 업로드 오류 처리
-            model.addAttribute("formData", request);
-            model.addAttribute("errorMessage", e.getMessage());
-            model.addAttribute("categories", PostCategory.values());
-            return "community-posts/form";
+            // 이미지 업로드 오류 처리 (PRG 패턴 적용)
+            redirectAttributes.addFlashAttribute("formData", request);
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/community-posts/new";
         }
     }
 
     /**
      * 게시글 수정 폼 제출
+     * PRG (Post-Redirect-Get) 패턴 적용: 유효성 검증 실패 시에도 리다이렉트
+     * redirectUrl 파라미터 지원: 수정 완료 후 원래 페이지로 이동 가능
      */
     @PostMapping("/{postId}")
     public String updatePost(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long postId,
+            @RequestParam(required = false) String redirectUrl,
             @Valid @ModelAttribute UpdatePostRequest request,
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes
     ) {
-        // 1. 유효성 검증 실패 처리
+        // 1. 유효성 검증 실패 처리 (PRG 패턴 적용)
         if (bindingResult.hasErrors()) {
-            model.addAttribute("formData", request);
-            model.addAttribute("errorMessage", 
+            // Flash 속성에 폼 데이터와 검증 오류 저장
+            redirectAttributes.addFlashAttribute("formData", request);
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.formData", bindingResult);
+            redirectAttributes.addFlashAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
-            // 기존 게시글 정보 조회해서 모델에 추가
-            PostResponse post = postService.getPostDetail(postId);
-            model.addAttribute("post", post);
-            // PostCategory enum 값들을 모델에 추가
-            model.addAttribute("categories", PostCategory.values());
-            // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
-            return "community-posts/form";
+            // redirectUrl이 있으면 함께 전달
+            if (redirectUrl != null && !redirectUrl.isBlank()) {
+                redirectAttributes.addAttribute("redirectUrl", redirectUrl);
+            }
+            // 게시글 수정 페이지로 리다이렉트 (새로고침 시 폼 재제출 방지)
+            return "redirect:/community-posts/" + postId + "/edit";
         }
         
         try {
@@ -237,25 +264,32 @@ public class PostController {
             
             postService.updatePost(user.getId(), postId, request);
             redirectAttributes.addFlashAttribute("successMessage", "게시글이 성공적으로 수정되었습니다.");
+            
+            // redirectUrl이 있으면 해당 페이지로 이동, 없으면 상세 페이지로 이동
+            if (redirectUrl != null && !redirectUrl.isBlank()) {
+                return "redirect:" + redirectUrl;
+            }
             return "redirect:/community-posts/" + postId;
         } catch (IllegalArgumentException e) {
-            // 이미지 업로드 오류 처리
-            model.addAttribute("formData", request);
-            model.addAttribute("errorMessage", e.getMessage());
-            PostResponse post = postService.getPostDetail(postId);
-            model.addAttribute("post", post);
-            model.addAttribute("categories", PostCategory.values());
-            return "community-posts/form";
+            // 이미지 업로드 오류 처리 (PRG 패턴 적용)
+            redirectAttributes.addFlashAttribute("formData", request);
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            if (redirectUrl != null && !redirectUrl.isBlank()) {
+                redirectAttributes.addAttribute("redirectUrl", redirectUrl);
+            }
+            return "redirect:/community-posts/" + postId + "/edit";
         }
     }
 
     /**
      * 게시글 삭제 폼 제출
+     * redirectUrl 파라미터 지원: 삭제 완료 후 원래 페이지로 이동 가능
      */
     @PostMapping("/{postId}/delete")
     public String deletePost(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long postId,
+            @RequestParam(required = false) String redirectUrl,
             RedirectAttributes redirectAttributes
     ) {
         User user = userRepository.findByEmail(userDetails.getUsername())
@@ -263,6 +297,11 @@ public class PostController {
         
         postService.deletePost(user.getId(), postId);
         redirectAttributes.addFlashAttribute("successMessage", "게시글이 성공적으로 삭제되었습니다.");
+        
+        // redirectUrl이 있으면 해당 페이지로 이동, 없으면 목록 페이지로 이동
+        if (redirectUrl != null && !redirectUrl.isBlank()) {
+            return "redirect:" + redirectUrl;
+        }
         return "redirect:/community-posts/list";
     }
     

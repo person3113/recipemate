@@ -42,6 +42,7 @@
                               th:object="${formData}"
                               enctype="multipart/form-data">
                             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <input type="hidden" th:if="${redirectUrl}" name="redirectUrl" th:value="${redirectUrl}"/>
                             
                             <!-- Recipe Info Section (레시피 기반 공구인 경우만 표시) -->
                             <div th:if="${recipe != null}" class="alert alert-info mb-4">
@@ -417,7 +418,7 @@
                                     <i class="bi bi-check-circle"></i>
                                     <span th:text="${groupBuy != null ? '수정하기' : '작성하기'}">작성하기</span>
                                 </button>
-                                <a th:href="${groupBuy != null ? '/group-purchases/' + groupBuy.id : '/group-purchases/list'}" 
+                                <a th:href="${redirectUrl != null ? redirectUrl : (groupBuy != null ? '/group-purchases/' + groupBuy.id : '/group-purchases/list')}" 
                                    class="btn btn-outline-secondary px-4">
                                     <i class="bi bi-x-circle"></i> 취소
                                 </a>

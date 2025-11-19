@@ -49,16 +49,23 @@ public class AuthController {
      */
     @GetMapping("/signup")
     public String signupPage(Model model) {
-        // 빈 폼 객체 추가 (Thymeleaf th:object를 위해 필수)
-        SignupRequest formData = new SignupRequest();
-        model.addAttribute("formData", formData);
-        model.addAttribute("signupRequest", formData); // POST 핸들러와의 호환성
+        // Flash 속성으로 전달된 폼 데이터가 있는지 확인 (PRG 패턴)
+        if (!model.containsAttribute("formData")) {
+            // 빈 폼 객체 추가 (Thymeleaf th:object를 위해 필수)
+            SignupRequest formData = new SignupRequest();
+            model.addAttribute("formData", formData);
+            model.addAttribute("signupRequest", formData); // POST 핸들러와의 호환성
+        } else {
+            // Flash 속성에서 전달된 formData가 있으면 signupRequest에도 동일하게 설정
+            model.addAttribute("signupRequest", model.getAttribute("formData"));
+        }
         return "auth/signup";
     }
 
     /**
      * 회원가입 폼 제출 처리
      * POST /auth/signup
+     * PRG (Post-Redirect-Get) 패턴 적용: 유효성 검증 실패 시에도 리다이렉트
      */
     @PostMapping("/signup")
     public String signup(
@@ -66,13 +73,15 @@ public class AuthController {
             org.springframework.validation.BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
-        // 유효성 검증 실패 처리
+        // 유효성 검증 실패 처리 (PRG 패턴 적용)
         if (bindingResult.hasErrors()) {
-            model.addAttribute("formData", request);
-            model.addAttribute("error", 
+            // Flash 속성에 폼 데이터와 검증 오류 저장
+            redirectAttributes.addFlashAttribute("formData", request);
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.formData", bindingResult);
+            redirectAttributes.addFlashAttribute("error", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
-            // 입력된 데이터를 유지하면서 회원가입 페이지로 직접 반환
-            return "auth/signup";
+            // 회원가입 페이지로 리다이렉트 (새로고침 시 폼 재제출 방지)
+            return "redirect:/auth/signup";
         }
         
         userService.signup(request);

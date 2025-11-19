@@ -43,6 +43,7 @@ public class CommentController {
     /**
      * 댓글 작성 폼 제출
      * POST /comments
+     * redirectUrl 파라미터 지원: 지정된 URL로 리다이렉트 가능
      */
     @PostMapping
     public String createComment(
@@ -52,10 +53,13 @@ public class CommentController {
             @RequestParam("content") String content,
             @RequestParam("type") CommentType type,
             @RequestParam(value = "parentId", required = false) Long parentId,
+            @RequestParam(value = "redirectUrl", required = false) String redirectUrl,
             RedirectAttributes redirectAttributes) {
         
-        // 리다이렉트 URL 결정
-        String redirectUrl = determineRedirectUrl(targetType, targetId);
+        // 리다이렉트 URL 결정 (파라미터로 전달된 값 우선 사용)
+        String targetUrl = (redirectUrl != null && !redirectUrl.isBlank()) 
+                ? redirectUrl 
+                : determineRedirectUrl(targetType, targetId);
         
         // 1. DTO 생성
         CreateCommentRequest request = CreateCommentRequest.builder()
@@ -71,7 +75,7 @@ public class CommentController {
         if (!violations.isEmpty()) {
             redirectAttributes.addFlashAttribute("errorMessage",
                     violations.iterator().next().getMessage());
-            return "redirect:" + redirectUrl;
+            return "redirect:" + targetUrl;
         }
         
         // 3. 사용자 조회 및 댓글 생성
@@ -86,12 +90,13 @@ public class CommentController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
         }
         
-        return "redirect:" + redirectUrl;
+        return "redirect:" + targetUrl;
     }
 
     /**
      * 댓글 수정 폼 제출
      * POST /comments/{commentId}/edit
+     * redirectUrl 파라미터 지원: 지정된 URL로 리다이렉트 가능
      */
     @PostMapping("/{commentId}/edit")
     public String updateComment(
@@ -100,10 +105,13 @@ public class CommentController {
             @RequestParam("targetType") EntityType targetType,
             @RequestParam("targetId") Long targetId,
             @RequestParam("content") String content,
+            @RequestParam(value = "redirectUrl", required = false) String redirectUrl,
             RedirectAttributes redirectAttributes) {
         
-        // 리다이렉트 URL 결정
-        String redirectUrl = determineRedirectUrl(targetType, targetId);
+        // 리다이렉트 URL 결정 (파라미터로 전달된 값 우선 사용)
+        String targetUrl = (redirectUrl != null && !redirectUrl.isBlank()) 
+                ? redirectUrl 
+                : determineRedirectUrl(targetType, targetId);
         
         // 1. DTO 생성
         UpdateCommentRequest request = UpdateCommentRequest.builder()
@@ -117,7 +125,7 @@ public class CommentController {
         if (!violations.isEmpty()) {
             redirectAttributes.addFlashAttribute("errorMessage",
                     violations.iterator().next().getMessage());
-            return "redirect:" + redirectUrl;
+            return "redirect:" + targetUrl;
         }
         
         // 3. 사용자 조회 및 댓글 수정
@@ -132,14 +140,14 @@ public class CommentController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
         }
         
-        return "redirect:" + redirectUrl;
+        return "redirect:" + targetUrl;
     }
 
     /**
      * 댓글 삭제 폼 제출
      * POST /comments/{commentId}/delete
      * htmx 요청인 경우: 삭제된 상태의 댓글 fragment 반환 (소프트 삭제 UI)
-     * 일반 폼 제출인 경우: 리다이렉트
+     * 일반 폼 제출인 경우: redirectUrl로 리다이렉트 (파라미터로 지정 가능)
      */
     @PostMapping("/{commentId}/delete")
     public String deleteComment(
@@ -147,6 +155,7 @@ public class CommentController {
             @PathVariable Long commentId,
             @RequestParam EntityType targetType,
             @RequestParam Long targetId,
+            @RequestParam(value = "redirectUrl", required = false) String redirectUrl,
             @RequestHeader(value = "HX-Request", required = false) String htmxRequest,
             RedirectAttributes redirectAttributes,
             Model model) {
@@ -175,8 +184,11 @@ public class CommentController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
         }
         
-        String redirectUrl = determineRedirectUrl(targetType, targetId);
-        return "redirect:" + redirectUrl;
+        // 리다이렉트 URL 결정 (파라미터로 전달된 값 우선 사용)
+        String targetUrl = (redirectUrl != null && !redirectUrl.isBlank()) 
+                ? redirectUrl 
+                : determineRedirectUrl(targetType, targetId);
+        return "redirect:" + targetUrl;
     }
 
     // ========== htmx Fragment 엔드포인트 ==========

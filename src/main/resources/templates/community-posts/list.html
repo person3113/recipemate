@@ -26,8 +26,11 @@
                 <h1 class="fw-bold mb-2"><i class="bi bi-chat-dots"></i> 커뮤니티</h1>
                 <p class="text-muted">레시피와 공동구매에 대한 이야기를 나눠보세요</p>
             </div>
-            <a th:href="@{/community-posts/new}" class="btn btn-primary">
+            <a sec:authorize="isAuthenticated()" th:href="@{/community-posts/new}" class="btn btn-primary">
                 <i class="bi bi-pencil"></i> 글쓰기
+            </a>
+            <a sec:authorize="!isAuthenticated()" th:href="@{/auth/login(continue=${currentUri})}" class="btn btn-primary">
+                <i class="bi bi-box-arrow-in-right"></i> 로그인하고 글쓰기
             </a>
         </div>
         

@@ -189,17 +189,28 @@ public class GroupBuyController {
     @GetMapping("/new")
     public String createPage(
         @RequestParam(required = false) String recipeApiId,
+        @RequestParam(required = false) String redirectUrl,
         Model model
     ) {
-        // 빈 폼 객체 추가 (Thymeleaf th:object를 위해 필수)
-        CreateGroupBuyRequest formData = new CreateGroupBuyRequest();
+        // Flash 속성에서 폼 데이터가 없으면 새로 생성
+        CreateGroupBuyRequest formData;
+        if (!model.containsAttribute("createGroupBuyRequest")) {
+            formData = new CreateGroupBuyRequest();
+            model.addAttribute("createGroupBuyRequest", formData);
+        } else {
+            // Flash 속성이 있으면 그것을 사용 (PRG 패턴에서 리다이렉트된 경우)
+            formData = (CreateGroupBuyRequest) model.asMap().get("createGroupBuyRequest");
+        }
         
         // 카카오 지도 API 키 추가
         log.info("Kakao JavaScript Key: {}", kakaoJavascriptKey != null && !kakaoJavascriptKey.isEmpty() ? "Loaded (length: " + kakaoJavascriptKey.length() + ")" : "NOT LOADED or EMPTY");
         model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
         
-        // 레시피 기반 공구인 경우 레시피 정보 조회 및 초기값 설정
-        if (recipeApiId != null && !recipeApiId.isBlank()) {
+        // redirectUrl 추가 (취소 버튼에서 사용)
+        model.addAttribute("redirectUrl", redirectUrl);
+        
+        // 레시피 기반 공구인 경우 레시피 정보 조회 및 초기값 설정 (최초 접근 시에만)
+        if (recipeApiId != null && !recipeApiId.isBlank() && !model.containsAttribute("createGroupBuyRequest")) {
             try {
                 com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe;
 
@@ -231,7 +242,6 @@ public class GroupBuyController {
         }
         
         model.addAttribute("formData", formData);
-        model.addAttribute("createGroupBuyRequest", formData); // POST 핸들러와의 호환성
         model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 전달
         return "group-purchases/form";
     }
@@ -240,27 +250,39 @@ public class GroupBuyController {
      * 공구 수정 페이지 렌더링
      */
     @GetMapping("/{purchaseId}/edit")
-    public String editPage(@PathVariable Long purchaseId, Model model) {
+    public String editPage(
+        @PathVariable Long purchaseId, 
+        @RequestParam(required = false) String redirectUrl,
+        Model model
+    ) {
         GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
         model.addAttribute("groupBuy", groupBuy);
+        model.addAttribute("redirectUrl", redirectUrl);
         
         // 카카오 지도 API 키 추가
         model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
         
-        // 기존 데이터로 폼 객체 초기화 (Thymeleaf th:field가 값을 채우기 위해 필요)
-        UpdateGroupBuyRequest formData = new UpdateGroupBuyRequest();
-        formData.setTitle(groupBuy.getTitle());
-        formData.setContent(groupBuy.getContent());
-        formData.setCategory(groupBuy.getCategory());
-        formData.setTargetAmount(groupBuy.getTargetAmount());
-        formData.setTargetHeadcount(groupBuy.getTargetHeadcount());
-        formData.setDeadline(groupBuy.getDeadline());
-        formData.setDeliveryMethod(groupBuy.getDeliveryMethod());
-        formData.setMeetupLocation(groupBuy.getMeetupLocation());
-        formData.setLatitude(groupBuy.getLatitude());
-        formData.setLongitude(groupBuy.getLongitude());
-        formData.setParcelFee(groupBuy.getParcelFee());
-        formData.setIsParticipantListPublic(groupBuy.getIsParticipantListPublic());
+        // Flash 속성에서 폼 데이터가 없으면 기존 데이터로 초기화
+        UpdateGroupBuyRequest formData;
+        if (model.containsAttribute("updateGroupBuyRequest")) {
+            // Flash 속성에서 가져오기 (유효성 검증 실패 후 리다이렉트된 경우)
+            formData = (UpdateGroupBuyRequest) model.getAttribute("updateGroupBuyRequest");
+        } else {
+            // 기존 데이터로 초기화
+            formData = new UpdateGroupBuyRequest();
+            formData.setTitle(groupBuy.getTitle());
+            formData.setContent(groupBuy.getContent());
+            formData.setCategory(groupBuy.getCategory());
+            formData.setTargetAmount(groupBuy.getTargetAmount());
+            formData.setTargetHeadcount(groupBuy.getTargetHeadcount());
+            formData.setDeadline(groupBuy.getDeadline());
+            formData.setDeliveryMethod(groupBuy.getDeliveryMethod());
+            formData.setMeetupLocation(groupBuy.getMeetupLocation());
+            formData.setLatitude(groupBuy.getLatitude());
+            formData.setLongitude(groupBuy.getLongitude());
+            formData.setParcelFee(groupBuy.getParcelFee());
+            formData.setIsParticipantListPublic(groupBuy.getIsParticipantListPublic());
+        }
         
         // 기존 이미지 URL 목록 추가
         model.addAttribute("existingImages", groupBuy.getImageUrls());
@@ -283,7 +305,6 @@ public class GroupBuyController {
         // (수정 시에는 DB에 저장된 재료만 표시하고, 레시피 재료는 로딩하지 않음)
         
         model.addAttribute("formData", formData);
-        model.addAttribute("updateGroupBuyRequest", formData); // POST 핸들러와의 호환성
         model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 전달
         return "group-purchases/form";
     }
@@ -320,18 +341,15 @@ public class GroupBuyController {
         @AuthenticationPrincipal UserDetails userDetails,
         @Valid @ModelAttribute("createGroupBuyRequest") CreateGroupBuyRequest request,
         BindingResult bindingResult,
-        Model model,
         RedirectAttributes redirectAttributes
     ) {
-        // 1. 유효성 검증 실패 처리
+        // 1. 유효성 검증 실패 처리 - PRG 패턴 적용
         if (bindingResult.hasErrors()) {
-            model.addAttribute("errorMessage", 
+            redirectAttributes.addFlashAttribute("createGroupBuyRequest", request);
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.createGroupBuyRequest", bindingResult);
+            redirectAttributes.addFlashAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
-            model.addAttribute("formData", request); // Thymeleaf th:object를 위해 필수
-            model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
-            model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
-            // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
-            return "group-purchases/form";
+            return "redirect:/group-purchases/new";
         }
         
         // 2. JSON에서 선택된 재료 파싱 (일반 공구도 재료 필수)
@@ -343,11 +361,9 @@ public class GroupBuyController {
                 );
                 
                 if (ingredients == null || ingredients.isEmpty()) {
-                    model.addAttribute("formData", request);
-                    model.addAttribute("errorMessage", "선택된 재료가 없습니다. 최소 1개 이상의 재료를 선택해주세요.");
-                    model.addAttribute("categories", GroupBuyCategory.values());
-                    model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
-                    return "group-purchases/form";
+                    redirectAttributes.addFlashAttribute("createGroupBuyRequest", request);
+                    redirectAttributes.addFlashAttribute("errorMessage", "선택된 재료가 없습니다. 최소 1개 이상의 재료를 선택해주세요.");
+                    return "redirect:/group-purchases/new";
                 }
                 
                 request.setSelectedIngredients(ingredients);
@@ -355,18 +371,14 @@ public class GroupBuyController {
                 
             } catch (Exception e) {
                 log.error("재료 JSON 파싱 실패: {}", e.getMessage());
-                model.addAttribute("formData", request);
-                model.addAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
-                model.addAttribute("categories", GroupBuyCategory.values());
-                model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
-                return "group-purchases/form";
+                redirectAttributes.addFlashAttribute("createGroupBuyRequest", request);
+                redirectAttributes.addFlashAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
+                return "redirect:/group-purchases/new";
             }
         } else {
-            model.addAttribute("formData", request);
-            model.addAttribute("errorMessage", "선택된 재료 정보가 없습니다. 최소 1개 이상의 재료를 선택해주세요.");
-            model.addAttribute("categories", GroupBuyCategory.values());
-            model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
-            return "group-purchases/form";
+            redirectAttributes.addFlashAttribute("createGroupBuyRequest", request);
+            redirectAttributes.addFlashAttribute("errorMessage", "선택된 재료 정보가 없습니다. 최소 1개 이상의 재료를 선택해주세요.");
+            return "redirect:/group-purchases/new";
         }
         
         CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
@@ -385,28 +397,19 @@ public class GroupBuyController {
         @AuthenticationPrincipal UserDetails userDetails,
         @Valid @ModelAttribute("createGroupBuyRequest") CreateGroupBuyRequest request,
         BindingResult bindingResult,
-        Model model,
         RedirectAttributes redirectAttributes
     ) {
-        // 1. 유효성 검증 실패 처리
+        // 1. 유효성 검증 실패 처리 - PRG 패턴 적용
         if (bindingResult.hasErrors()) {
-            model.addAttribute("formData", request);
-            model.addAttribute("errorMessage", 
+            redirectAttributes.addFlashAttribute("createGroupBuyRequest", request);
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.createGroupBuyRequest", bindingResult);
+            redirectAttributes.addFlashAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
-            model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
-            model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
-            // 레시피 정보 다시 조회해서 모델에 추가
+            // recipeApiId를 쿼리 파라미터로 유지
             if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
-                try {
-                    com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = 
-                        recipeService.getRecipeDetail(request.getRecipeApiId());
-                    model.addAttribute("recipe", recipe);
-                } catch (CustomException e) {
-                    model.addAttribute("errorMessage", "레시피 정보를 불러올 수 없습니다.");
-                }
+                redirectAttributes.addAttribute("recipeApiId", request.getRecipeApiId());
             }
-            // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
-            return "group-purchases/form";
+            return "redirect:/group-purchases/new";
         }
         
         // 2. JSON에서 선택된 재료 파싱
@@ -418,21 +421,12 @@ public class GroupBuyController {
                 );
                 
                 if (ingredients == null || ingredients.isEmpty()) {
-                    model.addAttribute("formData", request);
-                    model.addAttribute("errorMessage", "선택된 재료가 없습니다. 최소 1개 이상의 재료를 선택해주세요.");
-                    model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
-                    model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
-                    // 레시피 정보 다시 조회해서 모델에 추가
+                    redirectAttributes.addFlashAttribute("createGroupBuyRequest", request);
+                    redirectAttributes.addFlashAttribute("errorMessage", "선택된 재료가 없습니다. 최소 1개 이상의 재료를 선택해주세요.");
                     if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
-                        try {
-                            com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = 
-                                recipeService.getRecipeDetail(request.getRecipeApiId());
-                            model.addAttribute("recipe", recipe);
-                        } catch (CustomException e) {
-                            log.error("레시피 조회 실패: recipeApiId={}, error={}", request.getRecipeApiId(), e.getMessage());
-                        }
+                        redirectAttributes.addAttribute("recipeApiId", request.getRecipeApiId());
                     }
-                    return "group-purchases/form";
+                    return "redirect:/group-purchases/new";
                 }
                 
                 request.setSelectedIngredients(ingredients);
@@ -441,38 +435,20 @@ public class GroupBuyController {
                 
             } catch (Exception e) {
                 log.error("재료 JSON 파싱 실패: {}", e.getMessage());
-                model.addAttribute("formData", request);
-                model.addAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
-                model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
-                model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
-                // 레시피 정보 다시 조회해서 모델에 추가
+                redirectAttributes.addFlashAttribute("createGroupBuyRequest", request);
+                redirectAttributes.addFlashAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
                 if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
-                    try {
-                        com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = 
-                            recipeService.getRecipeDetail(request.getRecipeApiId());
-                        model.addAttribute("recipe", recipe);
-                    } catch (CustomException ex) {
-                        log.error("레시피 조회 실패: recipeApiId={}, error={}", request.getRecipeApiId(), ex.getMessage());
-                    }
+                    redirectAttributes.addAttribute("recipeApiId", request.getRecipeApiId());
                 }
-                return "group-purchases/form";
+                return "redirect:/group-purchases/new";
             }
         } else {
-            model.addAttribute("formData", request);
-            model.addAttribute("errorMessage", "선택된 재료 정보가 없습니다.");
-            model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
-            model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
-            // 레시피 정보 다시 조회해서 모델에 추가
+            redirectAttributes.addFlashAttribute("createGroupBuyRequest", request);
+            redirectAttributes.addFlashAttribute("errorMessage", "선택된 재료 정보가 없습니다.");
             if (request.getRecipeApiId() != null && !request.getRecipeApiId().isBlank()) {
-                try {
-                    com.recipemate.domain.recipe.dto.RecipeDetailResponse recipe = 
-                        recipeService.getRecipeDetail(request.getRecipeApiId());
-                    model.addAttribute("recipe", recipe);
-                } catch (CustomException e) {
-                    log.error("레시피 조회 실패: recipeApiId={}, error={}", request.getRecipeApiId(), e.getMessage());
-                }
+                redirectAttributes.addAttribute("recipeApiId", request.getRecipeApiId());
             }
-            return "group-purchases/form";
+            return "redirect:/group-purchases/new";
         }
         
         CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
@@ -492,23 +468,20 @@ public class GroupBuyController {
         @PathVariable Long purchaseId,
         @Valid @ModelAttribute("updateGroupBuyRequest") UpdateGroupBuyRequest request,
         @RequestParam(required = false) List<String> deletedImages,
+        @RequestParam(required = false) String redirectUrl,
         BindingResult bindingResult,
-        Model model,
         RedirectAttributes redirectAttributes
     ) {
-        // 1. 유효성 검증 실패 처리
+        // 1. 유효성 검증 실패 처리 - PRG 패턴 적용
         if (bindingResult.hasErrors()) {
-            model.addAttribute("formData", request);
-            model.addAttribute("errorMessage", 
+            redirectAttributes.addFlashAttribute("updateGroupBuyRequest", request);
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.updateGroupBuyRequest", bindingResult);
+            redirectAttributes.addFlashAttribute("errorMessage", 
                 bindingResult.getAllErrors().get(0).getDefaultMessage());
-            model.addAttribute("categories", GroupBuyCategory.values()); // 카테고리 목록 복구
-            model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
-            // 기존 공동구매 정보 조회해서 모델에 추가
-            GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
-            model.addAttribute("groupBuy", groupBuy);
-            model.addAttribute("existingImages", groupBuy.getImageUrls());
-            // 입력된 데이터를 유지하면서 폼 페이지로 직접 반환
-            return "group-purchases/form";
+            if (redirectUrl != null && !redirectUrl.isBlank()) {
+                redirectAttributes.addAttribute("redirectUrl", redirectUrl);
+            }
+            return "redirect:/group-purchases/" + purchaseId + "/edit";
         }
         
         // 2. 재료 JSON 파싱 (레시피 기반 공구인 경우)
@@ -522,14 +495,12 @@ public class GroupBuyController {
                 log.info("Parsed {} ingredients for group buy update", ingredients.size());
             } catch (Exception e) {
                 log.error("Failed to parse ingredients JSON: {}", e.getMessage());
-                model.addAttribute("formData", request);
-                model.addAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
-                model.addAttribute("categories", GroupBuyCategory.values());
-                model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
-                GroupBuyResponse groupBuy = groupBuyService.getGroupBuyDetail(purchaseId);
-                model.addAttribute("groupBuy", groupBuy);
-                model.addAttribute("existingImages", groupBuy.getImageUrls());
-                return "group-purchases/form";
+                redirectAttributes.addFlashAttribute("updateGroupBuyRequest", request);
+                redirectAttributes.addFlashAttribute("errorMessage", "재료 정보 처리 중 오류가 발생했습니다.");
+                if (redirectUrl != null && !redirectUrl.isBlank()) {
+                    redirectAttributes.addAttribute("redirectUrl", redirectUrl);
+                }
+                return "redirect:/group-purchases/" + purchaseId + "/edit";
             }
         }
         
@@ -538,6 +509,11 @@ public class GroupBuyController {
         
         groupBuyService.updateGroupBuy(user.getId(), purchaseId, request, deletedImages);
         redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 수정되었습니다.");
+        
+        // redirectUrl이 제공되면 해당 URL로, 없으면 상세 페이지로 리다이렉트
+        if (redirectUrl != null && !redirectUrl.isBlank()) {
+            return "redirect:" + redirectUrl;
+        }
         return "redirect:/group-purchases/" + purchaseId;
     }
 
@@ -564,6 +540,7 @@ public class GroupBuyController {
     @PostMapping("/{purchaseId}/cancel")
     public String cancelGroupBuy(
         @PathVariable Long purchaseId,
+        @RequestParam(required = false) String redirectUrl,
         @AuthenticationPrincipal UserDetails userDetails,
         RedirectAttributes redirectAttributes
     ) {
@@ -579,6 +556,10 @@ public class GroupBuyController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         
+        // redirectUrl이 제공되면 해당 URL로, 없으면 상세 페이지로 리다이렉트
+        if (redirectUrl != null && !redirectUrl.isBlank()) {
+            return "redirect:" + redirectUrl;
+        }
         return "redirect:/group-purchases/" + purchaseId;
     }
 
@@ -631,6 +612,7 @@ public class GroupBuyController {
     public String cancelParticipation(
         @AuthenticationPrincipal UserDetails userDetails,
         @PathVariable Long purchaseId,
+        @RequestParam(required = false) String redirectUrl,
         RedirectAttributes redirectAttributes
     ) {
         CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
@@ -645,6 +627,10 @@ public class GroupBuyController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         
+        // redirectUrl이 제공되면 해당 URL로, 없으면 공구 상세 페이지로
+        if (redirectUrl != null && !redirectUrl.isBlank()) {
+            return "redirect:" + redirectUrl;
+        }
         return "redirect:/group-purchases/" + purchaseId;
     }
 

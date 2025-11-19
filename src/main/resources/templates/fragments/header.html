@@ -91,7 +91,7 @@
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form th:action="@{/auth/logout}" method="post" class="d-inline">
-                                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                                     <button type="submit" class="dropdown-item text-danger">
                                         <i class="bi bi-box-arrow-right"></i> 로그아웃
                                     </button>
@@ -102,7 +102,7 @@
                     
                     <!-- Anonymous User Menu -->
                     <li sec:authorize="!isAuthenticated()" class="nav-item">
-                        <a th:href="@{/auth/login}" class="nav-link">로그인</a>
+                        <a th:href="@{/auth/login(continue=${currentUri})}" class="nav-link">로그인</a>
                     </li>
                     <li sec:authorize="!isAuthenticated()" class="nav-item">
                         <a th:href="@{/auth/signup}" class="btn btn-primary btn-sm ms-2">회원가입</a>

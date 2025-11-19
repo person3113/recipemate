@@ -21,7 +21,7 @@
 
     <!-- 로그인하지 않은 사용자는 로그인 페이지로 이동하는 링크 -->
     <a sec:authorize="!isAuthenticated()"
-       th:href="@{/auth/login}"
+        th:href="@{/auth/login(continue=${currentUri})}"
        class="btn btn-sm btn-outline-danger">
         <i class="bi bi-heart"></i>
         <span>좋아요</span>

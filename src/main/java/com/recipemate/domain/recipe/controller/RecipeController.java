@@ -150,6 +150,7 @@ public class RecipeController {
     public String recipeDetailPage(
             @PathVariable String recipeId,
             @AuthenticationPrincipal UserDetails userDetails,
+            jakarta.servlet.http.HttpServletRequest request,
             Model model) {
         
         RecipeDetailResponse recipe;
@@ -187,6 +188,13 @@ public class RecipeController {
         // 관련 공동구매 조회
         List<GroupBuyResponse> relatedGroupBuys = recipeService.getRelatedGroupBuys(recipe.getId());
         model.addAttribute("relatedGroupBuys", relatedGroupBuys);
+        
+        // 현재 URL을 모델에 추가 (리다이렉션에 사용)
+        String currentUrl = request.getRequestURI();
+        if (request.getQueryString() != null) {
+            currentUrl += "?" + request.getQueryString();
+        }
+        model.addAttribute("currentUrl", currentUrl);
         
         return "recipes/detail";
     }
@@ -427,6 +435,7 @@ public class RecipeController {
      */
     @GetMapping("/{id}/edit")
     public String editRecipeForm(@PathVariable Long id,
+                                 @RequestParam(required = false) String redirectUrl,
                                  @AuthenticationPrincipal UserDetails userDetails,
                                  Model model,
                                  RedirectAttributes redirectAttributes) {
@@ -494,6 +503,11 @@ public class RecipeController {
             model.addAttribute("recipe", recipe);
             model.addAttribute("isEdit", true);
             model.addAttribute("recipeId", id);
+            
+            // redirectUrl이 있으면 모델에 추가
+            if (redirectUrl != null && !redirectUrl.isBlank()) {
+                model.addAttribute("redirectUrl", redirectUrl);
+            }
 
             return "recipes/form";
 
@@ -511,6 +525,7 @@ public class RecipeController {
     public String updateRecipe(@PathVariable Long id,
                               @Valid @ModelAttribute com.recipemate.domain.recipe.dto.RecipeUpdateRequest request,
                               BindingResult bindingResult,
+                              @RequestParam(required = false) String redirectUrl,
                               @AuthenticationPrincipal UserDetails userDetails,
                               Model model,
                               RedirectAttributes redirectAttributes) {
@@ -611,6 +626,11 @@ public class RecipeController {
             recipeService.updateUserRecipe(id, request, currentUser);
 
             redirectAttributes.addFlashAttribute("message", "레시피가 성공적으로 수정되었습니다.");
+            
+            // redirectUrl이 제공되면 해당 URL로, 없으면 레시피 상세 페이지로
+            if (redirectUrl != null && !redirectUrl.isBlank()) {
+                return "redirect:" + redirectUrl;
+            }
             return "redirect:/recipes/" + id;
 
         } catch (CustomException e) {

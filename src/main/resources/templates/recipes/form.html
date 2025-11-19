@@ -32,6 +32,9 @@
                               method="post"
                               enctype="multipart/form-data"
                               th:object="${recipe}">
+                            
+                            <!-- redirectUrl이 있으면 hidden field로 전달 -->
+                            <input type="hidden" name="redirectUrl" th:if="${redirectUrl}" th:value="${redirectUrl}"/>
 
                             <!-- 기본 정보 -->
                             <div class="mb-4">

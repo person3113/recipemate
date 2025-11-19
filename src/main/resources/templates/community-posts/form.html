@@ -46,6 +46,8 @@
                               th:object="${formData}"
                               enctype="multipart/form-data">
                             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <!-- redirectUrl hidden input: 수정 후 돌아갈 페이지 지정 -->
+                            <input type="hidden" th:if="${redirectUrl}" name="redirectUrl" th:value="${redirectUrl}"/>
                             
                             <!-- Category -->
                             <div class="mb-4">
@@ -150,7 +152,7 @@
                                     <i class="bi bi-check-circle"></i>
                                     <span th:text="${post != null ? '수정하기' : '작성하기'}">작성하기</span>
                                 </button>
-                                <a th:href="@{/community-posts/list}" class="btn btn-outline-secondary px-4">
+                                <a th:href="${redirectUrl != null ? redirectUrl : '/community-posts/list'}" class="btn btn-outline-secondary px-4">
                                     <i class="bi bi-x-circle"></i> 취소
                                 </a>
                             </div>

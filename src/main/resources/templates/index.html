@@ -117,9 +117,15 @@
                                                class="btn btn-primary">
                                                 <i class="bi bi-book"></i> 레시피 자세히 보기
                                             </a>
-                                            <a th:href="@{/group-purchases/new(recipeId=${recipe.id})}" 
+                                            <a sec:authorize="isAuthenticated()" 
+                                               th:href="@{/group-purchases/new(recipeId=${recipe.id})}" 
                                                class="btn btn-outline-primary">
                                                 <i class="bi bi-basket3"></i> 이 레시피로 공구 만들기
+                                            </a>
+                                            <a sec:authorize="!isAuthenticated()" 
+                                               th:href="@{/auth/login(continue='/')}" 
+                                               class="btn btn-outline-primary">
+                                                <i class="bi bi-box-arrow-in-right"></i> 로그인하고 공구 만들기
                                             </a>
                                         </div>
                                     </div>
@@ -355,9 +361,15 @@
                                    class="btn btn-primary btn-sm">
                                     <i class="bi bi-book"></i> 레시피 보기
                                 </a>
-                                <a th:href="@{/group-purchases/new(recipeId=${recipe.id})}" 
+                                <a sec:authorize="isAuthenticated()" 
+                                   th:href="@{/group-purchases/new(recipeId=${recipe.id})}" 
                                    class="btn btn-outline-primary btn-sm">
                                     <i class="bi bi-basket3"></i> 공구 만들기
+                                </a>
+                                <a sec:authorize="!isAuthenticated()" 
+                                   th:href="@{/auth/login(continue='/')}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-box-arrow-in-right"></i> 로그인하고 공구 만들기
                                 </a>
                             </div>
                         </div>

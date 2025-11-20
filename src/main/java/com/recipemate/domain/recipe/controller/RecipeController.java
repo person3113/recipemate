@@ -467,7 +467,7 @@ public class RecipeController {
             recipe.setTitle(recipeDetail.getName());
             recipe.setCategory(recipeDetail.getCategory());
             recipe.setArea(recipeDetail.getArea());
-            recipe.setTips(null); // tips는 RecipeDetailResponse에 없으므로 null
+            recipe.setTips(recipeDetail.getTips());
             recipe.setYoutubeUrl(recipeDetail.getYoutubeUrl());
             recipe.setSourceUrl(recipeDetail.getSourceUrl());
             recipe.setExistingMainImageUrl(recipeDetail.getImageUrl());

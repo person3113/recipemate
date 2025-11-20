@@ -146,6 +146,18 @@
                 </div>
             </div>
 
+            <!-- Tips Card -->
+            <div th:if="${recipe.tips != null and !recipe.tips.isEmpty()}" class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0 fw-bold">
+                        <i class="bi bi-lightbulb text-primary"></i> 요리 팁
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-pre-wrap lh-lg mb-0" th:text="${recipe.tips}">요리 팁 내용</p>
+                </div>
+            </div>
+
             <!-- External Links Card -->
             <div th:if="${(recipe.youtubeUrl != null and !recipe.youtubeUrl.isEmpty()) or (recipe.sourceUrl != null and !recipe.sourceUrl.isEmpty())}" class="card shadow-sm mb-4">
                 <div class="card-header bg-white">

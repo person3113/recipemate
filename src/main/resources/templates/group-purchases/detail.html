@@ -299,31 +299,35 @@
                     <div class="card-body">
                         <!-- 로그인한 사용자 -->
                         <div sec:authorize="isAuthenticated()">
-                            <!-- 참여하기 버튼: 모집중 또는 마감임박이고, 참여자가 아닐 때만 표시 -->
-                            <div th:if="${(groupBuy.status.name() == 'RECRUITING' or groupBuy.status.name() == 'IMMINENT') and groupBuy.isParticipant != null and !groupBuy.isParticipant}" class="d-grid gap-2 mb-2">
-                                <button type="button" class="btn btn-primary btn-lg" id="participateBtn">
+                            <!-- 1. 핵심 액션 그룹 -->
+                            <div class="d-grid gap-2">
+                                <!-- 참여하기 버튼: 모집중 또는 마감임박이고, 참여자가 아닐 때만 표시 -->
+                                <button th:if="${(groupBuy.status.name() == 'RECRUITING' or groupBuy.status.name() == 'IMMINENT') and groupBuy.isParticipant != null and !groupBuy.isParticipant}"
+                                        type="button" class="btn btn-primary btn-lg" id="participateBtn">
                                     <i class="bi bi-basket3"></i> 참여하기
                                 </button>
-                            </div>
-                            <!-- 참여 취소 버튼: 참여자이고, 취소 가능할 때만 표시 -->
-                            <div th:if="${groupBuy.isParticipant != null and groupBuy.isParticipant and groupBuy.isCancellable != null and groupBuy.isCancellable}" class="d-grid gap-2 mb-2">
-                                <button type="button" class="btn btn-outline-danger" id="cancelBtn">
+                                
+                                <!-- 참여 취소 버튼: 참여자이고, 취소 가능할 때만 표시 -->
+                                <button th:if="${groupBuy.isParticipant != null and groupBuy.isParticipant and groupBuy.isCancellable != null and groupBuy.isCancellable}"
+                                        type="button" class="btn btn-outline-danger" id="cancelBtn">
                                     <i class="bi bi-x-circle"></i> 참여 취소
                                 </button>
-                            </div>
-                            
-                            <!-- 찜하기 버튼 -->
-                            <div class="d-grid gap-2 mb-2">
+                                
+                                <!-- 찜하기 버튼 -->
                                 <button type="button" id="wishlistBtn" class="btn btn-outline-danger" onclick="toggleWishlist()">
                                     <i id="wishlistIcon" class="bi bi-heart"></i>
                                     <span id="wishlistText">찜 추가</span>
                                 </button>
                             </div>
 
-                            <!-- 신고 버튼: 주최자가 아닌 사용자만 표시 -->
-                            <div th:if="${groupBuy.isHost == null or !groupBuy.isHost}" class="d-grid gap-2">
+                            <!-- 2. 시각적 구분선 (주최자가 아닐 때만 표시) -->
+                            <hr th:if="${groupBuy.isHost == null or !groupBuy.isHost}" class="my-3">
+
+                            <!-- 3. 보조 액션 그룹 (우측 정렬된 작은 링크) -->
+                            <div th:if="${groupBuy.isHost == null or !groupBuy.isHost}" class="d-flex justify-content-end">
+                                <!-- 신고하기 링크: 주최자가 아닌 사용자만 표시 -->
                                 <a th:href="@{/reports/new(entityType='GROUP_PURCHASE', entityId=${groupBuy.id}, entityName=${groupBuy.title})}"
-                                   class="btn btn-outline-secondary btn-sm">
+                                   class="text-danger small text-decoration-none">
                                     <i class="bi bi-flag"></i> 신고하기
                                 </a>
                             </div>

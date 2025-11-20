@@ -130,9 +130,14 @@
         <!-- Create Button and Sort Options -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <!-- Left: Create Button -->
-            <div>
+            <div sec:authorize="isAuthenticated()">
                 <a href="/group-purchases/new" class="btn btn-primary">
                     <i class="bi bi-plus-circle"></i> 새 공동구매 만들기
+                </a>
+            </div>
+            <div sec:authorize="!isAuthenticated()">
+                <a href="/auth/login?continue=/group-purchases/new" class="btn btn-primary">
+                    <i class="bi bi-box-arrow-in-right"></i> 로그인하고 공동구매 만들기
                 </a>
             </div>
             

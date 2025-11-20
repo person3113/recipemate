@@ -93,6 +93,18 @@ public class CreateGroupBuyRequest {
     }
     
     /**
+     * 마감일이 30분 단위(00분 또는 30분)인지 검증
+     */
+    @AssertTrue(message = "마감 시간은 30분 단위(00분 또는 30분)로 설정해야 합니다")
+    public boolean isDeadlineIn30MinuteIntervals() {
+        if (deadline == null) {
+            return true; // null은 @NotNull에서 검증
+        }
+        int minute = deadline.getMinute();
+        return minute == 0 || minute == 30;
+    }
+    
+    /**
      * selectedIngredients List를 JSON 문자열로 변환
      * GroupBuy 엔티티의 ingredients 필드에 저장하기 위해 사용
      */

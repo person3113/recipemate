@@ -29,6 +29,7 @@ public class RecipeDetailResponse {
     private List<ManualStep> manualSteps;
     private NutritionInfo nutritionInfo;
     private String source; // API 출처
+    private String tips; // 요리 팁
     private List<GroupBuyResponse> relatedGroupBuys; // 관련 공동구매 목록
 
     @Getter

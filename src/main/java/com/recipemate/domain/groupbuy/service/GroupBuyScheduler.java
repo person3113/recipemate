@@ -57,9 +57,9 @@ public class GroupBuyScheduler {
      * 공구 상태 자동 업데이트
      * - 마감일이 지난 공구: RECRUITING/IMMINENT → CLOSED
      * - D-1 또는 D-2 공구: RECRUITING → IMMINENT
-     * 매 시간 정각에 실행
+     * 30분마다 실행
      */
-    @Scheduled(cron = "0 0 * * * *") // 매시 00분 00초
+    @Scheduled(cron = "0 0/30 * * * ?") // 매 30분마다 (00분, 30분)
     @Transactional
     public void updateGroupBuyStatus() {
         log.info("공구 상태 자동 업데이트 배치 시작");

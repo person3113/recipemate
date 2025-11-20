@@ -146,6 +146,18 @@
                 </div>
             </div>
 
+            <!-- Tips Card -->
+            <div th:if="${recipe.tips != null and !recipe.tips.isEmpty()}" class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0 fw-bold">
+                        <i class="bi bi-lightbulb text-primary"></i> 요리 팁
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-pre-wrap lh-lg mb-0" th:text="${recipe.tips}">요리 팁 내용</p>
+                </div>
+            </div>
+
             <!-- External Links Card -->
             <div th:if="${(recipe.youtubeUrl != null and !recipe.youtubeUrl.isEmpty()) or (recipe.sourceUrl != null and !recipe.sourceUrl.isEmpty())}" class="card shadow-sm mb-4">
                 <div class="card-header bg-white">
@@ -180,14 +192,13 @@
                     <h5 class="mb-0 fw-bold">빠른 실행</h5>
                 </div>
                 <div class="card-body">
-                    <div class="d-grid gap-2">
-
-                        <!-- 본인이 작성한 레시피인 경우에만 수정/삭제 버튼 표시 -->
-                        <div th:if="${isOwner}" class="mb-3">
-                            <div class="alert alert-info small mb-2">
-                                <i class="bi bi-info-circle"></i> 내가 작성한 레시피입니다
-                            </div>
-                            <a th:href="@{/recipes/{id}/edit(id=${recipe.dbId}, redirectUrl=${currentUrl})}" class="btn btn-warning w-100 mb-2">
+                    <!-- 본인이 작성한 레시피인 경우에만 수정/삭제 버튼 표시 -->
+                    <div th:if="${isOwner}" class="mb-3">
+                        <div class="alert alert-info small mb-2">
+                            <i class="bi bi-info-circle"></i> 내가 작성한 레시피입니다
+                        </div>
+                        <div class="d-grid gap-2">
+                            <a th:href="@{/recipes/{id}/edit(id=${recipe.dbId}, redirectUrl=${currentUrl})}" class="btn btn-warning">
                                 <i class="bi bi-pencil-square"></i> 수정하기
                             </a>
                             <form th:action="@{/recipes/{id}/delete(id=${recipe.dbId})}"
@@ -197,9 +208,12 @@
                                     <i class="bi bi-trash"></i> 삭제하기
                                 </button>
                             </form>
-                            <hr class="my-3">
                         </div>
+                        <hr class="my-3">
+                    </div>
 
+                    <!-- 1. 핵심 액션 그룹 -->
+                    <div class="d-grid gap-2">
                         <!-- 공구 만들기 버튼 (로그인 필요) -->
                         <a sec:authorize="isAuthenticated()"
                            th:href="@{/group-purchases/new(recipeApiId=${recipe.id}, redirectUrl=${currentUrl})}"
@@ -225,22 +239,29 @@
                             <i class="bi bi-heart"></i> 로그인하고 찜하기
                         </a>
 
+                        <!-- 공유하기 버튼 -->
                         <button type="button" class="btn btn-outline-secondary" onclick="shareRecipe()">
                             <i class="bi bi-share"></i> 공유하기
                         </button>
+                    </div>
 
-                        <!-- 레시피 개선 제안 버튼 (로그인한 사용자만) -->
+                    <!-- 2. 시각적 구분선 -->
+                    <hr class="my-3">
+
+                    <!-- 3. 보조 액션 그룹 (우측 정렬된 작은 링크) -->
+                    <div class="d-flex justify-content-end gap-3">
+                        <!-- 레시피 개선 제안 링크 (로그인한 사용자만) -->
                         <a sec:authorize="isAuthenticated()"
                            th:href="@{/recipes/{id}/corrections/new(id=${recipe.dbId})}"
-                           class="btn btn-outline-warning">
-                            <i class="bi bi-lightbulb"></i> 레시피 개선 제안하기
+                           class="text-muted small text-decoration-none">
+                            <i class="bi bi-lightbulb"></i> 개선 제안
                         </a>
-                        
-                        <!-- 신고 버튼 (로그인한 사용자만, 본인 레시피 제외) -->
+
+                        <!-- 신고하기 링크 (로그인한 사용자만, 본인 레시피 제외) -->
                         <a sec:authorize="isAuthenticated()"
                            th:if="${!isOwner}"
                            th:href="@{/reports/new(entityType='RECIPE', entityId=${recipe.dbId}, entityName=${recipe.name})}" 
-                           class="btn btn-outline-danger btn-sm">
+                           class="text-danger small text-decoration-none">
                             <i class="bi bi-flag"></i> 신고하기
                         </a>
                     </div>

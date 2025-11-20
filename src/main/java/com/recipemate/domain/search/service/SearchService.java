@@ -26,9 +26,13 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 
@@ -49,6 +53,7 @@ public class SearchService {
     private final SearchKeywordRepository searchKeywordRepository;
 
     private static final int MAX_PAGE_SIZE = 20;
+    private static final long SEARCH_COUNT_COOLDOWN_MS = 300000; // 5분 (300,000ms)
 
     /**
      * 통합 검색
@@ -57,9 +62,10 @@ public class SearchService {
      * @param keyword 검색 키워드
      * @param type 검색 타입 (ALL, RECIPE, GROUP_BUY, POST)
      * @param pageable 페이지 정보
+     * @param request HTTP 요청 객체 (세션 관리용)
      * @return 통합 검색 결과
      */
-    public UnifiedSearchResponse unifiedSearch(String keyword, String type, Pageable pageable) {
+    public UnifiedSearchResponse unifiedSearch(String keyword, String type, Pageable pageable, HttpServletRequest request) {
         // 검색어 유효성 검증
         validateKeyword(keyword);
         
@@ -69,8 +75,11 @@ public class SearchService {
         log.info("통합 검색 시작 - keyword: {}, type: {}, page: {}, size: {}", 
             keyword, searchType, pageable.getPageNumber(), pageable.getPageSize());
 
-        // 검색 키워드 비동기 저장 (인기 검색어 집계용)
-        saveSearchKeywordAsync(keyword);
+        // 검색 키워드 저장 여부 결정 (세션 기반 중복 체크)
+        if (shouldIncrementSearchCount(keyword, request.getSession())) {
+            // 검색 키워드 비동기 저장 (인기 검색어 집계용)
+            saveSearchKeywordAsync(keyword);
+        }
 
         List<SearchResultResponse> groupBuyResults;
         List<SearchResultResponse> postResults;
@@ -463,5 +472,39 @@ public class SearchService {
                 .stream()
                 .map(SearchKeyword::getKeyword)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 검색 수 증가 여부 결정
+     * 세션에 기록된 마지막 검색 시간을 확인하여 일정 시간(5분) 이내 중복 검색을 필터링
+     * 
+     * @param keyword 검색 키워드
+     * @param session HTTP 세션
+     * @return 검색 수를 증가시킬지 여부
+     */
+    private boolean shouldIncrementSearchCount(String keyword, HttpSession session) {
+        // 세션에서 'searchedKeywords' 맵 가져오기 (없으면 생성)
+        @SuppressWarnings("unchecked")
+        Map<String, Long> searchedKeywords = (Map<String, Long>) session.getAttribute("searchedKeywords");
+        
+        if (searchedKeywords == null) {
+            searchedKeywords = new ConcurrentHashMap<>();
+            session.setAttribute("searchedKeywords", searchedKeywords);
+        }
+
+        String normalizedKeyword = keyword.trim().toLowerCase();
+        long now = System.currentTimeMillis();
+        Long lastSearchedTime = searchedKeywords.get(normalizedKeyword);
+
+        // 5분(300,000ms) 이내에 검색한 기록이 없으면 카운트 증가 허용
+        if (lastSearchedTime == null || (now - lastSearchedTime) > SEARCH_COUNT_COOLDOWN_MS) {
+            searchedKeywords.put(normalizedKeyword, now);
+            log.debug("검색 수 증가 허용: {} (마지막 검색: {})", normalizedKeyword, 
+                lastSearchedTime == null ? "없음" : (now - lastSearchedTime) + "ms 전");
+            return true; // 카운트 증가 필요
+        }
+
+        log.debug("검색 수 증가 스킵: {} ({}ms 전 검색함)", normalizedKeyword, now - lastSearchedTime);
+        return false; // 카운트 증가 불필요
     }
 }

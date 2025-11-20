@@ -263,9 +263,10 @@
                                        th:field="*{deadline}"
                                        class="form-control"
                                        th:classappend="${#fields.hasErrors('deadline')} ? 'is-invalid'"
+                                       step="1800"
                                        required>
                                 <div class="form-text">
-                                    <i class="bi bi-calendar-event"></i> 현재 시각 이후 ~ 1개월 이내로 설정해주세요.
+                                    <i class="bi bi-calendar-event"></i> 현재 시각 이후 ~ 1개월 이내, 30분 단위로 설정해주세요.
                                 </div>
                                 <div class="invalid-feedback" th:if="${#fields.hasErrors('deadline')}" th:errors="*{deadline}"></div>
                             </div>
@@ -527,17 +528,28 @@
                 function setDeadlineConstraints() {
                     const now = new Date();
                     
-                    // 최소값: 현재 시각
+                    // 최소값: 현재 시각을 30분 단위로 반올림
+                    const minutes = now.getMinutes();
+                    const roundedMinutes = minutes < 30 ? 30 : 60;
+                    now.setMinutes(roundedMinutes);
+                    now.setSeconds(0);
+                    now.setMilliseconds(0);
+                    
+                    if (roundedMinutes === 60) {
+                        now.setHours(now.getHours() + 1);
+                        now.setMinutes(0);
+                    }
+                    
                     const year = now.getFullYear();
                     const month = String(now.getMonth() + 1).padStart(2, '0');
                     const day = String(now.getDate()).padStart(2, '0');
                     const hours = String(now.getHours()).padStart(2, '0');
-                    const minutes = String(now.getMinutes()).padStart(2, '0');
-                    const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                    const minutesStr = String(now.getMinutes()).padStart(2, '0');
+                    const minDateTime = `${year}-${month}-${day}T${hours}:${minutesStr}`;
                     deadlineInput.setAttribute('min', minDateTime);
                     
                     // 최대값: 현재 + 1개월
-                    const maxDate = new Date(now);
+                    const maxDate = new Date();
                     maxDate.setMonth(maxDate.getMonth() + 1);
                     const maxYear = maxDate.getFullYear();
                     const maxMonth = String(maxDate.getMonth() + 1).padStart(2, '0');
@@ -550,21 +562,51 @@
                 
                 setDeadlineConstraints();
                 
-                // 마감일 유효성 검증 (현재 시각 ~ 1개월 이내)
+                // 마감일 유효성 검증 (현재 시각 ~ 1개월 이내, 30분 단위)
                 deadlineInput.addEventListener('change', function() {
                     const selectedDate = new Date(this.value);
                     const now = new Date();
                     const maxDate = new Date(now);
                     maxDate.setMonth(maxDate.getMonth() + 1);
                     
+                    // 시간 범위 검증
                     if (selectedDate <= now) {
                         alert('마감일은 현재 시각 이후로 설정해주세요.');
                         this.value = '';
                         this.focus();
+                        return;
                     } else if (selectedDate > maxDate) {
                         alert('마감일은 현재로부터 최대 1개월 이내로 설정해주세요.');
                         this.value = '';
                         this.focus();
+                        return;
+                    }
+                    
+                    // 30분 단위 자동 보정 (Snap)
+                    const minutes = selectedDate.getMinutes();
+                    if (minutes !== 0 && minutes !== 30) {
+                        // 가장 가까운 30분 단위로 스냅
+                        let snappedMinutes;
+                        if (minutes < 15) {
+                            snappedMinutes = 0;
+                        } else if (minutes < 45) {
+                            snappedMinutes = 30;
+                        } else {
+                            snappedMinutes = 0;
+                            selectedDate.setHours(selectedDate.getHours() + 1);
+                        }
+                        
+                        selectedDate.setMinutes(snappedMinutes);
+                        selectedDate.setSeconds(0);
+                        selectedDate.setMilliseconds(0);
+                        
+                        // 자동 보정된 시간으로 입력값 업데이트
+                        const year = selectedDate.getFullYear();
+                        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(selectedDate.getDate()).padStart(2, '0');
+                        const hours = String(selectedDate.getHours()).padStart(2, '0');
+                        const minutesStr = String(selectedDate.getMinutes()).padStart(2, '0');
+                        this.value = `${year}-${month}-${day}T${hours}:${minutesStr}`;
                     }
                 });
                 

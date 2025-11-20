@@ -834,6 +834,7 @@ public class RecipeService {
                 .manualSteps(manualSteps.isEmpty() ? null : manualSteps)
                 .nutritionInfo(nutritionInfo)
                 .source(source)
+                .tips(recipe.getTips())  // 요리 팁 추가
                 .relatedGroupBuys(relatedGroupBuys)
                 .build();
     }

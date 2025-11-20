@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 
@@ -35,6 +36,7 @@ public class SearchController {
      * @param keyword 검색어 (필수)
      * @param type 검색 타입 (선택: ALL, RECIPE, GROUP_BUY, POST)
      * @param pageable 페이지네이션 정보 (기본: page=0, size=10)
+     * @param request HTTP 요청 객체 (세션 관리용)
      * @param response HTTP 응답 객체
      * @param model 뷰에 전달할 모델
      * @return 검색 결과 페이지 뷰 이름
@@ -44,6 +46,7 @@ public class SearchController {
         @RequestParam String keyword,
         @RequestParam(required = false, defaultValue = "ALL") String type,
         @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+        HttpServletRequest request,
         HttpServletResponse response,
         Model model
     ) {
@@ -59,7 +62,7 @@ public class SearchController {
         // 타입별 처리
         if ("ALL".equalsIgnoreCase(type)) {
             // 전체 탭: 통합 검색으로 미리보기와 전체 개수 조회
-            UnifiedSearchResponse searchResults = searchService.unifiedSearch(keyword, type, pageable);
+            UnifiedSearchResponse searchResults = searchService.unifiedSearch(keyword, type, pageable, request);
             long totalCount = searchResults.getTotalRecipeCount() 
                             + searchResults.getTotalGroupBuyCount() 
                             + searchResults.getTotalPostCount();

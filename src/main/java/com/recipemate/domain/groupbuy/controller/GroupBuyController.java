@@ -35,6 +35,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -472,7 +473,7 @@ public class GroupBuyController {
         @AuthenticationPrincipal UserDetails userDetails,
         @PathVariable Long purchaseId,
         @Valid @ModelAttribute("updateGroupBuyRequest") UpdateGroupBuyRequest request,
-        @RequestParam(required = false) List<String> deletedImages,
+        @RequestParam(required = false) String deletedImages,
         @RequestParam(required = false) String redirectUrl,
         BindingResult bindingResult,
         RedirectAttributes redirectAttributes
@@ -509,10 +510,25 @@ public class GroupBuyController {
             }
         }
         
+        // 3. deletedImages JSON 파싱
+        List<String> deletedImagesList = new ArrayList<>();
+        if (deletedImages != null && !deletedImages.isBlank()) {
+            try {
+                deletedImagesList = objectMapper.readValue(
+                    deletedImages,
+                    new TypeReference<List<String>>() {}
+                );
+                log.info("Parsed {} deleted images for group buy update", deletedImagesList.size());
+            } catch (Exception e) {
+                log.error("Failed to parse deletedImages JSON: {}", e.getMessage());
+                // deletedImages 파싱 실패는 무시하고 계속 진행
+            }
+        }
+        
         CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
         User user = customUserDetails.getUser();
         
-        groupBuyService.updateGroupBuy(user.getId(), purchaseId, request, deletedImages);
+        groupBuyService.updateGroupBuy(user.getId(), purchaseId, request, deletedImagesList);
         redirectAttributes.addFlashAttribute("successMessage", "공동구매가 성공적으로 수정되었습니다.");
         
         // redirectUrl이 제공되면 해당 URL로, 없으면 상세 페이지로 리다이렉트

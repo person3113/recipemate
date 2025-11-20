@@ -355,6 +355,7 @@ public class GroupBuyService {
                 image.updateDisplayOrder(i);
             }
         }
+        groupBuyImageRepository.flush(); // display_order 변경사항 즉시 DB에 반영
         
         // 4-4. 새 이미지 업로드 전 총 개수 검증
         List<String> newImageUrls = new ArrayList<>();

@@ -72,4 +72,28 @@ public class UpdateGroupBuyRequest {
     // 새로 업로드할 이미지 파일
     @Builder.Default
     private List<MultipartFile> images = new ArrayList<>();
+    
+    /**
+     * 마감일이 현재로부터 1개월 이내인지 검증
+     */
+    @AssertTrue(message = "마감일은 현재로부터 1개월 이내로 설정해야 합니다")
+    public boolean isDeadlineWithinOneMonth() {
+        if (deadline == null) {
+            return true; // null은 @NotNull에서 검증
+        }
+        LocalDateTime maxDeadline = LocalDateTime.now().plusMonths(1);
+        return !deadline.isAfter(maxDeadline);
+    }
+    
+    /**
+     * 마감일이 30분 단위(00분 또는 30분)인지 검증
+     */
+    @AssertTrue(message = "마감 시간은 30분 단위(00분 또는 30분)로 설정해야 합니다")
+    public boolean isDeadlineIn30MinuteIntervals() {
+        if (deadline == null) {
+            return true; // null은 @NotNull에서 검증
+        }
+        int minute = deadline.getMinute();
+        return minute == 0 || minute == 30;
+    }
 }

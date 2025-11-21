@@ -1029,6 +1029,9 @@
         <!-- Kakao Map Display Script -->
         <script th:inline="javascript">
             /*<![CDATA[*/
+            let detailMap = null; // Store map instance
+            let detailMarker = null; // Store marker instance
+
             function initDetailMap() {
                 const mapContainer = document.getElementById('detailMap');
 
@@ -1051,14 +1054,14 @@
                         disableDoubleClickZoom: false
                     };
 
-                    const map = new kakao.maps.Map(mapContainer, mapOption);
+                    detailMap = new kakao.maps.Map(mapContainer, mapOption);
 
                     // Add marker
                     const markerPosition = new kakao.maps.LatLng(latitude, longitude);
-                    const marker = new kakao.maps.Marker({
+                    detailMarker = new kakao.maps.Marker({
                         position: markerPosition
                     });
-                    marker.setMap(map);
+                    detailMarker.setMap(detailMap);
 
                     // Add info window with meetup location
                     const meetupLocation = /*[[${groupBuy.meetupLocation}]]*/ '';
@@ -1066,7 +1069,7 @@
                         const infowindow = new kakao.maps.InfoWindow({
                             content: '<div style="padding:5px;font-size:12px;width:150px;text-align:center;">' + meetupLocation + '</div>'
                         });
-                        infowindow.open(map, marker);
+                        infowindow.open(detailMap, detailMarker);
                     }
                 }
             }
@@ -1079,10 +1082,21 @@
                     return;
                 }
 
-                // Use kakao.maps.load() for proper SDK initialization
-                kakao.maps.load(function() {
-                    initDetailMap();
-                });
+                // Initialize map when delivery location tab is shown
+                const deliveryLocationTab = document.getElementById('delivery-location-tab');
+                if (deliveryLocationTab) {
+                    deliveryLocationTab.addEventListener('shown.bs.tab', function() {
+                        kakao.maps.load(function() {
+                            if (detailMap === null) {
+                                // First time showing the tab - initialize map
+                                initDetailMap();
+                            } else {
+                                // Map already exists - just relayout to fix size
+                                detailMap.relayout();
+                            }
+                        });
+                    });
+                }
             });
             /*]]>*/
         </script>

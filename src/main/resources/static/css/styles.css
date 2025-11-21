@@ -100,6 +100,68 @@ a:hover {
     font-size: 4rem;
 }
 
+/* Carousel Control Buttons - Simple Arrow Style */
+#popularRecipesCarousel .carousel-control-prev,
+#popularRecipesCarousel .carousel-control-next {
+    width: 60px;
+    opacity: 0.8;
+}
+
+#popularRecipesCarousel .carousel-control-prev {
+    left: -60px;
+}
+
+#popularRecipesCarousel .carousel-control-next {
+    right: -60px;
+}
+
+.custom-carousel-icon {
+    width: 50px !important;
+    height: 50px !important;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.carousel-control-prev-icon.custom-carousel-icon,
+.carousel-control-next-icon.custom-carousel-icon {
+    background-image: none !important;
+    width: 50px !important;
+    height: 50px !important;
+    position: relative;
+}
+
+.carousel-control-prev-icon.custom-carousel-icon::before {
+    content: '<';
+    position: absolute;
+    font-size: 3.5rem;
+    font-weight: 300;
+    color: #4a4a4a;
+    line-height: 1;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.carousel-control-next-icon.custom-carousel-icon::before {
+    content: '>';
+    position: absolute;
+    font-size: 3.5rem;
+    font-weight: 300;
+    color: #4a4a4a;
+    line-height: 1;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.carousel-control-prev:hover .custom-carousel-icon::before,
+.carousel-control-next:hover .custom-carousel-icon::before {
+    color: #2a2a2a;
+    transform: translate(-50%, -50%) scale(1.2);
+    transition: all 0.3s ease;
+}
+
 /* Recipe Item Cards */
 .recipe-item {
     transition: transform 0.2s ease;

@@ -7,25 +7,50 @@
         ~{::additional-scripts}
       )}">
 <head>
-    <th:block th:fragment="title">공동구매 목록</th:block>
+    <th:block th:fragment="title">공동구매</th:block>
 
     <th:block th:fragment="additional-head">
         <style>
             /* List page specific styles */
             .group-buy-item {
                 transition: transform 0.2s, box-shadow 0.2s;
+                border: 1px solid rgba(0, 0, 0, 0.125);
             }
             .group-buy-item:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+                transform: translateY(-3px);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+            }
+
+            /* 이미지 컨테이너 스타일 */
+            .group-buy-item .position-relative {
+                overflow: hidden;
+            }
+
+            .group-buy-item img {
+                transition: transform 0.3s ease;
+            }
+
+            .group-buy-item:hover img {
+                transform: scale(1.05);
+            }
+
+            /* 모바일 대응 */
+            @media (max-width: 768px) {
+                .group-buy-item .col-md-3 {
+                    min-height: 150px;
+                }
             }
         </style>
     </th:block>
 </head>
 <body>
-    <main th:fragment="main-content" class="container py-4">
-        <h1 class="mb-4">공동구매 목록</h1>
-        
+    <main th:fragment="main-content" class="container my-5">
+        <!-- Page Header -->
+        <div class="mb-4">
+            <h1 class="fw-bold mb-2"><i class="bi bi-basket3"></i> 공동구매</h1>
+            <p class="text-muted">진행 중인 공동구매를 확인하고 참여해보세요</p>
+        </div>
+
         <!-- Flash Messages -->
         <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="bi bi-check-circle me-2"></i>
@@ -172,95 +197,124 @@
             공동구매가 없습니다.
         </div>
         
-        <div th:if="${!groupBuys.isEmpty()}" class="row">
-            <div th:each="groupBuy : ${groupBuys}" class="col-md-6 col-lg-4 mb-4">
-                <div class="card h-100 shadow-sm group-buy-item">
-                    <div class="card-body">
-                        <!-- 제목과 상태 배지 -->
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0">
-                                <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" 
+        <div th:if="${!groupBuys.isEmpty()}">
+            <div th:each="groupBuy : ${groupBuys}" class="card mb-3 shadow-sm group-buy-item" style="height: 220px;">
+                <div class="row g-0 h-100">
+                    <!-- 왼쪽: 공구 이미지 -->
+                    <div class="col-md-3 h-100">
+                        <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}" class="text-decoration-none h-100 d-block">
+                            <div class="position-relative h-100">
+                                <!-- 공동구매 업로드 이미지 우선 표시 -->
+                                <img th:if="${groupBuy.imageUrls != null and !groupBuy.imageUrls.isEmpty()}"
+                                     th:src="${groupBuy.imageUrls[0]}"
+                                     class="w-100 h-100 rounded-start"
+                                     style="object-fit: cover;"
+                                     th:alt="${groupBuy.title}">
+                                <!-- 업로드 이미지가 없으면 레시피 이미지 표시 -->
+                                <img th:if="${(groupBuy.imageUrls == null or groupBuy.imageUrls.isEmpty()) and groupBuy.recipeImageUrl != null and !#strings.isEmpty(groupBuy.recipeImageUrl)}"
+                                     th:src="${groupBuy.recipeImageUrl}"
+                                     class="w-100 h-100 rounded-start"
+                                     style="object-fit: cover;"
+                                     th:alt="${groupBuy.title}">
+                                <!-- 기본 이미지 (둘 다 없는 경우) -->
+                                <div th:if="${(groupBuy.imageUrls == null or groupBuy.imageUrls.isEmpty()) and (groupBuy.recipeImageUrl == null or #strings.isEmpty(groupBuy.recipeImageUrl))}"
+                                     class="bg-light w-100 h-100 rounded-start d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                </div>
+                                <!-- 상태 배지를 이미지 위에 오버레이 -->
+                                <div class="position-absolute top-0 end-0 m-2">
+                                    <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge bg-success">모집중</span>
+                                    <span th:if="${groupBuy.status.name() == 'IMMINENT'}" class="badge bg-warning">임박</span>
+                                    <span th:if="${groupBuy.status.name() == 'CLOSED'}" class="badge bg-secondary">마감</span>
+                                    <span th:if="${groupBuy.status.name() == 'COMPLETED'}" class="badge bg-info">모집 성공</span>
+                                    <span th:if="${groupBuy.status.name() == 'CANCELLED'}" class="badge bg-danger">취소</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- 오른쪽: 공구 정보 -->
+                    <div class="col-md-9 h-100">
+                        <div class="card-body h-100 d-flex flex-column">
+                            <!-- 제목 -->
+                            <h5 class="card-title mb-2">
+                                <a th:href="@{/group-purchases/{id}(id=${groupBuy.id})}"
                                    class="text-decoration-none text-dark"
                                    th:text="${groupBuy.title}"></a>
                             </h5>
-                            <!-- 백엔드 상태 값 사용 -->
-                            <span th:if="${groupBuy.status.name() == 'RECRUITING'}" class="badge bg-success">모집중</span>
-                            <span th:if="${groupBuy.status.name() == 'IMMINENT'}" class="badge bg-warning">임박</span>
-                            <span th:if="${groupBuy.status.name() == 'CLOSED'}" class="badge bg-secondary">마감</span>
-                            <span th:if="${groupBuy.status.name() == 'COMPLETED'}" class="badge bg-info">모집 성공</span>
-                            <span th:if="${groupBuy.status.name() == 'CANCELLED'}" class="badge bg-danger">취소</span>
-                        </div>
-                        
-                        <!-- 내용 -->
-                        <p class="card-text text-muted small" th:text="${#strings.abbreviate(groupBuy.content, 60)}"></p>
-                        
-                        <!-- 카테고리 -->
-                        <div class="mb-2">
-                            <span class="badge bg-light text-dark border">
-                                <i class="bi bi-tag"></i> <span th:text="${groupBuy.category}"></span>
-                            </span>
-                        </div>
-                        
-                        <!-- 가격 정보 -->
-                        <div class="mb-2">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-primary fw-bold">
-                                    총 <span th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')}"></span>원
-                                </span>
-                                <span class="text-success fw-bold">
-                                    1인당 <span th:text="${#numbers.formatInteger(groupBuy.targetAmount / groupBuy.targetHeadcount, 0, 'COMMA')}"></span>원
+
+                            <!-- 카테고리 -->
+                            <div class="mb-2">
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-tag"></i> <span th:text="${groupBuy.category}"></span>
                                 </span>
                             </div>
-                        </div>
-                        
-                        <!-- 참여 인원 -->
-                        <div class="mb-2">
-                            <span class="text-muted small">
-                                <i class="bi bi-people"></i>
-                                <span th:text="${groupBuy.currentHeadcount}"></span> / <span th:text="${groupBuy.targetHeadcount}"></span>명
-                            </span>
-                        </div>
-                        
-                        <!-- 마감일 -->
-                        <div class="mb-2">
-                            <th:block th:with="deadlineDate=${groupBuy.deadline.toLocalDate()},
-                                               today=${T(java.time.LocalDate).now()},
-                                               daysUntil=${T(java.time.temporal.ChronoUnit).DAYS.between(today, deadlineDate)}">
+
+                            <!-- 내용 -->
+                            <p class="card-text text-muted small mb-2" style="overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;" th:text="${groupBuy.content}"></p>
+
+                            <div class="row g-2 flex-grow-1">
+                                <!-- 가격 정보 -->
+                                <div class="col-md-6">
+                                    <div class="d-flex flex-column">
+                                        <span class="text-primary fw-bold small">
+                                            <i class="bi bi-cash-stack"></i> 총 <span th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')}"></span>원
+                                        </span>
+                                        <span class="text-success fw-bold small mt-1">
+                                            <i class="bi bi-person-fill"></i> 1인당 <span th:text="${#numbers.formatInteger(groupBuy.targetAmount / groupBuy.targetHeadcount, 0, 'COMMA')}"></span>원
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- 참여 인원 및 마감일 -->
+                                <div class="col-md-6">
+                                    <div class="d-flex flex-column">
+                                        <span class="text-muted small">
+                                            <i class="bi bi-people-fill"></i>
+                                            <span th:text="${groupBuy.currentHeadcount}"></span> / <span th:text="${groupBuy.targetHeadcount}"></span>명
+                                        </span>
+                                        <th:block th:with="deadlineDate=${groupBuy.deadline.toLocalDate()},
+                                                           today=${T(java.time.LocalDate).now()},
+                                                           daysUntil=${T(java.time.temporal.ChronoUnit).DAYS.between(today, deadlineDate)}">
+                                            <span class="text-muted small mt-1">
+                                                <i class="bi bi-calendar-event-fill"></i>
+                                                <span th:if="${daysUntil == 0}" class="text-danger fw-bold">
+                                                    오늘 마감 🔥
+                                                </span>
+                                                <span th:if="${daysUntil == 1}" class="text-warning fw-bold">
+                                                    D-1 🔥
+                                                </span>
+                                                <span th:if="${daysUntil > 1}">
+                                                    D-<span th:text="${daysUntil}"></span>
+                                                </span>
+                                                <span th:if="${daysUntil < 0}">
+                                                    마감
+                                                </span>
+                                            </span>
+                                        </th:block>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 하단 정보 -->
+                            <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+                                <!-- 수령 방법 -->
                                 <span class="text-muted small">
-                                    <i class="bi bi-calendar-event"></i>
-                                    <span th:if="${daysUntil == 0}">
-                                        오늘 마감 🔥
-                                    </span>
-                                    <span th:if="${daysUntil == 1}">
-                                        D-1 🔥
-                                    </span>
-                                    <span th:if="${daysUntil > 1}">
-                                        D-<span th:text="${daysUntil}"></span>
-                                    </span>
-                                    <span th:if="${daysUntil < 0}">
-                                        마감
-                                    </span>
+                                    <i class="bi bi-truck"></i>
+                                    <th:block th:switch="${groupBuy.deliveryMethod.name()}">
+                                        <span th:case="'DIRECT'" th:text="${groupBuy.meetupLocation}"></span>
+                                        <span th:case="'PARCEL'">택배 가능</span>
+                                        <span th:case="'BOTH'">
+                                            <span th:text="${groupBuy.meetupLocation}"></span> 또는 택배
+                                        </span>
+                                    </th:block>
                                 </span>
-                            </th:block>
-                        </div>
-                        
-                        <!-- 수령 방법 -->
-                        <div class="mb-2">
-                            <span class="text-muted small">
-                                <i class="bi bi-truck"></i>
-                                <th:block th:switch="${groupBuy.deliveryMethod.name()}">
-                                    <span th:case="'DIRECT'" th:text="${groupBuy.meetupLocation}"></span>
-                                    <span th:case="'PARCEL'">택배 가능</span>
-                                    <span th:case="'BOTH'">
-                                        <span th:text="${groupBuy.meetupLocation}"></span> 또는 택배
-                                    </span>
-                                </th:block>
-                            </span>
-                        </div>
-                        
-                        <!-- 주최자 정보 -->
-                        <div class="text-muted small">
-                            <i class="bi bi-person"></i> <span th:text="${groupBuy.hostNickname}"></span>
+
+                                <!-- 주최자 정보 -->
+                                <span class="text-muted small">
+                                    <i class="bi bi-person-circle"></i> <span th:text="${groupBuy.hostNickname}"></span>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>

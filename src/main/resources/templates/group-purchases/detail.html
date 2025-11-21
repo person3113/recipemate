@@ -40,20 +40,31 @@
                             <!-- 왼쪽: 이미지 -->
                             <div class="col-md-6">
                                 <div th:if="${groupBuy.imageUrls != null and !groupBuy.imageUrls.isEmpty()}">
-                                    <div id="carouselImages" class="carousel slide" data-bs-ride="carousel">
-                                        <div class="carousel-inner rounded">
-                                             <div th:each="imageUrl, iterStat : ${groupBuy.imageUrls}"
-                                                 class="carousel-item"
-                                                 th:classappend="${iterStat.first} ? 'active'">
-                                                <img th:src="${imageUrl}" class="d-block w-100 group-purchase-img" alt="공구 사진" style="max-height: 400px; object-fit: cover;">
-                                            </div>
+                                    <!-- 메인 이미지 표시 영역 -->
+                                    <div class="mb-2 position-relative" style="height: 400px;">
+                                        <div th:each="imageUrl, iterStat : ${groupBuy.imageUrls}"
+                                             th:id="'mainImage' + ${iterStat.index}"
+                                             class="position-absolute w-100 h-100"
+                                             th:style="${iterStat.index > 0} ? 'display: none;' : 'display: block;'">
+                                            <img th:src="${imageUrl}"
+                                                 class="w-100 h-100 rounded"
+                                                 alt="공구 사진"
+                                                 style="object-fit: cover;">
                                         </div>
-                                        <button class="carousel-control-prev" type="button" data-bs-target="#carouselImages" data-bs-slide="prev">
-                                            <span class="carousel-control-prev-icon"></span>
-                                        </button>
-                                        <button class="carousel-control-next" type="button" data-bs-target="#carouselImages" data-bs-slide="next">
-                                            <span class="carousel-control-next-icon"></span>
-                                        </button>
+                                    </div>
+
+                                    <!-- 썸네일 이미지 목록 (여러 이미지가 있을 때만 표시) -->
+                                    <div th:if="${groupBuy.imageUrls.size() > 1}" class="d-flex gap-2 justify-content-center overflow-auto pb-2" style="max-width: 100%;">
+                                        <div th:each="imageUrl, iterStat : ${groupBuy.imageUrls}"
+                                             class="thumbnail-wrapper flex-shrink-0">
+                                            <img th:src="${imageUrl}"
+                                                 class="thumbnail-image rounded"
+                                                 alt="썸네일"
+                                                 th:classappend="${iterStat.first} ? 'active' : ''"
+                                                 th:data-index="${iterStat.index}"
+                                                 onclick="changeMainImage(this)"
+                                                 style="width: 80px; height: 80px; object-fit: cover; cursor: pointer; border: 3px solid transparent; transition: all 0.2s;">
+                                        </div>
                                     </div>
                                 </div>
                                 <!-- 이미지가 없는 경우 -->
@@ -84,7 +95,7 @@
                                 </div>
 
                                 <!-- 참여 인원 및 진행률 -->
-                                <div class="mb-4">
+                                <div class="mb-4 pb-4 border-bottom">
                                     <div class="d-flex justify-content-between text-sm mb-2">
                                         <span class="text-muted"><i class="bi bi-people"></i> 참여 인원</span>
                                         <span class="fw-semibold">
@@ -101,18 +112,57 @@
                                     </div>
                                 </div>
 
-                                <!-- 주최자 정보 -->
-                                <div class="d-flex align-items-center border-top pt-3">
-                                    <i class="bi bi-person-circle fs-3 me-3"></i>
-                                    <div>
-                                        <div class="fw-semibold">
-                                            <a th:href="@{/users/profile/{nickname}(nickname=${groupBuy.hostNickname})}"
-                                               class="text-decoration-none text-dark"
-                                               th:text="${groupBuy.hostNickname ?: '알 수 없음'}">주최자</a>
+                                <!-- 가격 정보 -->
+                                <div class="mb-4 pb-4 border-bottom">
+                                    <h6 class="text-muted mb-3"><i class="bi bi-cash-coin"></i> 가격 정보</h6>
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span class="text-muted">1인당 예상 가격</span>
+                                        <span class="fs-5 fw-bold text-primary" th:text="${#numbers.formatInteger(groupBuy.targetAmount / groupBuy.targetHeadcount, 0, 'COMMA')} + '원'">1,000원</span>
+                                    </div>
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-6">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <small class="text-muted d-block">목표 금액</small>
+                                                <strong class="small" th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')} + '원'">10,000원</strong>
+                                            </div>
                                         </div>
-                                        <div class="text-muted small">
-                                            매너온도
-                                            <span class="text-primary fw-semibold" th:text="${groupBuy.hostMannerTemperature ?: 36.5} + '°C'">36.5°C</span>
+                                        <div class="col-6">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <small class="text-muted d-block">현재 금액</small>
+                                                <strong class="text-success small" th:text="${groupBuy.currentAmount != null ? #numbers.formatInteger(groupBuy.currentAmount, 0, 'COMMA') : '0'} + '원'">0원</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                                        <span class="text-muted small"><i class="bi bi-percent"></i> 달성률</span>
+                                        <span class="fw-semibold text-info" th:text="${groupBuy.currentAmount != null and groupBuy.targetAmount > 0 ? #numbers.formatInteger((groupBuy.currentAmount * 100 / groupBuy.targetAmount), 0) : '0'} + '%'">0%</span>
+                                    </div>
+                                </div>
+
+                                <!-- 배송 정보 -->
+                                <div>
+                                    <h6 class="text-muted mb-3"><i class="bi bi-truck"></i> 배송 정보</h6>
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <span class="text-muted">배송 방법</span>
+                                        <span class="fw-semibold" th:text="${groupBuy.deliveryMethod.displayName}">택배/직거래</span>
+                                    </div>
+                                    <div th:if="${(groupBuy.deliveryMethod.name() == 'DIRECT' or groupBuy.deliveryMethod.name() == 'BOTH') and groupBuy.meetupLocation != null and !#strings.isEmpty(groupBuy.meetupLocation)}" class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <span class="text-muted"><i class="bi bi-geo-alt"></i> 만남 장소</span>
+                                            <span class="fw-semibold text-end" style="max-width: 60%;" th:text="${groupBuy.meetupLocation}">장소</span>
+                                        </div>
+                                        <!-- Map Display (if coordinates exist) -->
+                                        <div th:if="${groupBuy.latitude != null and groupBuy.longitude != null}">
+                                            <div id="detailMap" style="width: 100%; height: 150px; border-radius: 8px;"></div>
+                                            <p class="small text-muted text-center mt-2 mb-0">
+                                                <i class="bi bi-info-circle"></i> 만남 장소 위치
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div th:if="${(groupBuy.deliveryMethod.name() == 'PARCEL' or groupBuy.deliveryMethod.name() == 'BOTH') and groupBuy.parcelFee != null}">
+                                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                                            <span class="text-muted"><i class="bi bi-cash"></i> 택배비</span>
+                                            <span class="fw-semibold" th:text="${#numbers.formatInteger(groupBuy.parcelFee, 0, 'COMMA')} + '원'">3,000원</span>
                                         </div>
                                     </div>
                                 </div>
@@ -387,80 +437,25 @@
                     </div>
                 </div>
 
-                <!-- Info Card with Tabs -->
+                <!-- 주최자 정보 카드 -->
                 <div class="card shadow-sm mb-3">
                     <div class="card-header bg-white">
-                        <ul class="nav nav-tabs card-header-tabs" id="infoTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="price-tab" data-bs-toggle="tab" data-bs-target="#price-content"
-                                        type="button" role="tab" aria-controls="price-content" aria-selected="true">
-                                    <i class="bi bi-cash-coin"></i> 가격
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="delivery-tab" data-bs-toggle="tab" data-bs-target="#delivery-content"
-                                        type="button" role="tab" aria-controls="delivery-content" aria-selected="false">
-                                    <i class="bi bi-truck"></i> 배송
-                                </button>
-                            </li>
-                        </ul>
+                        <h6 class="mb-0 fw-bold">
+                            <i class="bi bi-person-circle"></i> 주최자 정보
+                        </h6>
                     </div>
                     <div class="card-body">
-                        <div class="tab-content" id="infoTabsContent">
-                            <!-- Price Tab -->
-                            <div class="tab-pane fade show active" id="price-content" role="tabpanel" aria-labelledby="price-tab">
-                                <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-                                    <span class="text-muted">1인당 예상 가격</span>
-                                    <span class="fs-4 fw-bold text-primary" th:text="${#numbers.formatInteger(groupBuy.targetAmount / groupBuy.targetHeadcount, 0, 'COMMA')} + '원'">1,000원</span>
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-person-circle fs-1 me-3 text-primary"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold mb-1">
+                                    <a th:href="@{/users/profile/{nickname}(nickname=${groupBuy.hostNickname})}"
+                                       class="text-decoration-none text-dark"
+                                       th:text="${groupBuy.hostNickname ?: '알 수 없음'}">주최자</a>
                                 </div>
-                                <div class="row g-2 mb-3">
-                                    <div class="col-6">
-                                        <div class="text-center p-2 bg-light rounded">
-                                            <small class="text-muted d-block">목표 금액</small>
-                                            <strong th:text="${#numbers.formatInteger(groupBuy.targetAmount, 0, 'COMMA')} + '원'">10,000원</strong>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="text-center p-2 bg-light rounded">
-                                            <small class="text-muted d-block">현재 금액</small>
-                                            <strong class="text-success" th:text="${groupBuy.currentAmount != null ? #numbers.formatInteger(groupBuy.currentAmount, 0, 'COMMA') : '0'} + '원'">0원</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
-                                    <span class="text-muted small">
-                                        <i class="bi bi-percent"></i> 달성률
-                                    </span>
-                                    <span class="fw-semibold text-info" th:text="${groupBuy.currentAmount != null and groupBuy.targetAmount > 0 ? #numbers.formatInteger((groupBuy.currentAmount * 100 / groupBuy.targetAmount), 0) : '0'} + '%'">0%</span>
-                                </div>
-                            </div>
-
-                            <!-- Delivery Tab -->
-                            <div class="tab-pane fade" id="delivery-content" role="tabpanel" aria-labelledby="delivery-tab">
-                                <div class="d-flex justify-content-between align-items-start mb-3 pb-2 border-bottom">
-                                    <span class="text-muted">배송 방법</span>
-                                    <span class="fw-semibold" th:text="${groupBuy.deliveryMethod.displayName}">택배/직거래</span>
-                                </div>
-                                <div th:if="${(groupBuy.deliveryMethod.name() == 'DIRECT' or groupBuy.deliveryMethod.name() == 'BOTH') and groupBuy.meetupLocation != null and !#strings.isEmpty(groupBuy.meetupLocation)}" class="mb-3 pb-2 border-bottom">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <span class="text-muted"><i class="bi bi-geo-alt"></i> 만남 장소</span>
-                                        <span class="fw-semibold text-end" style="max-width: 60%;" th:text="${groupBuy.meetupLocation}">장소</span>
-                                    </div>
-                                </div>
-
-                                <!-- Map Display (if coordinates exist) -->
-                                <div th:if="${groupBuy.latitude != null and groupBuy.longitude != null}" class="mb-3">
-                                    <div id="detailMap" style="width: 100%; height: 200px; border-radius: 8px;"></div>
-                                    <p class="small text-muted text-center mt-2 mb-0">
-                                        <i class="bi bi-info-circle"></i> 만남 장소 위치
-                                    </p>
-                                </div>
-
-                                <div th:if="${(groupBuy.deliveryMethod.name() == 'PARCEL' or groupBuy.deliveryMethod.name() == 'BOTH') and groupBuy.parcelFee != null}">
-                                    <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
-                                        <span class="text-muted"><i class="bi bi-cash"></i> 택배비</span>
-                                        <span class="fw-semibold" th:text="${#numbers.formatInteger(groupBuy.parcelFee, 0, 'COMMA')} + '원'">3,000원</span>
-                                    </div>
+                                <div class="d-flex align-items-center">
+                                    <span class="text-muted small me-2">매너온도</span>
+                                    <span class="badge bg-primary" th:text="${groupBuy.hostMannerTemperature ?: 36.5} + '°C'">36.5°C</span>
                                 </div>
                             </div>
                         </div>
@@ -932,6 +927,43 @@
                 }, 3000);
             }
             /*]]>*/
+        </script>
+
+        <!-- 썸네일 이미지 갤러리 스크립트 -->
+        <script>
+            // 썸네일 클릭 시 메인 이미지 변경
+            function changeMainImage(thumbnail) {
+                const index = thumbnail.getAttribute('data-index');
+
+                // 모든 메인 이미지 컨테이너 숨기기
+                document.querySelectorAll('[id^="mainImage"]').forEach(container => {
+                    container.style.display = 'none';
+                });
+
+                // 선택된 이미지 컨테이너만 표시
+                const selectedContainer = document.getElementById('mainImage' + index);
+                if (selectedContainer) {
+                    selectedContainer.style.display = 'block';
+                }
+
+                // 모든 썸네일의 active 클래스 및 테두리 제거
+                document.querySelectorAll('.thumbnail-image').forEach(thumb => {
+                    thumb.classList.remove('active');
+                    thumb.style.borderColor = 'transparent';
+                });
+
+                // 클릭된 썸네일에 active 클래스 및 테두리 추가
+                thumbnail.classList.add('active');
+                thumbnail.style.borderColor = '#ff6b35';
+            }
+
+            // 페이지 로드 시 첫 번째 썸네일 활성화
+            document.addEventListener('DOMContentLoaded', function() {
+                const firstThumbnail = document.querySelector('.thumbnail-image.active');
+                if (firstThumbnail) {
+                    firstThumbnail.style.borderColor = '#ff6b35';
+                }
+            });
         </script>
 
         <!-- Comment Scripts -->

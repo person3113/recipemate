@@ -325,7 +325,16 @@
             <div th:if="${hotGroupBuys != null and !hotGroupBuys.isEmpty()}" class="row g-4">
                 <div th:each="groupBuy : ${hotGroupBuys}" class="col-md-4">
                     <div class="card h-100 shadow-sm">
-                        <div class="card-img-top image-placeholder p-5 text-center text-white">
+                        <!-- 공구 이미지가 있는 경우 -->
+                        <div th:if="${groupBuy.imageUrls != null and !groupBuy.imageUrls.isEmpty()}" class="card-img-top" style="height: 250px; overflow: hidden;">
+                            <img th:src="${groupBuy.imageUrls[0]}" class="w-100 h-100" alt="공구 이미지" style="object-fit: cover;">
+                        </div>
+                        <!-- 공구 이미지가 없지만 레시피 이미지가 있는 경우 -->
+                        <div th:if="${(groupBuy.imageUrls == null or groupBuy.imageUrls.isEmpty()) and groupBuy.recipeImageUrl != null}" class="card-img-top" style="height: 250px; overflow: hidden;">
+                            <img th:src="${groupBuy.recipeImageUrl}" class="w-100 h-100" alt="레시피 이미지" style="object-fit: cover;">
+                        </div>
+                        <!-- 공구 이미지도 레시피 이미지도 없는 경우 placeholder -->
+                        <div th:if="${(groupBuy.imageUrls == null or groupBuy.imageUrls.isEmpty()) and groupBuy.recipeImageUrl == null}" class="card-img-top image-placeholder p-5 text-center text-white" style="height: 250px;">
                             <i class="bi bi-basket3 display-1"></i>
                         </div>
                         <div class="card-body">

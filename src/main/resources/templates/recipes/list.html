@@ -7,7 +7,7 @@
         ~{::additional-scripts}
       )}">
 <head>
-    <th:block th:fragment="title">레시피 탐색</th:block>
+    <th:block th:fragment="title">레시피</th:block>
 
     <th:block th:fragment="additional-head">
         <style>
@@ -35,9 +35,11 @@
     </th:block>
 </head>
 <body>
-    <main th:fragment="main-content" class="container py-4">
+    <main th:fragment="main-content" class="container my-5">
+        <!-- Page Header -->
         <div class="mb-4">
-            <h1>레시피 탐색</h1>
+            <h1 class="fw-bold mb-2"><i class="bi bi-book"></i> 레시피</h1>
+            <p class="text-muted">다양한 레시피를 탐색하고 공동구매를 시작해보세요</p>
         </div>
 
         <!-- Filter Indicators -->

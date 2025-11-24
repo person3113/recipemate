@@ -2,9 +2,8 @@ spring:
   application:
     name: RecipeMate
   profiles:
-    active: dev
-    # 개발 환경에서 application-dev.local.yml 자동 로드
-    include: dev.local
+    # The active profile is determined by the `SPRING_PROFILES_ACTIVE` environment variable.
+    # For local development, set it to `dev`. For production, it's `prod`.
   servlet:
     multipart:
       enabled: true
@@ -51,6 +50,8 @@ spring:
   config:
     activate:
       on-profile: dev
+  profiles:
+    include: dev.local
   cache:
     type: none  # Disable cache for dev environment
   datasource:

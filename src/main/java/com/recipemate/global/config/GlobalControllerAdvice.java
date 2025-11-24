@@ -37,8 +37,8 @@ public class GlobalControllerAdvice {
             CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
             User user = userDetails.getUser();
             
-            // 사용자가 삭제된 경우 자동 로그아웃 처리
-            if (user.isDeleted()) {
+            // 사용자가 삭제되었거나 유효하지 않은 경우 자동 로그아웃 처리
+            if (user == null || user.isDeleted()) {
                 new SecurityContextLogoutHandler().logout(request, null, auth);
                 
                 model.addAttribute("unreadNotificationCount", 0L);
@@ -46,11 +46,19 @@ public class GlobalControllerAdvice {
                 return;
             }
             
-            Long unreadNotificationCount = notificationService.getUnreadCount(user.getId());
-            long unreadMessageCount = directMessageService.getUnreadCount(user.getId());
-            
-            model.addAttribute("unreadNotificationCount", unreadNotificationCount);
-            model.addAttribute("unreadMessageCount", unreadMessageCount);
+            try {
+                Long unreadNotificationCount = notificationService.getUnreadCount(user.getId());
+                long unreadMessageCount = directMessageService.getUnreadCount(user.getId());
+
+                model.addAttribute("unreadNotificationCount", unreadNotificationCount);
+                model.addAttribute("unreadMessageCount", unreadMessageCount);
+            } catch (Exception e) {
+                // 사용자를 찾을 수 없는 경우 (삭제된 경우 등) 로그아웃 처리
+                new SecurityContextLogoutHandler().logout(request, null, auth);
+
+                model.addAttribute("unreadNotificationCount", 0L);
+                model.addAttribute("unreadMessageCount", 0L);
+            }
         } else {
             model.addAttribute("unreadNotificationCount", 0L);
             model.addAttribute("unreadMessageCount", 0L);

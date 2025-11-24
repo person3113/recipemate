@@ -126,6 +126,9 @@ spring:
         order_inserts: true
         order_updates: true
         batch_versioned_data: true
+        # PostgreSQL ENUM 자동 매핑
+        type:
+          preferred_jdbc_type_for_enum: NAMED_ENUM
   thymeleaf:
     cache: true
 

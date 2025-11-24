@@ -10,7 +10,7 @@ CREATE TYPE badge_type AS ENUM('FIRST_GROUP_BUY', 'POPULAR_HOST', 'REVIEWER', 'T
 CREATE TYPE comment_type AS ENUM('GENERAL', 'Q_AND_A');
 CREATE TYPE group_buy_category AS ENUM('DAIRY', 'ETC', 'FRUIT', 'GRAIN', 'MEAT', 'RECIPE', 'SEAFOOD', 'SEASONING', 'SNACK', 'VEGETABLE');
 CREATE TYPE delivery_method AS ENUM('BOTH', 'DIRECT', 'PARCEL');
-CREATE TYPE group_buy_status AS ENUM('CANCELLED', 'CLOSED', 'COMPLETED', 'IMMINENT', 'RECRUITING');
+-- group_buy_status ENUM type removed for database portability (now using VARCHAR(20))
 CREATE TYPE notification_related_entity_type AS ENUM('COMMENT', 'DIRECT_MESSAGE', 'GROUP_BUY', 'POST', 'RECIPE', 'REVIEW');
 CREATE TYPE notification_type AS ENUM('CANCEL_PARTICIPATION', 'COMMENT_GROUP_BUY', 'COMMENT_POST', 'DIRECT_MESSAGE', 'GROUP_BUY_COMPLETED', 'GROUP_BUY_DEADLINE', 'JOIN_GROUP_BUY', 'RECIPE_CORRECTION_APPROVED', 'RECIPE_CORRECTION_REJECTED', 'REPLY_COMMENT', 'REVIEW_GROUP_BUY');
 CREATE TYPE participation_status AS ENUM('CANCELLED', 'PAYMENT_COMPLETED');
@@ -110,7 +110,7 @@ CREATE TABLE group_buys(
     recipe_api_id VARCHAR(100),
     recipe_image_url VARCHAR(500),
     recipe_name VARCHAR(200),
-    status group_buy_status NOT NULL,
+    status VARCHAR(20) NOT NULL,
     target_amount INTEGER NOT NULL,
     target_headcount INTEGER NOT NULL,
     title VARCHAR(100) NOT NULL,

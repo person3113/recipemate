@@ -138,7 +138,7 @@ public class GroupBuyController {
                     recipeService.getRecipeDetailById(recipeDbId);
                 } else {
                     // 접두사 있음 = API 레시피 (API ID로 조회)
-                    recipeService.getRecipeDetail(recipeApiId);
+                    recipeService.getRecipeDetailByApiId(recipeApiId);
                 }
                 
                 model.addAttribute("isRecipeDeleted", false);

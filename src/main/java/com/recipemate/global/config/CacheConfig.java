@@ -1,5 +1,9 @@
 package com.recipemate.global.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -35,6 +39,18 @@ public class CacheConfig {
     @Bean
     @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+        // 다형성 타입을 안전하게 처리하고 Java 8 시간 타입을 지원하는 ObjectMapper 설정
+        PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
+                .allowIfBaseType(Object.class)
+                .build();
+        
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.activateDefaultTyping(ptv, ObjectMapper.DefaultTyping.NON_FINAL);
+        
+        // 설정된 ObjectMapper를 사용하여 RedisSerializer 생성
+        GenericJackson2JsonRedisSerializer redisSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+        
         // 기본 캐시 설정 (1시간 TTL)
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(1))
@@ -42,7 +58,7 @@ public class CacheConfig {
                         RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer())
                 )
                 .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer())
+                        RedisSerializationContext.SerializationPair.fromSerializer(redisSerializer)
                 )
                 .disableCachingNullValues();
         

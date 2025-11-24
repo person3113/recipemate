@@ -50,8 +50,6 @@ spring:
   config:
     activate:
       on-profile: dev
-  profiles:
-    include: dev.local
   cache:
     type: none  # Disable cache for dev environment
   datasource:

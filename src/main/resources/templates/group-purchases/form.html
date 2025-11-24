@@ -459,22 +459,11 @@
                     deletedImagesArray.push(imageUrl);
                 }
                 
-                // Hidden input에 배열을 다중 값으로 추가
+                // Hidden input에 JSON 문자열로 저장
                 const deletedImagesInput = document.getElementById('deletedImagesInput');
-                const form = document.getElementById('groupBuyForm');
-                
-                // 기존 hidden input 제거
-                const existingInputs = form.querySelectorAll('input[name="deletedImages"]');
-                existingInputs.forEach(input => input.remove());
-                
-                // 각 URL을 개별 hidden input으로 추가
-                deletedImagesArray.forEach(url => {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'deletedImages';
-                    input.value = url;
-                    form.appendChild(input);
-                });
+                if (deletedImagesInput) {
+                    deletedImagesInput.value = JSON.stringify(deletedImagesArray);
+                }
                 
                 // UI에서 카드 제거
                 const card = button.closest('.existing-image-card');

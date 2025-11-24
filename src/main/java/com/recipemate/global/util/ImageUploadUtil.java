@@ -188,52 +188,34 @@ public class ImageUploadUtil {
     
     /**
      * Cloudinary URL에서 public_id 추출
-     * 예: https://res.cloudinary.com/dt9xgsr2z/image/upload/v1234567890/recipemate/group-purchases/abc123.jpg
+     * 예: https://res.cloudinary.com/dt9xgsr2z/image/upload/w_800,h_600/v1234567890/recipemate/group-purchases/abc123.jpg
      * -> recipemate/group-purchases/abc123
+     * 
+     * URL 구조: .../upload/{변환 파라미터}/{버전}/recipemate/group-purchases/{파일명}.{확장자}
      */
     private String extractPublicIdFromUrl(String imageUrl) {
         try {
-            // "/upload/" 이후 부분 추출
-            String[] parts = imageUrl.split("/upload/");
-            if (parts.length < 2) {
-                throw new IllegalArgumentException("Invalid Cloudinary URL: " + imageUrl);
+            // "/upload/" 이후의 경로 추출
+            String path = imageUrl.substring(imageUrl.indexOf("/upload/") + 8);
+
+            // 버전 정보(v로 시작하는 10자리 숫자) 제거
+            // 예: w_800,h_600/v1234567890/folder/image.png -> w_800,h_600/folder/image.png
+            path = path.replaceAll("v\\d{10}/", "");
+
+            // 변환 파라미터가 있는 경우(첫 세그먼트에 '_' 포함) 제거
+            // 예: w_800,h_600/folder/image.png -> folder/image.png
+            if (path.contains("/") && path.substring(0, path.indexOf('/')).contains("_")) {
+                path = path.substring(path.indexOf('/') + 1);
             }
-            
-            String path = parts[1];
-            
-            // 변환 파라미터 제거 (w_800,h_600,c_limit,q_auto,f_auto/)
-            if (path.contains("/")) {
-                // 마지막 '/' 이후만 파일 경로
-                int lastSlash = path.lastIndexOf('/');
-                if (lastSlash > 0) {
-                    // 변환 파라미터가 있는 경우: w_800,h_600.../recipemate/...
-                    // 변환 파라미터 건너뛰기
-                    String[] segments = path.split("/");
-                    StringBuilder pathBuilder = new StringBuilder();
-                    boolean foundFolder = false;
-                    for (String segment : segments) {
-                        if (segment.startsWith("recipemate") || foundFolder) {
-                            if (pathBuilder.length() > 0) {
-                                pathBuilder.append("/");
-                            }
-                            pathBuilder.append(segment);
-                            foundFolder = true;
-                        }
-                    }
-                    path = pathBuilder.toString();
-                }
-            }
-            
-            // 버전 정보(v1234567890) 제거
-            path = path.replaceFirst("v\\d+/", "");
-            
+
             // 확장자 제거
-            int lastDot = path.lastIndexOf('.');
-            if (lastDot > 0) {
-                path = path.substring(0, lastDot);
+            int lastDotIndex = path.lastIndexOf('.');
+            if (lastDotIndex > 0) {
+                return path.substring(0, lastDotIndex);
             }
-            
-            return path;
+
+            return path; // 확장자가 없는 경우
+
         } catch (Exception e) {
             log.error("Failed to extract public_id from URL: {}", imageUrl, e);
             throw new IllegalArgumentException("Invalid Cloudinary URL: " + imageUrl, e);

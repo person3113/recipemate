@@ -1,10 +1,7 @@
 spring:
   application:
     name: RecipeMate
-  profiles:
-    active: dev
-    # 개발 환경에서 application-dev.local.yml 자동 로드
-    include: dev.local
+
   servlet:
     multipart:
       enabled: true
@@ -129,6 +126,9 @@ spring:
         order_inserts: true
         order_updates: true
         batch_versioned_data: true
+        # PostgreSQL ENUM 자동 매핑
+        type:
+          preferred_jdbc_type_for_enum: NAMED_ENUM
   thymeleaf:
     cache: true
 

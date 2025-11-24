@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -153,17 +154,16 @@ public class RecipeService {
         log.info("DB 기반 인기 레시피 조회 요청: size={}", size);
         
         // QueryDSL을 사용한 인기 레시피 조회 (연결된 공구 수 기준)
+        // PostgreSQL GROUP BY 호환성을 위해 2단계로 분리
         com.recipemate.domain.recipe.entity.QRecipe recipe = 
             com.recipemate.domain.recipe.entity.QRecipe.recipe;
         com.recipemate.domain.groupbuy.entity.QGroupBuy groupBuy = 
             com.recipemate.domain.groupbuy.entity.QGroupBuy.groupBuy;
         
-        // GroupBuy와 join 후 count가 높은 순으로 정렬
-        // author를 fetchJoin으로 함께 조회하여 N+1 문제 방지
-        List<Recipe> popularRecipes = queryFactory
-                .select(recipe)
+        // 1단계: recipe_id와 공구 개수만 조회
+        List<Long> popularRecipeIds = queryFactory
+                .select(recipe.id)
                 .from(recipe)
-                .leftJoin(recipe.author).fetchJoin()
                 .leftJoin(groupBuy).on(groupBuy.recipeApiId.eq(
                     com.querydsl.core.types.dsl.Expressions.stringTemplate(
                         "CASE WHEN {0} = 'MEAL_DB' THEN CONCAT('meal-', {1}) " +
@@ -177,8 +177,32 @@ public class RecipeService {
                 .limit(size)
                 .fetch();
         
+        // 조회된 ID가 없으면 빈 리스트 반환
+        if (popularRecipeIds.isEmpty()) {
+            return RecipeListResponse.builder()
+                    .recipes(List.of())
+                    .totalCount(0)
+                    .source("database")
+                    .build();
+        }
+        
+        // 2단계: ID 기반으로 상세 정보 조회 (author fetchJoin으로 N+1 방지)
+        List<Recipe> popularRecipes = queryFactory
+                .selectFrom(recipe)
+                .leftJoin(recipe.author).fetchJoin()
+                .where(recipe.id.in(popularRecipeIds))
+                .fetch();
+        
+        // 원래 순서대로 정렬 (ID 리스트 순서 유지)
+        Map<Long, Recipe> recipeMap = popularRecipes.stream()
+                .collect(Collectors.toMap(Recipe::getId, r -> r));
+        List<Recipe> orderedRecipes = popularRecipeIds.stream()
+                .map(recipeMap::get)
+                .filter(r -> r != null)
+                .collect(Collectors.toList());
+        
         // RecipeSimpleInfo로 변환
-        List<RecipeListResponse.RecipeSimpleInfo> recipes = popularRecipes.stream()
+        List<RecipeListResponse.RecipeSimpleInfo> recipes = orderedRecipes.stream()
                 .map(this::convertRecipeEntityToSimpleInfo)
                 .collect(Collectors.toList());
         

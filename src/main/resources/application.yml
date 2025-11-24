@@ -1,9 +1,7 @@
 spring:
   application:
     name: RecipeMate
-  profiles:
-    # The active profile is determined by the `SPRING_PROFILES_ACTIVE` environment variable.
-    # For local development, set it to `dev`. For production, it's `prod`.
+
   servlet:
     multipart:
       enabled: true

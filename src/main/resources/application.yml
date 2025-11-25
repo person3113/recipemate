@@ -137,7 +137,7 @@ recipe:
   init:
     # 운영에서는 기본적으로 초기화 비활성화 (배포 시에만 환경변수로 활성화)
     enabled: ${RECIPE_INIT_ENABLED:false}
-    force: false
+    force: ${RECIPE_INIT_FORCE:false}
   sync:
     # 운영에서는 주 1회 동기화 활성화
     enabled: ${RECIPE_SYNC_ENABLED:true}

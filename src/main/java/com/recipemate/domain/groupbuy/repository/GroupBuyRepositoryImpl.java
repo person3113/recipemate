@@ -21,6 +21,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * GroupBuy 커스텀 Repository 구현체
@@ -161,19 +163,34 @@ public class GroupBuyRepositoryImpl implements GroupBuyRepositoryCustom {
 
         long total = (totalCount != null) ? totalCount : 0L;
 
-        // 페이징 및 정렬 적용하여 조회 (host와 리뷰 통계를 함께 조회)
-        JPAQuery<GroupBuyWithReviewStatsDto> query = queryFactory
+        // === PostgreSQL GROUP BY 문제 해결: 서브쿼리 방식 ===
+        
+        // 1단계: 리뷰 통계만 먼저 조회 (groupBy는 집계 함수에만 사용)
+        List<ReviewStatsProjection> reviewStatsList = queryFactory
                 .select(Projections.constructor(
-                    GroupBuyWithReviewStatsDto.class,
-                    groupBuy,
+                    ReviewStatsProjection.class,
+                    groupBuy.id,
                     review.rating.avg().coalesce(0.0),
                     review.count()
                 ))
                 .from(groupBuy)
-                .leftJoin(groupBuy.host).fetchJoin()
                 .leftJoin(review).on(review.groupBuy.eq(groupBuy))
                 .where(builder)
                 .groupBy(groupBuy.id)
+                .fetch();
+
+        // 리뷰 통계를 Map으로 변환 (GroupBuy ID -> ReviewStats)
+        Map<Long, ReviewStatsProjection> reviewStatsMap = reviewStatsList.stream()
+                .collect(Collectors.toMap(
+                    ReviewStatsProjection::getGroupBuyId,
+                    stats -> stats
+                ));
+
+        // 2단계: 실제 엔티티 조회 (정렬 및 페이징 적용)
+        JPAQuery<GroupBuy> entityQuery = queryFactory
+                .selectFrom(groupBuy)
+                .leftJoin(groupBuy.host).fetchJoin()
+                .where(builder)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize());
 
@@ -194,11 +211,50 @@ public class GroupBuyRepositoryImpl implements GroupBuyRepositoryCustom {
             default -> new OrderSpecifier<>(sortOrder, groupBuy.createdAt);
         };
 
-        query.orderBy(orderSpecifier);
+        entityQuery.orderBy(orderSpecifier);
 
-        List<GroupBuyWithReviewStatsDto> content = query.fetch();
+        List<GroupBuy> groupBuys = entityQuery.fetch();
+
+        // 3단계: 엔티티와 리뷰 통계를 결합하여 DTO 생성
+        List<GroupBuyWithReviewStatsDto> content = groupBuys.stream()
+                .map(gb -> {
+                    ReviewStatsProjection stats = reviewStatsMap.get(gb.getId());
+                    double avgRating = (stats != null) ? stats.getAvgRating() : 0.0;
+                    long reviewCount = (stats != null) ? stats.getReviewCount() : 0L;
+                    
+                    return new GroupBuyWithReviewStatsDto(gb, avgRating, reviewCount);
+                })
+                .collect(Collectors.toList());
 
         return new PageImpl<>(content, pageable, total);
+    }
+
+    /**
+     * 리뷰 통계 조회용 내부 클래스
+     * QueryDSL Projection을 위한 간단한 DTO
+     */
+    private static class ReviewStatsProjection {
+        private final Long groupBuyId;
+        private final Double avgRating;
+        private final Long reviewCount;
+
+        public ReviewStatsProjection(Long groupBuyId, Double avgRating, Long reviewCount) {
+            this.groupBuyId = groupBuyId;
+            this.avgRating = avgRating;
+            this.reviewCount = reviewCount;
+        }
+
+        public Long getGroupBuyId() {
+            return groupBuyId;
+        }
+
+        public Double getAvgRating() {
+            return avgRating;
+        }
+
+        public Long getReviewCount() {
+            return reviewCount;
+        }
     }
 
     @Override

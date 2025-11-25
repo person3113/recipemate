@@ -40,8 +40,9 @@ public class CacheConfig {
     @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         // 다형성 타입을 안전하게 처리하고 Java 8 시간 타입을 지원하는 ObjectMapper 설정
+        // 메모리 최적화를 위해 애플리케이션 패키지로 범위 제한
         PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
-                .allowIfBaseType(Object.class)
+                .allowIfSubType("com.recipemate")
                 .build();
         
         ObjectMapper objectMapper = new ObjectMapper();

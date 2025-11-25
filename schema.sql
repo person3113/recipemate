@@ -6,23 +6,7 @@
 -- 1. ENUMS (Custom Types)
 -- =====================================================
 
-CREATE TYPE badge_type AS ENUM('FIRST_GROUP_BUY', 'POPULAR_HOST', 'REVIEWER', 'TEN_PARTICIPATIONS');
-CREATE TYPE comment_type AS ENUM('GENERAL', 'Q_AND_A');
-CREATE TYPE group_buy_category AS ENUM('DAIRY', 'ETC', 'FRUIT', 'GRAIN', 'MEAT', 'RECIPE', 'SEAFOOD', 'SEASONING', 'SNACK', 'VEGETABLE');
-CREATE TYPE delivery_method AS ENUM('BOTH', 'DIRECT', 'PARCEL');
--- group_buy_status ENUM type removed for database portability (now using VARCHAR(20))
-CREATE TYPE notification_related_entity_type AS ENUM('COMMENT', 'DIRECT_MESSAGE', 'GROUP_BUY', 'POST', 'RECIPE', 'REVIEW');
-CREATE TYPE notification_type AS ENUM('CANCEL_PARTICIPATION', 'COMMENT_GROUP_BUY', 'COMMENT_POST', 'DIRECT_MESSAGE', 'GROUP_BUY_COMPLETED', 'GROUP_BUY_DEADLINE', 'JOIN_GROUP_BUY', 'RECIPE_CORRECTION_APPROVED', 'RECIPE_CORRECTION_REJECTED', 'REPLY_COMMENT', 'REVIEW_GROUP_BUY');
-CREATE TYPE participation_status AS ENUM('CANCELLED', 'PAYMENT_COMPLETED');
-CREATE TYPE point_history_type AS ENUM('CHARGE', 'EARN', 'RECIPE_CORRECTION', 'REFUND', 'USE');
-CREATE TYPE post_category AS ENUM('FREE', 'TIPS');
-CREATE TYPE recipe_correction_type AS ENUM('INCORRECT_INFO', 'OTHER', 'SUGGESTION', 'TYPO');
-CREATE TYPE recipe_correction_status AS ENUM('APPROVED', 'PENDING', 'REJECTED');
-CREATE TYPE recipe_source_api AS ENUM('FOOD_SAFETY', 'MEAL_DB', 'USER');
-CREATE TYPE report_type AS ENUM('ABUSE', 'COPYRIGHT', 'ETC', 'FALSE_INFORMATION', 'INAPPROPRIATE_CONTENT', 'SPAM');
-CREATE TYPE reported_entity_type AS ENUM('COMMENT', 'GROUP_PURCHASE', 'POST', 'RECIPE', 'USER');
-CREATE TYPE report_status AS ENUM('DISMISSED', 'PENDING', 'PROCESSED');
-CREATE TYPE user_role AS ENUM('ADMIN', 'USER');
+-- All ENUM types are replaced with VARCHAR(50) for database portability.
 
 -- =====================================================
 -- 2. TABLES
@@ -46,7 +30,7 @@ CREATE TABLE addresses(
 CREATE TABLE badges(
     id BIGSERIAL PRIMARY KEY,
     acquired_at TIMESTAMP(6) NOT NULL,
-    badge_type badge_type NOT NULL,
+    badge_type VARCHAR(50) NOT NULL,
     user_id BIGINT NOT NULL
 );
 
@@ -62,7 +46,7 @@ CREATE TABLE comments(
     deleted_at TIMESTAMP(6),
     updated_at TIMESTAMP(6) NOT NULL,
     content VARCHAR(1000) NOT NULL,
-    type comment_type NOT NULL,
+    type VARCHAR(50) NOT NULL,
     author_id BIGINT NOT NULL,
     group_buy_id BIGINT,
     parent_id BIGINT,
@@ -95,12 +79,12 @@ CREATE TABLE group_buys(
     created_at TIMESTAMP(6) NOT NULL,
     deleted_at TIMESTAMP(6),
     updated_at TIMESTAMP(6) NOT NULL,
-    category group_buy_category NOT NULL,
+    category VARCHAR(50) NOT NULL,
     content VARCHAR(2000) NOT NULL,
     current_amount INTEGER NOT NULL,
     current_headcount INTEGER NOT NULL,
     deadline TIMESTAMP(6) NOT NULL,
-    delivery_method delivery_method NOT NULL,
+    delivery_method VARCHAR(50) NOT NULL,
     ingredients VARCHAR,
     is_participant_list_public BOOLEAN NOT NULL,
     latitude FLOAT(53),
@@ -139,8 +123,8 @@ CREATE TABLE notifications(
     content VARCHAR(500) NOT NULL,
     is_read BOOLEAN NOT NULL,
     related_entity_id BIGINT,
-    related_entity_type notification_related_entity_type,
-    type notification_type NOT NULL,
+    related_entity_type VARCHAR(50),
+    type VARCHAR(50) NOT NULL,
     url VARCHAR(255),
     actor_id BIGINT,
     user_id BIGINT NOT NULL
@@ -153,8 +137,8 @@ CREATE TABLE participations(
     updated_at TIMESTAMP(6) NOT NULL,
     participated_at TIMESTAMP(6) NOT NULL,
     quantity INTEGER NOT NULL,
-    selected_delivery_method delivery_method NOT NULL,
-    status participation_status NOT NULL,
+    selected_delivery_method VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL,
     total_payment INTEGER NOT NULL,
     address_id BIGINT,
     group_buy_id BIGINT NOT NULL,
@@ -175,7 +159,7 @@ CREATE TABLE point_histories(
     updated_at TIMESTAMP(6) NOT NULL,
     amount INTEGER NOT NULL,
     description VARCHAR(200) NOT NULL,
-    type point_history_type NOT NULL,
+    type VARCHAR(50) NOT NULL,
     user_id BIGINT NOT NULL
 );
 
@@ -200,7 +184,7 @@ CREATE TABLE posts(
     created_at TIMESTAMP(6) NOT NULL,
     deleted_at TIMESTAMP(6),
     updated_at TIMESTAMP(6) NOT NULL,
-    category post_category NOT NULL,
+    category VARCHAR(50) NOT NULL,
     content VARCHAR NOT NULL,
     title VARCHAR(100) NOT NULL,
     view_count INTEGER NOT NULL,
@@ -213,9 +197,9 @@ CREATE TABLE recipe_corrections(
     deleted_at TIMESTAMP(6),
     updated_at TIMESTAMP(6) NOT NULL,
     admin_reason VARCHAR,
-    correction_type recipe_correction_type NOT NULL,
+    correction_type VARCHAR(50) NOT NULL,
     proposed_change VARCHAR NOT NULL,
-    status recipe_correction_status NOT NULL,
+    status VARCHAR(50) NOT NULL,
     proposer_id BIGINT NOT NULL,
     recipe_id BIGINT NOT NULL,
     resolver_id BIGINT
@@ -265,7 +249,7 @@ CREATE TABLE recipes(
     protein INTEGER,
     serving_size VARCHAR(50),
     sodium INTEGER,
-    source_api recipe_source_api NOT NULL,
+    source_api VARCHAR(50) NOT NULL,
     source_api_id VARCHAR(100),
     source_url VARCHAR(500),
     thumbnail_image_url VARCHAR(500),
@@ -282,10 +266,10 @@ CREATE TABLE reports(
     updated_at TIMESTAMP(6) NOT NULL,
     admin_notes VARCHAR,
     content VARCHAR NOT NULL,
-    report_type report_type NOT NULL,
+    report_type VARCHAR(50) NOT NULL,
     reported_entity_id BIGINT NOT NULL,
-    reported_entity_type reported_entity_type NOT NULL,
-    status report_status NOT NULL,
+    reported_entity_type VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL,
     reporter_id BIGINT NOT NULL,
     resolver_id BIGINT
 );
@@ -324,7 +308,7 @@ CREATE TABLE users(
     phone_number VARCHAR(13) NOT NULL,
     points INTEGER NOT NULL,
     profile_image_url VARCHAR(500),
-    role user_role NOT NULL
+    role VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE wishlists(

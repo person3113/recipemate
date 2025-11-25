@@ -124,8 +124,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                <!-- Hidden input for deleted images -->
-                                <input type="hidden" id="deletedImagesInput" name="deletedImages" value="">
                             </div>
                             
                             <!-- Image Upload -->
@@ -190,23 +188,6 @@
                 deletedImagesArray.push(imageUrl);
             }
             
-            // Hidden input에 배열을 다중 값으로 추가
-            const deletedImagesInput = document.getElementById('deletedImagesInput');
-            const form = document.getElementById('postForm');
-            
-            // 기존 hidden input 제거
-            const existingInputs = form.querySelectorAll('input[name="deletedImages"]');
-            existingInputs.forEach(input => input.remove());
-            
-            // 각 URL을 개별 hidden input으로 추가
-            deletedImagesArray.forEach(url => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'deletedImages';
-                input.value = url;
-                form.appendChild(input);
-            });
-            
             // UI에서 카드 제거
             const card = button.closest('.existing-image-card');
             if (card) {
@@ -217,6 +198,28 @@
                 button.classList.add('btn-secondary');
             }
         }
+        
+        // 폼 제출 시 deletedImages를 JSON 문자열로 변환하여 전송
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('postForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // 기존 deletedImages hidden input 제거
+                    const existingInputs = form.querySelectorAll('input[name="deletedImages"]');
+                    existingInputs.forEach(input => input.remove());
+                    
+                    // JSON 문자열로 변환하여 단일 hidden input으로 추가
+                    if (deletedImagesArray.length > 0) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'deletedImages';
+                        input.value = JSON.stringify(deletedImagesArray);
+                        form.appendChild(input);
+                        console.log('Submitting deletedImages:', input.value);
+                    }
+                });
+            }
+        });
     </script>
     
     <!-- Image Upload and Validation Script -->

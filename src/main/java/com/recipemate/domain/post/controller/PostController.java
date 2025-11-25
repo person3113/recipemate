@@ -1,5 +1,8 @@
 package com.recipemate.domain.post.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.recipemate.domain.post.dto.CreatePostRequest;
 import com.recipemate.domain.post.dto.PostResponse;
 import com.recipemate.domain.post.dto.UpdatePostRequest;
@@ -12,6 +15,7 @@ import com.recipemate.global.exception.ErrorCode;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +28,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -33,10 +39,12 @@ import java.util.Set;
 @Controller
 @RequestMapping("/community-posts")
 @RequiredArgsConstructor
+@Slf4j
 public class PostController {
 
     private final PostService postService;
     private final UserRepository userRepository;
+    private final ObjectMapper objectMapper;
 
     // ========== 페이지 렌더링 엔드포인트 ==========
     
@@ -238,6 +246,7 @@ public class PostController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long postId,
             @RequestParam(required = false) String redirectUrl,
+            @RequestParam(required = false) String deletedImages,
             @Valid @ModelAttribute UpdatePostRequest request,
             BindingResult bindingResult,
             Model model,
@@ -257,6 +266,24 @@ public class PostController {
             // 게시글 수정 페이지로 리다이렉트 (새로고침 시 폼 재제출 방지)
             return "redirect:/community-posts/" + postId + "/edit";
         }
+        
+        // 2. deletedImages JSON 파싱
+        List<String> deletedImagesList = new ArrayList<>();
+        if (deletedImages != null && !deletedImages.isBlank()) {
+            try {
+                deletedImagesList = objectMapper.readValue(
+                    deletedImages,
+                    new TypeReference<List<String>>() {}
+                );
+                log.info("Parsed {} deleted images for post update", deletedImagesList.size());
+            } catch (JsonProcessingException e) {
+                log.warn("Failed to parse deletedImages JSON: {}", e.getMessage());
+                // deletedImages 파싱 실패는 무시하고 계속 진행
+            }
+        }
+        
+        // 3. DTO에 삭제할 이미지 목록 설정
+        request.setDeletedImages(deletedImagesList);
         
         try {
             User user = userRepository.findByEmail(userDetails.getUsername())

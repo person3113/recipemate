@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +32,7 @@ public interface SearchKeywordRepository extends JpaRepository<SearchKeyword, Lo
      * 검색 횟수 증가 (동시성 제어)
      */
     @Modifying
+    @Transactional
     @Query("UPDATE SearchKeyword sk SET sk.searchCount = sk.searchCount + 1 WHERE sk.keyword = :keyword")
     int incrementSearchCount(@Param("keyword") String keyword);
 }

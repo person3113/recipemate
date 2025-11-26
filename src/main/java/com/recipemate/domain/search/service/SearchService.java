@@ -24,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,7 +44,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class SearchService {
 
     private final GroupBuyRepository groupBuyRepository;
@@ -77,10 +77,55 @@ public class SearchService {
 
         // 검색 키워드 저장 여부 결정 (세션 기반 중복 체크)
         if (shouldIncrementSearchCount(keyword, request.getSession())) {
-            // 검색 키워드 비동기 저장 (인기 검색어 집계용)
-            saveSearchKeywordAsync(keyword);
+            // 검색 키워드 저장 (쓰기 트랜잭션)
+            saveSearchKeyword(keyword);
         }
 
+        // 실제 검색 수행 (읽기 전용 트랜잭션)
+        return performSearch(keyword, searchType, pageable);
+    }
+
+    /**
+     * 검색어 저장 (쓰기 트랜잭션)
+     * REQUIRES_NEW: 항상 새로운 트랜잭션을 시작하여 실행되도록 보장
+     * 검색어 저장 실패가 검색 결과 조회에 영향을 주지 않도록 독립적으로 실행
+     * 
+     * @param keyword 검색 키워드
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void saveSearchKeyword(String keyword) {
+        try {
+            String normalizedKeyword = keyword.trim().toLowerCase();
+            
+            // 기존 키워드가 있는지 확인
+            Optional<SearchKeyword> existingKeyword = searchKeywordRepository.findByKeyword(normalizedKeyword);
+            
+            if (existingKeyword.isPresent()) {
+                // 기존 키워드면 검색 횟수만 증가 (동시성 제어)
+                int updated = searchKeywordRepository.incrementSearchCount(normalizedKeyword);
+                log.debug("검색 횟수 증가 완료: {} (updated: {})", normalizedKeyword, updated);
+            } else {
+                // 새 키워드면 생성
+                SearchKeyword newKeyword = SearchKeyword.create(normalizedKeyword);
+                searchKeywordRepository.save(newKeyword);
+                log.debug("새 검색 키워드 저장 완료: {}", normalizedKeyword);
+            }
+        } catch (Exception e) {
+            // 검색어 저장 실패가 검색 기능 전체를 방해하지 않도록 로깅만 수행
+            log.error("검색 키워드 저장 중 오류 발생", e);
+        }
+    }
+
+    /**
+     * 실제 검색 수행 (읽기 전용 트랜잭션)
+     * 
+     * @param keyword 검색 키워드
+     * @param searchType 검색 타입 (ALL, RECIPE, GROUP_BUY, POST)
+     * @param pageable 페이지 정보
+     * @return 통합 검색 결과
+     */
+    @Transactional(readOnly = true)
+    public UnifiedSearchResponse performSearch(String keyword, String searchType, Pageable pageable) {
         List<SearchResultResponse> groupBuyResults;
         List<SearchResultResponse> postResults;
         List<SearchResultResponse> recipeResults;
@@ -150,6 +195,7 @@ public class SearchService {
      * 공동구매 검색 (Page 반환)
      * QueryDSL 기반 검색으로 제목 + 내용 검색 및 모든 상태 포함
      */
+    @Transactional(readOnly = true)
     public Page<SearchResultResponse> searchGroupBuysPage(String keyword, Pageable pageable) {
         // GroupBuySearchCondition 생성 (status는 null로 두어 모든 상태 검색)
         GroupBuySearchCondition condition = GroupBuySearchCondition.builder()
@@ -165,6 +211,7 @@ public class SearchService {
     /**
      * 커뮤니티 게시글 검색 (Page 반환)
      */
+    @Transactional(readOnly = true)
     public Page<SearchResultResponse> searchPostsPage(String keyword, Pageable pageable) {
         Page<PostWithCountsDto> postPage = postRepository.searchByKeywordWithCounts(keyword, pageable);
         return postPage.map(dto -> convertPostToSearchResult(dto, keyword));
@@ -197,6 +244,7 @@ public class SearchService {
      * 레시피 검색 (Page 반환)
      * RecipeService의 findRecipes 메소드를 사용하여 페이징 지원
      */
+    @Transactional(readOnly = true)
     public Page<SearchResultResponse> searchRecipesPage(String keyword, Pageable pageable) {
         RecipeListResponse recipeResponse = recipeService.findRecipes(
             keyword,    // keyword
@@ -372,40 +420,13 @@ public class SearchService {
     }
 
     /**
-     * 검색 키워드 비동기 저장
-     * 검색 시 호출되어 검색어를 DB에 저장하고 검색 횟수를 증가시킴
-     */
-    @Async
-    @Transactional
-    public void saveSearchKeywordAsync(String keyword) {
-        try {
-            String normalizedKeyword = keyword.trim().toLowerCase();
-            
-            // 기존 키워드가 있는지 확인
-            Optional<SearchKeyword> existingKeyword = searchKeywordRepository.findByKeyword(normalizedKeyword);
-            
-            if (existingKeyword.isPresent()) {
-                // 기존 키워드면 검색 횟수만 증가 (동시성 제어)
-                int updated = searchKeywordRepository.incrementSearchCount(normalizedKeyword);
-                log.debug("검색 횟수 증가 완료: {} (updated: {})", normalizedKeyword, updated);
-            } else {
-                // 새 키워드면 생성
-                SearchKeyword newKeyword = SearchKeyword.create(normalizedKeyword);
-                searchKeywordRepository.save(newKeyword);
-                log.debug("새 검색 키워드 저장 완료: {}", normalizedKeyword);
-            }
-        } catch (Exception e) {
-            log.error("검색 키워드 저장 중 오류 발생", e);
-        }
-    }
-
-    /**
      * 검색 결과 개수만 조회 (배지 표시용)
      * COUNT 쿼리만 실행하여 각 카테고리별 총 개수 반환
      * 
      * @param keyword 검색 키워드
      * @return 카테고리별 개수 정보를 담은 응답 (데이터는 비어있음)
      */
+    @Transactional(readOnly = true)
     public UnifiedSearchResponse getSearchCounts(String keyword) {
         validateKeyword(keyword);
         
@@ -436,6 +457,7 @@ public class SearchService {
     /**
      * 공동구매 검색 결과 개수 조회
      */
+    @Transactional(readOnly = true)
     public long countGroupBuys(String keyword) {
         validateKeyword(keyword);
         GroupBuySearchCondition condition = GroupBuySearchCondition.builder()
@@ -447,6 +469,7 @@ public class SearchService {
     /**
      * 게시글 검색 결과 개수 조회
      */
+    @Transactional(readOnly = true)
     public long countPosts(String keyword) {
         validateKeyword(keyword);
         return postRepository.countByKeyword(keyword);
@@ -455,6 +478,7 @@ public class SearchService {
     /**
      * 레시피 검색 결과 개수 조회
      */
+    @Transactional(readOnly = true)
     public long countRecipes(String keyword) {
         validateKeyword(keyword);
         return recipeService.countRecipes(keyword);
@@ -466,6 +490,7 @@ public class SearchService {
      * @param limit 조회할 개수
      * @return 검색 횟수가 많은 순으로 정렬된 키워드 리스트
      */
+    @Transactional(readOnly = true)
     public List<String> getPopularKeywords(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
         return searchKeywordRepository.findAllByOrderBySearchCountDesc(pageable)

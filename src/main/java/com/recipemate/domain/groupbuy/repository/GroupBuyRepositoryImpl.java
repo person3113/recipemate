@@ -233,7 +233,7 @@ public class GroupBuyRepositoryImpl implements GroupBuyRepositoryCustom {
      * 리뷰 통계 조회용 내부 클래스
      * QueryDSL Projection을 위한 간단한 DTO
      */
-    private static class ReviewStatsProjection {
+    public static class ReviewStatsProjection {
         private final Long groupBuyId;
         private final Double avgRating;
         private final Long reviewCount;

@@ -117,9 +117,9 @@ spring:
     hibernate:
       ddl-auto: validate
     show-sql: false
+    open-in-view: false  # OSIV 비활성화로 성능 최적화
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         # N+1 문제 해결을 위한 Batch Size 설정
         default_batch_fetch_size: 100
         # 배치 처리 최적화
@@ -140,7 +140,7 @@ recipe:
     force: ${RECIPE_INIT_FORCE:false}
   sync:
     # 운영에서는 주 1회 동기화 활성화
-    enabled: ${RECIPE_SYNC_ENABLED:true}
+    enabled: ${RECIPE_SYNC_ENABLED:false}
     # 매주 일요일 새벽 3시
     cron: "0 0 3 * * SUN"
     mealdb:

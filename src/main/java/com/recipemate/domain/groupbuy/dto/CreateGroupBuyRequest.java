@@ -34,6 +34,7 @@ public class CreateGroupBuyRequest {
 
     @NotNull(message = "총 금액은 필수입니다")
     @Min(value = 0, message = "총 금액은 0원 이상이어야 합니다")
+    @Max(value = 2147483647, message = "총 금액은 21억원을 초과할 수 없습니다")
     private Integer targetAmount;
 
     @NotNull(message = "목표 인원은 필수입니다")

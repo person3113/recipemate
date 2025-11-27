@@ -215,11 +215,15 @@
                                                id="targetAmount" 
                                                th:field="*{targetAmount}"
                                                class="form-control" 
-                                               min="0" 
+                                               min="0"
+                                               max="2147483647"
                                                step="1000"
                                                placeholder="0"
                                                required>
                                         <span class="input-group-text">원</span>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> 최대 21억원까지 입력 가능합니다.
                                     </div>
                                 </div>
                                 

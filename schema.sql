@@ -254,7 +254,7 @@ CREATE TABLE recipes(
     source_url VARCHAR(500),
     thumbnail_image_url VARCHAR(500),
     tips VARCHAR(1000),
-    title VARCHAR(200) NOT NULL,
+    title VARCHAR(200) COLLATE "C" NOT NULL,
     youtube_url VARCHAR(500),
     user_id BIGINT
 );

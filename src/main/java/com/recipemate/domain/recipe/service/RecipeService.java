@@ -455,7 +455,7 @@ public class RecipeService {
             ? Sort.Direction.ASC 
             : Sort.Direction.DESC;
         
-        // popularity 정렬인 경우 GroupBuy 테이블과 조인
+        // popularity 정렬인 경우 2단계 쿼리 사용 (PostgreSQL 호환성)
         if ("popularity".equals(sort)) {
             // 인기순은 항상 count 기준, direction에 따라 오름차순/내림차순 결정
             com.querydsl.core.types.OrderSpecifier<?> popularityOrder = 
@@ -463,35 +463,96 @@ public class RecipeService {
                     ? groupBuy.id.count().asc() 
                     : groupBuy.id.count().desc();
             
-            query = queryFactory
-                    .select(recipe)
+            // 1단계: 정렬된 레시피 ID 목록 조회
+            JPAQuery<Long> idQuery = queryFactory
+                    .select(recipe.id)
                     .from(recipe)
                     .leftJoin(groupBuy).on(groupBuy.recipeApiId.eq(
                         com.querydsl.core.types.dsl.Expressions.stringTemplate(
-                            "CASE WHEN {0} = 'MEAL_DB' THEN CONCAT('meal-', {1}) ELSE CONCAT('food-', {1}) END",
-                            recipe.sourceApi, recipe.sourceApiId
+                            "CASE WHEN {0} = 'MEAL_DB' THEN CONCAT('meal-', {1}) " +
+                            "WHEN {0} = 'FOOD_SAFETY' THEN CONCAT('food-', {1}) " +
+                            "ELSE CAST({2} as string) END",
+                            recipe.sourceApi, recipe.sourceApiId, recipe.id
                         )
                     ).and(groupBuy.deletedAt.isNull()))
                     .where(builder)
                     .groupBy(recipe.id)
                     .orderBy(popularityOrder, recipe.lastSyncedAt.desc());
             
-            // 재료 검색이 있으면 조인 추가 (distinct 제거 - GROUP BY로 중복 제거됨)
+            // 재료 검색이 있으면 조인 추가
             if (hasIngredients) {
-                query = queryFactory
-                        .select(recipe)
+                idQuery = queryFactory
+                        .select(recipe.id)
                         .from(recipe)
                         .join(recipe.ingredients, recipeIngredient)
                         .leftJoin(groupBuy).on(groupBuy.recipeApiId.eq(
                             com.querydsl.core.types.dsl.Expressions.stringTemplate(
-                                "CASE WHEN {0} = 'MEAL_DB' THEN CONCAT('meal-', {1}) ELSE CONCAT('food-', {1}) END",
-                                recipe.sourceApi, recipe.sourceApiId
+                                "CASE WHEN {0} = 'MEAL_DB' THEN CONCAT('meal-', {1}) " +
+                                "WHEN {0} = 'FOOD_SAFETY' THEN CONCAT('food-', {1}) " +
+                                "ELSE CAST({2} as string) END",
+                                recipe.sourceApi, recipe.sourceApiId, recipe.id
                             )
                         ).and(groupBuy.deletedAt.isNull()))
                         .where(builder)
                         .groupBy(recipe.id)
                         .orderBy(popularityOrder, recipe.lastSyncedAt.desc());
             }
+            
+            List<Long> recipeIds = idQuery
+                    .offset(pageable.getOffset())
+                    .limit(pageable.getPageSize())
+                    .fetch();
+            
+            // 빈 결과 처리
+            if (recipeIds.isEmpty()) {
+                return RecipeListResponse.builder()
+                        .recipes(List.of())
+                        .totalCount(0)
+                        .source("all")
+                        .build();
+            }
+            
+            // 2단계: ID 기반으로 레시피 엔티티 조회
+            List<Recipe> recipes = queryFactory
+                    .selectFrom(recipe)
+                    .where(recipe.id.in(recipeIds))
+                    .fetch();
+            
+            // 원래 순서대로 정렬 (ID 리스트 순서 유지)
+            Map<Long, Recipe> recipeMap = recipes.stream()
+                    .collect(Collectors.toMap(Recipe::getId, r -> r));
+            List<Recipe> sortedRecipes = recipeIds.stream()
+                    .map(recipeMap::get)
+                    .filter(r -> r != null)
+                    .collect(Collectors.toList());
+            
+            // 전체 개수 조회
+            Long totalCount;
+            if (hasIngredients) {
+                totalCount = queryFactory
+                        .select(recipe.countDistinct())
+                        .from(recipe)
+                        .join(recipe.ingredients, recipeIngredient)
+                        .where(builder)
+                        .fetchOne();
+            } else {
+                totalCount = queryFactory
+                        .select(recipe.count())
+                        .from(recipe)
+                        .where(builder)
+                        .fetchOne();
+            }
+            
+            // DTO 변환
+            List<RecipeListResponse.RecipeSimpleInfo> recipeInfos = sortedRecipes.stream()
+                    .map(this::convertRecipeEntityToSimpleInfo)
+                    .collect(Collectors.toList());
+            
+            return RecipeListResponse.builder()
+                    .recipes(recipeInfos)
+                    .totalCount(totalCount != null ? totalCount.intValue() : 0)
+                    .source("all")
+                    .build();
         } else if ("name".equals(sort)) {
             // 이름순: direction에 따라 오름차순/내림차순
             com.querydsl.core.types.OrderSpecifier<?> nameOrder =
@@ -536,7 +597,7 @@ public class RecipeService {
             }
         }
         
-        // 페이징 적용
+        // name 또는 latest 정렬 결과 조회 (페이징 적용)
         List<Recipe> recipes = query
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())

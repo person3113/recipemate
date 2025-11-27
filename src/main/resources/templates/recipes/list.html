@@ -164,9 +164,9 @@
                                  th:alt="${recipe.name}"
                                  class="card-img-top recipe-img lazy-load"
                                  src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'%3E%3Crect width='400' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%23999'%3ELoading...%3C/text%3E%3C/svg%3E">
-                            <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center recipe-img" 
+                            <div class="card-img-top image-placeholder recipe-img text-white d-flex align-items-center justify-content-center"
                                  th:if="${recipe.imageUrl == null}">
-                                <i class="bi bi-image text-white" style="font-size: 3rem;"></i>
+                                <i class="bi bi-egg-fried" style="font-size: 3rem;"></i>
                             </div>
                             <div class="card-body">
                                 <h5 class="card-title">

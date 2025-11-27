@@ -494,11 +494,11 @@ public class RecipeService {
             }
         } else if ("name".equals(sort)) {
             // 이름순: direction에 따라 오름차순/내림차순
-            com.querydsl.core.types.OrderSpecifier<?> nameOrder = 
+            com.querydsl.core.types.OrderSpecifier<?> nameOrder =
                 sortDirection == Sort.Direction.ASC 
-                    ? recipe.title.asc() 
+                    ? recipe.title.asc()
                     : recipe.title.desc();
-            
+
             query = queryFactory
                     .selectFrom(recipe)
                     .where(builder)

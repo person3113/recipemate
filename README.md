@@ -13,3 +13,9 @@ JOIN recipes
 ON RECIPE_INGREDIENTS.recipe_id = recipes.id
 WHERE recipes.SOURCE_API = 'FOOD_SAFETY';
 ```
+
+- 관리자 테스트용 계정
+admin1@recipemate.com
+admin123
+관리자1
+010-1111-1111

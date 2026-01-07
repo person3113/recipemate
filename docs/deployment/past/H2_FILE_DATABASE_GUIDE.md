@@ -266,6 +266,3 @@ taskkill /F /IM java.exe  # Windows
 # 방법 2: Flyway 사용 (권장, 아래 참조)
 ```
 
----
-
-**다음**: [엔티티 스키마 변경 관리 가이드](./SCHEMA_MIGRATION.md)

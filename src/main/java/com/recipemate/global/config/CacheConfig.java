@@ -30,6 +30,7 @@ import java.util.Map;
  */
 @Configuration
 @EnableCaching
+@ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
 public class CacheConfig {
     
     public static final String RECIPES_CACHE = "recipes";
@@ -37,7 +38,6 @@ public class CacheConfig {
     public static final String VIEW_COUNTS_CACHE = "viewCounts";
     
     @Bean
-    @ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis")
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         // 다형성 타입을 안전하게 처리하고 Java 8 시간 타입을 지원하는 ObjectMapper 설정
         // 메모리 최적화를 위해 애플리케이션 패키지로 범위 제한

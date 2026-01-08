@@ -21,15 +21,15 @@ AWS에 올리기 전, 로컬에서 완벽하게 동작하는 Docker 환경을 �
 ### 1. Dockerfile 개선
 빌드 일관성과 속도를 위해 로컬의 Gradle Wrapper를 사용하도록 수정합니다.
 
-- [ ] **Gradle Wrapper 활용:** `gradle` 이미지 대신 JDK 이미지 기반에서 `./gradlew`를 사용하도록 변경.
-- [ ] **빌드 테스트:** `docker build -t recipemate-app .` 명령어로 이미지 생성 확인.
+- [x] **Gradle Wrapper 활용:** `gradle` 이미지 대신 JDK 이미지 기반에서 `./gradlew`를 사용하도록 변경.
+- [x] **빌드 테스트:** `docker build -t recipemate-app .` 명령어로 이미지 생성 확인.
 
 ### 2. docker-compose.yml 경량화
 1차 배포에서는 복잡도를 낮추기 위해 **Nginx를 제거**하고 3개의 컨테이너(App, Postgres, Redis)만 실행합니다.
 
-- [ ] **Nginx 제거:** `nginx` 서비스 블록 및 관련 볼륨/네트워크 설정 주석 처리.
-- [ ] **포트 노출:** App 컨테이너의 `8080:8080` 포트 매핑 유지.
-- [ ] **로컬 검증:**
+- [x] **Nginx 제거:** `nginx` 서비스 블록 및 관련 볼륨/네트워크 설정 주석 처리.
+- [x] **포트 노출:** App 컨테이너의 `8080:8080` 포트 매핑 유지.
+- [x] **로컬 검증:**
     ```bash
     # .env 파일 준비
     docker compose up -d --build
@@ -40,12 +40,14 @@ AWS에 올리기 전, 로컬에서 완벽하게 동작하는 Docker 환경을 �
 **"키(Key)는 코드에, 값(Value)은 환경에"** 원칙을 따릅니다.
 복잡하게 파일을 나누기보다, **각 환경에 맞는 단일 `.env` 파일**을 사용하는 것이 가장 단순하고 확실합니다. (상세 내용은 `docs/deployment/ENV_VAR_MANAGEMENT.md` 참조)
 
-- [ ] **공통 변수 확인:** `application.yml`에서 사용하는 키(`DB_USERNAME`, `SPRING_DATASOURCE_URL` 등) 확인.
-- [ ] **단일 `.env` 파일 유지:**
+- [x] **공통 변수 확인:** `application.yml`에서 사용하는 키(`DB_USERNAME`, `SPRING_DATASOURCE_URL` 등) 확인.
+- [x] **단일 `.env` 파일 유지:**
     - **로컬 개발 시:** 프로젝트 루트의 `.env` 파일에 로컬용 값(예: `DB_HOST=postgres`) 입력.
     - **AWS 배포 시:** EC2 서버의 `.env` 파일에 운영용 값(예: `DB_HOST=rds-endpoint...` 또는 `postgres`) 입력.
     - *Tip: `.env.local`, `.env.prod` 등으로 파일을 쪼개기보다, 실행 환경마다 그에 맞는 `.env` 파일 하나만 두는 것을 권장합니다.*
 
+### 4. 로컬 최종 점검
+- [ ] db에 데이터 없을 시 recipe api 호출이나 어드민 계정 생성 등으로 초기 데이터 채워지는지 확인 및 테스트.
 ---
 
 ## ☁️ 2단계: AWS EC2 인프라 구축 (Console)

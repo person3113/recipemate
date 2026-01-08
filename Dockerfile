@@ -1,5 +1,5 @@
 # Stage 1: Build stage
-FROM gradle:8.5-jdk21-alpine AS builder
+FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /app
 
@@ -7,14 +7,17 @@ WORKDIR /app
 COPY build.gradle settings.gradle gradlew ./
 COPY gradle gradle/
 
+# Make gradlew executable
+RUN chmod +x gradlew
+
 # Download dependencies (cached if build.gradle hasn't changed)
-RUN gradle dependencies --no-daemon || true
+RUN ./gradlew dependencies --no-daemon || true
 
 # Copy source code
 COPY src src/
 
 # Build the application (skip tests for faster builds, run tests in CI/CD)
-RUN gradle bootJar --no-daemon -x test
+RUN ./gradlew bootJar --no-daemon -x test
 
 # Stage 2: Runtime stage
 FROM eclipse-temurin:21-jre-alpine

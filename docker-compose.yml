@@ -13,7 +13,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+      - ./init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./schema.sql:/docker-entrypoint-initdb.d/02-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d recipemate"]
       interval: 10s
@@ -54,17 +55,20 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_CACHE_TYPE: ${SPRING_CACHE_TYPE:-none}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/recipemate
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      FOOD_SAFETY_API_KEY: ${FOOD_SAFETY_API_KEY}
+      FOOD_SAFETY_API_KEY: ${FOOD_SAFETY_API_KEY:-sample}
+      CLOUDINARY_URL: ${CLOUDINARY_URL}
+      KAKAO_JAVASCRIPT_KEY: ${KAKAO_JAVASCRIPT_KEY}
       # Recipe 초기화 및 동기화 설정
       RECIPE_INIT_ENABLED: ${RECIPE_INIT_ENABLED:-false}
       RECIPE_INIT_FORCE: ${RECIPE_INIT_FORCE:-false}
-      RECIPE_SYNC_ENABLED: ${RECIPE_SYNC_ENABLED:-true}
+      RECIPE_SYNC_ENABLED: ${RECIPE_SYNC_ENABLED:-false}
       RECIPE_SYNC_CRON: ${RECIPE_SYNC_CRON:-0 0 3 * * SUN}
       # JVM options
       JAVA_OPTS: >-
@@ -85,29 +89,29 @@ services:
     networks:
       - recipemate-network
 
-  # Nginx Reverse Proxy
-  nginx:
-    image: nginx:1.25-alpine
-    container_name: recipemate-nginx
-    restart: unless-stopped
-    depends_on:
-      - app
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - nginx_logs:/var/log/nginx
-      # For SSL certificates (uncomment when ready)
-      # - ./nginx/ssl:/etc/nginx/ssl:ro
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-    networks:
-      - recipemate-network
+  # Nginx Reverse Proxy (2단계에서 사용 - 1단계에서는 주석 처리)
+  # nginx:
+  #   image: nginx:1.25-alpine
+  #   container_name: recipemate-nginx
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - app
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./nginx/conf.d:/etc/nginx/conf.d:ro
+  #     - nginx_logs:/var/log/nginx
+  #     # For SSL certificates (uncomment when ready)
+  #     # - ./nginx/ssl:/etc/nginx/ssl:ro
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/health"]
+  #     interval: 30s
+  #     timeout: 3s
+  #     retries: 3
+  #   networks:
+  #     - recipemate-network
 
 networks:
   recipemate-network:
@@ -120,5 +124,5 @@ volumes:
     driver: local
   app_uploads:
     driver: local
-  nginx_logs:
-    driver: local
+  # nginx_logs:  # 1단계에서는 사용하지 않음
+  #   driver: local

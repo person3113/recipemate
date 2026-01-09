@@ -56,9 +56,9 @@ AWS에 올리기 전, 로컬에서 완벽하게 동작하는 Docker 환경을 �
 
 ### 1. EC2 인스턴스 생성
 - **Region:** 서울 (ap-northeast-2)
-- **OS:** Ubuntu Server 22.04 LTS 또는 24.04 LTS
-- **Type:** `t3.micro` (Free Tier 지원 확인)
-- **Key Pair:** 새 키 페어(`.pem`) 생성 및 안전한 곳에 보관
+- **OS:** Amazon Linux 2023 (또는 Ubuntu Server 24.04 LTS)
+- **Type:** `t2.micro` (Free Tier 지원)
+- **Key Pair:** 키 페어(`.pem`) 선택 및 안전한 곳에 보관
 - **Storage:** 30GB (Free Tier 최대 용량 활용)
 
 ### 2. 보안 그룹 (Security Group) 설정
@@ -72,45 +72,114 @@ AWS에 올리기 전, 로컬에서 완벽하게 동작하는 Docker 환경을 �
 | HTTPS | 443 | Anywhere | (2차 HTTPS 배포용 미리 개방) |
 
 ### 3. 탄력적 IP (Elastic IP)
-- [ ] EIP 할당 및 EC2 인스턴스 연결 (서버 재시작 시 IP 변경 방지).
+- [x] EIP 할당 및 EC2 인스턴스 연결 (서버 재시작 시 IP 변경 방지).
 
 ---
 
 ## 🚀 3단계: 서버 설정 및 배포 (Terminal)
 
-### 1. 기본 설정 & Docker 설치
+### 1. 기본 설정 & Docker와 Java 설치
 ```bash
-# SSH 접속
-ssh -i "path/to/key.pem" ubuntu@<Elastic-IP>
+# SSH 접속(Git Bash 또는 WSL에서)
+### ubuntu
+# ssh -i "path/to/key.pem" ubuntu@<Elastic-IP>
+
+### Amazon Linux
+# ssh -i "path/to/key.pem" ec2-user@<Elastic-IP>
+ssh -i "C:\Users\UESR\.ssh\recipemate-ec2-key.pem" ec2-user@13.125.48.36
 
 # 패키지 업데이트 및 Docker 설치
-sudo apt update && sudo apt install -y docker.io docker-compose-plugin
-sudo usermod -aG docker ubuntu
+### Ubuntu 기준
+# sudo apt update && sudo apt install -y docker.io docker-compose-plugin
+# sudo usermod -aG docker ubuntu
+
+### Amazon Linux 2023 기준
+sudo dnf update -y
+sudo dnf install -y git docker java-21-amazon-corretto-headless
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker ec2-user
+java --version  # 21.x.x 확인
+git --version  # git version 2.43.x 등 출력됨
+
+# docker compose 설치
+# 플러그인 디렉토리 생성
+sudo mkdir -p /usr/local/lib/docker/cli-plugins
+
+# 최신 버전 다운로드 (자동)
+sudo curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+
+# 실행 권한 부여
+sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+# 설치 확인
+docker compose version
+
 # (로그아웃 후 재로그인하여 그룹 적용)
+### 로그아웃
+exit
+
+### 다시 접속 (docker 명령어 이제 sudo 없이 사용 가능)
+ssh -i "C:\Users\UESR\.ssh\recipemate-ec2-key.pem" ec2-user@13.125.48.36
+docker --version  # 정상 동작 확인
 ```
 
 ### 2. Swap Memory 설정 (필수)
-`t3.micro`는 RAM이 1GB라 빌드/실행 시 메모리 부족으로 멈출 수 있습니다. **반드시 설정하세요.**
+`t2.micro`는 RAM이 1GB라 빌드/실행 시 메모리 부족으로 멈출 수 있습니다. **반드시 설정하세요.**
 ```bash
 sudo fallocate -l 2G /swapfile
 sudo chmod 600 /swapfile
 sudo mkswap /swapfile
 sudo swapon /swapfile
 # (선택) 재부팅 후에도 유지되도록 /etc/fstab 등록
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+free -h  # 확인 (Swap 2.0G 표시됨)
 ```
 
 ### 3. 프로젝트 배포
-- [ ] **코드 복제:** `git clone <your-repo-url>`
-- [ ] **환경변수 설정:** `.env` 파일 생성 (AWS용 값 입력)
-    ```bash
-    nano .env
-    # 내용 붙여넣기 -> Ctrl+O -> Enter -> Ctrl+X
-    ```
-- [ ] **실행:**
-    ```bash
-    docker compose up -d --build
-    ```
-- [ ] **로그 확인:** `docker compose logs -f`
+```bash
+# 1. Git 클론
+# git clone <your-repo-url>
+git clone https://github.com/person3113/recipemate.git
+cd recipemate  # 프로젝트 폴더로 이동
+
+# 2. 환경변수 설정 (.env 파일 생성) (AWS용 값 입력)
+vim .env
+# i 눌러 삽입 모드 진입
+# .env 내용 전체 복사 (Ctrl+A → Ctrl+C)
+# Vim 창에 붙여넣기 (오른쪽 클릭 → 붙여넣기 또는 Shift+Insert)
+# Esc 눌러 명령 모드로 나가기
+# :wq 입력 → Enter (저장 후 종료)
+cat .env  # 내용 확인
+
+# 3. Docker Compose 실행 (build 포함)
+docker compose up -d --build
+
+# Docker Buildx 버전 문제입니다. Amazon Linux 2023의 Docker 기본 buildx가 구버전이라 docker compose up --build가 실패합니다
+# Buildx 플러그인 다운로드 (최신 버전)
+DOCKER_BUILDX_VERSION=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+sudo curl -L "https://github.com/docker/buildx/releases/download/${DOCKER_BUILDX_VERSION}/buildx-${DOCKER_BUILDX_VERSION}.linux-amd64" \
+  -o /usr/local/lib/docker/cli-plugins/docker-buildx
+
+sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
+docker buildx version  # 0.17.1 확인
+
+# 재빌드
+docker compose down --volumes --rmi all --remove-orphans # 1. 기존 정리 (볼륨/DB 초기화)
+docker compose up -d --build
+
+# 4. 상태 확인
+docker compose ps     # 모든 서비스 running 확인
+docker compose logs -f app  # 앱 로그 실시간 확인
+
+# 5. 초기화 스크립트 실행 (필요시)
+# docker compose exec app ./gradlew flywayMigrate  # DB 마이그레이션
+
+# 헬스체크
+curl http://localhost:8080/actuator/health
+```
+
 - [ ] **접속 확인:** 브라우저에서 `http://<Elastic-IP>:8080` 접속.
 
 ---

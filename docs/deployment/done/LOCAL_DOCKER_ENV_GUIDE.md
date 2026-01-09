@@ -62,7 +62,7 @@ FOOD_SAFETY_API_KEY=xxxxx
 # 5. 레시피 데이터 동기화 옵션 (선택)
 # ==========================================
 # 앱 실행 시 레시피 데이터 초기화 여부
-RECIPE_INIT_ENABLED=false
+RECIPE_INIT_ENABLED=true
 RECIPE_INIT_FORCE=false
 
 # 주기적 동기화 스케줄러 활성화 여부

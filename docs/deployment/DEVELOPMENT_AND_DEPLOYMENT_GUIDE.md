@@ -64,7 +64,7 @@ wsl -d Ubuntu-22.04
 # 모든 서비스 실행 (이미지 없으면 다운로드/빌드)
 docker-compose up -d
 
-# 코드 변경 후 재빌드 및 실행 (가장 많이 사용)
+# 코드 변경 후 재빌드 및 실행 
 docker-compose up -d --build app
 
 # 전체 재빌드 및 실행 (초기 설정 시)
@@ -136,20 +136,38 @@ docker-compose down --rmi all -v
 데이터는 `postgres_data` 볼륨에 영구 저장됩니다.
 
 ```bash
-# PostgreSQL 쉘 접속
+# PostgreSQL 쉘 접속 (컨테이너 안에서 바로 psql 실행)
 docker exec -it recipemate-postgres psql -U recipemate -d recipemate
+
+# `5432:5432`로 포트 열어놨으니, 로컬에 psql 설치돼 있으면 도커 안 들어가고도 접속 가능
+# 암호 입력하라고 나오면 `.env`에 넣은 `${DB_PASSWORD}` 입력.
+psql -h localhost -p 5432 -U recipemate -d recipemate
 
 # schema.sql 실행 (테이블 생성)
 docker exec -i recipemate-postgres psql -U recipemate -d recipemate < schema.sql
-
-# 테이블 목록 확인
-docker exec -it recipemate-postgres psql -U recipemate -d recipemate -c "\dt"
 
 # DB 백업 (Backup)
 docker exec recipemate-postgres pg_dump -U recipemate recipemate > backup_$(date +%Y%m%d).sql
 
 # DB 복구 (Restore)
 docker exec -i recipemate-postgres psql -U recipemate -d recipemate < backup_20250105.sql
+```
+
+테이블 / 데이터 확인
+```sql
+-- `psql` 셸 안에서(docker exec -it recipemate-postgres psql -U recipemate -d recipemate):
+
+-- 현재 DB의 테이블 목록
+\dt
+
+-- 특정 테이블 구조
+\d member   -- 예시
+ 
+ -- 데이터 몇 줄만 확인
+SELECT * FROM member LIMIT 10;
+
+-- psql 종료
+\q
 ```
 
 **초기 데이터 삽입**

@@ -15,10 +15,6 @@ data/
 
 ### Environment ###
 .env
-.env.local
-.env.*.local
-# 주의: .env.dev와 .env.prod는 템플릿이므로 커밋 가능
-# 실제 시크릿은 .env.*.local에 저장하고 gitignore 처리
 
 # 개발 환경 로컬 설정 (민감 정보 포함)
 application-dev.local.yml
@@ -57,8 +53,10 @@ out/
 
 ### Docker ###
 .env
-.env.local
-.env.*.local
 docker-compose.override.yml
 nginx/ssl/
+*.pem
+*.crt
+*.key
+letsencrypt/
 uploads/

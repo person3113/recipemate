@@ -39,6 +39,17 @@
 
 ## 2. Docker 환경 설정 및 기본 운영 (Docker Operations)
 
+### 시작(ssh 접속)
+```bash
+# SSH 접속(Git Bash 또는 WSL에서)
+### ubuntu
+# ssh -i "path/to/key.pem" ubuntu@<Elastic-IP>
+
+### Amazon Linux
+# ssh -i "path/to/key.pem" ec2-user@<Elastic-IP>
+ssh -i "C:\Users\UESR\.ssh\recipemate-ec2-key.pem" ec2-user@13.125.48.36
+```
+
 ### 2.1 환경 설정 (Environment Setup)
 1. `.env` 파일 생성 및 환경 변수 설정
 2. 애플리케이션 접속:

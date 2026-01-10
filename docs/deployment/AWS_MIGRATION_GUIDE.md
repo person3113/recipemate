@@ -180,7 +180,25 @@ docker compose logs -f app  # 앱 로그 실시간 확인
 curl http://localhost:8080/actuator/health
 ```
 
-- [ ] **접속 확인:** 브라우저에서 `http://<Elastic-IP>:8080` 접속.
+### 4. docker-compose 수정했을 때
+```bash
+# 모든 컨테이너 중지 & 볼륨 확인 (DB 데이터 보존)
+docker compose down
+
+# 3. 이미지 완전 삭제 (캐시 무시)
+docker compose build --no-cache --pull
+# 또는 한 번에: docker compose up -d --build --force-recreate --pull
+
+# 4. 재시작 (최신 코드 + docker-compose.yml 적용)
+docker compose up -d --build --force-recreate
+
+# 5. 상태 점검
+docker compose ps          # Up 상태 확인
+docker compose logs -f app # 앱 시작 로그 실시간 확인
+```
+
+- [x] **접속 확인:** 브라우저에서 `http://<Elastic-IP>:8080` 접속.
+  - 예시: http://13.125.48.36:8080
 
 ---
 

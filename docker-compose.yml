@@ -41,7 +41,7 @@ services:
     networks:
       - recipemate-network
 
-  # Spring Boot Application
+  # Spring Boot Application (ports 유지 - Nginx 내부 접근용)
   app:
     build:
       context: .
@@ -66,7 +66,7 @@ services:
       CLOUDINARY_URL: ${CLOUDINARY_URL}
       KAKAO_JAVASCRIPT_KEY: ${KAKAO_JAVASCRIPT_KEY}
       # Recipe 초기화 및 동기화 설정
-      RECIPE_INIT_ENABLED: ${RECIPE_INIT_ENABLED:-false}
+      RECIPE_INIT_ENABLED: ${RECIPE_INIT_ENABLED:-true}
       RECIPE_INIT_FORCE: ${RECIPE_INIT_FORCE:-false}
       RECIPE_SYNC_ENABLED: ${RECIPE_SYNC_ENABLED:-false}
       RECIPE_SYNC_CRON: ${RECIPE_SYNC_CRON:-0 0 3 * * SUN}
@@ -77,7 +77,7 @@ services:
         -XX:+UseG1GC
         -Djava.security.egd=file:/dev/./urandom
     ports:
-      - "8080:8080"
+      - "8080:8080"  # Nginx 내부 접근용 (외부 노출 안 됨)
     volumes:
       - app_uploads:/app/uploads
     healthcheck:
@@ -89,29 +89,28 @@ services:
     networks:
       - recipemate-network
 
-  # Nginx Reverse Proxy (2단계에서 사용 - 1단계에서는 주석 처리)
-  # nginx:
-  #   image: nginx:1.25-alpine
-  #   container_name: recipemate-nginx
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - app
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - ./nginx/conf.d:/etc/nginx/conf.d:ro
-  #     - nginx_logs:/var/log/nginx
-  #     # For SSL certificates (uncomment when ready)
-  #     # - ./nginx/ssl:/etc/nginx/ssl:ro
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/health"]
-  #     interval: 30s
-  #     timeout: 3s
-  #     retries: 3
-  #   networks:
-  #     - recipemate-network
+  # Nginx Reverse Proxy & SSL 볼륨 추가
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: recipemate-nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx_logs:/var/log/nginx
+      - ./nginx/ssl:/etc/nginx/ssl:ro  # SSL 인증서 마운트
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - recipemate-network
 
 networks:
   recipemate-network:
@@ -124,5 +123,5 @@ volumes:
     driver: local
   app_uploads:
     driver: local
-  # nginx_logs:  # 1단계에서는 사용하지 않음
-  #   driver: local
+  nginx_logs:
+    driver: local

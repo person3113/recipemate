@@ -215,4 +215,3 @@ docker compose logs -f app # 앱 시작 로그 실시간 확인
 1.  **도메인 구입 및 연결:** 가비아/Route53 등에서 도메인 구매 후 EIP와 연결.
 2.  **Nginx 복구:** `docker-compose.yml`에서 Nginx 서비스 주석 해제.
 3.  **Certbot 설정:** SSL 인증서 발급 자동화.
-4.  **보안 그룹 수정:** 8080 포트 인바운드 규칙 삭제 (Nginx를 통해서만 접속하도록 제한).

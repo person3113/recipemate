@@ -31,8 +31,6 @@ cat ~/duckdns/duck.log  # "OK" 확인
 curl http://recipemate.duckdns.org:8080 # 현재 앱 접속 확인
 ```
 
-***
-
 ## 🔧 Step 2: Nginx 설정 & docker-compose.yml 수정
 
 ### 1. 로컬에서 Nginx 설정 파일 생성 (프로젝트 루트)
@@ -53,81 +51,31 @@ git push origin main
 git pull
 ```
 
-***
-
 ## 🔐 Step 3: HTTPS (SSL) 설정 with Certbot
 
 ```bash
+# EC2에서
+cd ~/recipemate
+
 # 1. Certbot Docker 이미지로 인증서 발급
-docker run -it --rm --name certbot \
+docker run -it --rm --network host \
   -v /home/ec2-user/recipemate/nginx/ssl:/etc/letsencrypt \
   certbot/certbot certonly --standalone \
   -d recipemate.duckdns.org \
-  --email your-email@gmail.com \
+  --email person3113@gmail.com \
   --agree-tos --non-interactive
 
 # 2. 인증서 확인
-ls -la ~/recipemate/nginx/ssl/live/recipemate.duckdns.org/
+sudo ls -la ~/recipemate/nginx/ssl/live/recipemate.duckdns.org/
+# fullchain.pem, privkey.pem 파일 생성됨
 
-# 3. Nginx HTTPS 설정 추가
-cat > nginx/conf.d/recipemate.conf << 'EOF'
-# HTTP → HTTPS 리다이렉트
-server {
-    listen 80;
-    server_name recipemate.duckdns.org;
-    return 301 https://$server_name$request_uri;
-}
-
-# HTTPS 서버
-server {
-    listen 443 ssl http2;
-    server_name recipemate.duckdns.org;
-    client_max_body_size 50M;
-
-    ssl_certificate /etc/nginx/ssl/live/recipemate.duckdns.org/fullchain.pem;
-    ssl_certificate_key /etc/nginx/ssl/live/recipemate.duckdns.org/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
-
-    location / {
-        proxy_pass http://app:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-EOF
-
-# 4. Docker Compose 재시작
+# 3. Docker Compose 재시작
 docker compose down
 docker compose up -d --build --force-recreate
 
-# 5. 인증서 자동 갱신 (3개월마다)
-(crontab -l 2>/dev/null; echo "0 0 1 * * docker run --rm -v ~/recipemate/nginx/ssl:/etc/letsencrypt certbot/certbot renew") | crontab -
+# 4. 인증서 자동 갱신 (3개월마다)
+(crontab -l 2>/dev/null; echo "0 3 1 * * cd ~/recipemate && docker compose stop nginx && docker run --rm -v ./nginx/ssl:/etc/letsencrypt certbot/certbot renew --quiet && docker compose up -d nginx") | crontab -
 ```
-
-***
-
-## 🔒 Step 4: AWS 보안 그룹 수정
-
-**목표:** 8080 차단, 80/443만 공개
-
-```bash
-# AWS Console에서
-# Security Group: launch-wizard-1
-# Inbound Rules 수정:
-# ❌ 8080 (Custom TCP) 삭제
-# ✅ 22 (SSH) - My IP 유지
-# ✅ 80 (HTTP) - 0.0.0.0/0 유지
-# ✅ 443 (HTTPS) - 0.0.0.0/0 추가
-```
-
-***
 
 ## ✅ 최종 확인
 
@@ -144,5 +92,3 @@ docker compose logs -f app
 ```
 
 **완료! 이제 `https://recipemate.duckdns.org`로 안전하게 접속 가능합니다.** 🎉
-
-혹시 Certbot 오류나 도메인 연결 문제 발생하면 알려주세요!

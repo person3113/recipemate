@@ -164,6 +164,102 @@ volumes:
     driver: local
 ```
 
+- 환경변수 관련해서 몇 가지 설명:
+  - 필수 추가 아님 → 없어도 동작함.
+  - 표준화하고 싶으면 기존 `DB_USERNAME`/`DB_PASSWORD`를 지우지 말고 겹쳐서 `SPRING_DATASOURCE_USERNAME/PASSWORD`를 “추가”하는 방식이 안전하다.
+  - `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `SPRING_JPA_HIBERNATE_DDL_AUTO`는 “있으면 좋은 옵션”이지 필수는 아니다.[1][2]
+  - 지금처럼 `SPRING_DATASOURCE_URL` + `DB_USERNAME` + `DB_PASSWORD` 조합으로 이미 잘 되고 있다면, 굳이 바꿀 필요 없다.
+
+1. 이 옵션들이 의미하는 것
+
+- `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD`
+    - Spring Boot가 `spring.datasource.username`, `spring.datasource.password`를 외부 환경변수로 받을 때 쓰는 공식 키 이름이다.[2][1]
+    - 즉, `application.yml`에서
+      ```yaml
+      spring:
+        datasource:
+          url: ${SPRING_DATASOURCE_URL}
+          username: ${SPRING_DATASOURCE_USERNAME}
+          password: ${SPRING_DATASOURCE_PASSWORD}
+      ```  
+      이런 식으로 매핑할 때 보통 사용한다.[1]
+
+- `SPRING_JPA_HIBERNATE_DDL_AUTO`
+    - `spring.jpa.hibernate.ddl-auto`에 대응되는 환경변수.
+    - RDS에 이미 테이블 만들어놨으면 `validate`로 두는 게 안전하고, 처음 자동 생성하고 싶으면 `update`/`create` 등을 쓴다.[3]
+
+2. 지금 상황에서 어떻게 할지
+
+현재 docker-compose.yml (요약)
+
+```yaml
+environment:
+  SPRING_DATASOURCE_URL: jdbc:postgresql://recipemate....rds.amazonaws.com:5432/recipemate
+  DB_USERNAME: ${DB_USERNAME}
+  DB_PASSWORD: ${DB_PASSWORD}
+```
+
+이 구조라면 보통은:
+
+- `application-prod.yml`에서 직접 `DB_USERNAME`, `DB_PASSWORD`를 읽거나
+- 자바 코드에서 `System.getenv("DB_USERNAME")` 이런 식으로 읽도록 되어 있을 가능성이 높다.[4]
+
+그래서:
+
+- 이미 잘 돌아간다면 → 건들지 말고 그대로 사용해도 된다.
+- Spring의 표준 방식으로 정리하고 싶다면 → 아래처럼 “추가”하는 식으로 점진적 변경 추천.
+
+추천하는 점진적 변경
+
+1) 기존 것 유지 + 새 키 추가 (겹쳐서 넣기)
+
+```yaml
+environment:
+  SPRING_DATASOURCE_URL: jdbc:postgresql://recipemate....rds.amazonaws.com:5432/recipemate
+  SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+  SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+  SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+  DB_USERNAME: ${DB_USERNAME}
+  DB_PASSWORD: ${DB_PASSWORD}
+```
+
+- 이렇게 하면:
+    - 기존 코드에서 `DB_USERNAME` / `DB_PASSWORD`를 쓰고 있으면 그대로 동작.
+    - 나중에 `application-prod.yml` 쪽을 정리할 때 `SPRING_DATASOURCE_*`만 쓰도록 옮길 수 있다.[5][2]
+
+2) 이후에 설정 파일을 정리할 때:
+
+```yaml
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
+```
+
+이렇게 되면 완전히 Spring 표준 키로 통일되고, 그때 가서 `DB_USERNAME`, `DB_PASSWORD` 환경변수는 제거해도 된다.[2][1]
+
+3. 지금 당장 해도 되는 최소 변경안
+
+당장 에러 없이, RDS용으로 조금 더 안전하게만 하려면:
+
+```yaml
+environment:
+  SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+  SPRING_CACHE_TYPE: ${SPRING_CACHE_TYPE:-none}
+  SPRING_DATASOURCE_URL: jdbc:postgresql://recipemate.c3qcycyic4eb.ap-northeast-2.rds.amazonaws.com:5432/recipemate
+  SPRING_JPA_HIBERNATE_DDL_AUTO: validate  # 이 정도만 추가
+  DB_USERNAME: ${DB_USERNAME}
+  DB_PASSWORD: ${DB_PASSWORD}
+  ...
+```
+
+- `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`는 지금 프로젝트 설정을 안 봐서는 꼭 쓸 필요는 없다.
+- 대신 `.env`에서 `DB_USERNAME`, `DB_PASSWORD`만 RDS 계정으로 맞춰 두면 된다.
+
 ### Step 3: .env 파일 수정
 
 ```bash
@@ -185,8 +281,25 @@ SPRING_PROFILES_ACTIVE=prod
 # application-prod.yml에서 spring.jpa.hibernate.ddl-auto: create 설정
 # OR RDS에 직접 접속해서 init-db.sql, schema.sql 실행
 
-# EC2에서 PostgreSQL 클라이언트로 RDS 접속
-sudo dnf install -y postgresql-client
+# 패키지 목록/캐시 최신화
+sudo dnf update -y
+
+# PostgreSQL 15 클라이언트 (psql 포함) 설치
+sudo dnf install -y postgresql15
+
+# 설치 확인
+psql --version
+# psql (PostgreSQL) 15.x 형태로 나오면 성공
+
+# 1. postgres DB로 접속 (기본 DB)
+psql -h recipemate.c3qcycyic4eb.ap-northeast-2.rds.amazonaws.com \
+     -U postgres \
+     -d postgres  # recipemate → postgres 변경!
+
+# 2. recipemate DB 생성
+CREATE DATABASE recipemate;
+GRANT ALL PRIVILEGES ON DATABASE recipemate TO postgres;
+\q  # 종료
 
 # RDS 접속 테스트
 psql -h recipemate-db.cxxxxxx.ap-northeast-2.rds.amazonaws.com \
@@ -198,28 +311,41 @@ psql -h recipemate-db.cxxxxxx.ap-northeast-2.rds.amazonaws.com \
 \i ./schema.sql
 ```
 
-***
-
-## 🔄 Step 5: Docker Compose 재시작 + 배포
+## 🔄 Step 5: 데이터 백업 + Docker Compose 재시작 + 배포
 
 ```bash
-# 1. 코드 업데이트 (로컬)
+# EC2에서 (docker compose 실행 중일 때)
+
+# 현재 Docker DB 백업 (단일 DB만 백업)
+# psql -h recipemate-db... -U postgres -d recipemate < recipemate_backup.sql
+docker compose exec -T postgres pg_dump -U ${DB_USERNAME} recipemate > recipemate_backup.sql
+
+# 백업 확인
+ls -lh recipemate_backup.sql  # 1-10MB 예상
+head -20 recipemate_backup.sql  # CREATE TABLE 확인
+
+# 코드 업데이트 (로컬)
 git add docker-compose.yml .env application-prod.yml
 git commit -m "feat: Migrate to AWS RDS PostgreSQL"
 git push origin main
 
-# 2. EC2에서 반영
+# EC2에서 반영
 cd ~/recipemate
 git pull
 
-# 3. 컨테이너 재시작
+# 중단 (볼륨 보존)
 docker compose down
-docker compose up -d --build --force-recreate
 
-# 4. 로그 확인 (DB 연결 확인)
+# RDS에 복원 (선택)
+psql -h $RDS_ENDPOINT -U postgres -d recipemate < recipemate_backup.sql
+
+# 재시작
+docker compose up -d --build
+
+# 로그 확인 (DB 연결 확인)
 docker compose logs -f app | grep -i "connect\|datasource\|error"
 
-# 5. 헬스체크
+# 헬스체크
 curl https://recipemate.duckdns.org/actuator/health
 ```
 

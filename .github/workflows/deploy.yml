@@ -1,25 +1,25 @@
-name: Deploy to AWS EC2
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: SSH Deploy to EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_KEY }}
-          script: |
-            cd ~/recipemate
-            git pull origin main
-            docker compose down
-            docker compose up -d --build
-            docker compose logs -f app | head -20
+#name: Deploy to AWS EC2
+#
+#on:
+#  push:
+#    branches:
+#      - main
+#
+#jobs:
+#  deploy:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      - name: SSH Deploy to EC2
+#        uses: appleboy/ssh-action@master
+#        with:
+#          host: ${{ secrets.EC2_HOST }}
+#          username: ec2-user
+#          key: ${{ secrets.EC2_KEY }}
+#          script: |
+#            cd ~/recipemate
+#            git pull origin main
+#            docker compose down
+#            docker compose up -d --build
+#            docker compose logs -f app | head -20

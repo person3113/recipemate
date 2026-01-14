@@ -302,7 +302,7 @@ GRANT ALL PRIVILEGES ON DATABASE recipemate TO postgres;
 \q  # 종료
 
 # RDS 접속 테스트
-psql -h recipemate-db.cxxxxxx.ap-northeast-2.rds.amazonaws.com \
+psql -h recipemate.c3qcycyic4eb.ap-northeast-2.rds.amazonaws.com \
      -U postgres \
      -d recipemate
 
@@ -397,6 +397,7 @@ GitHub 저장소 → Settings → Secrets and variables → Actions → New repo
 
 EC2_HOST: 13.125.48.36 (Elastic IP)
 EC2_KEY: (EC2 키 페어 .pem 파일 내용 전체 복사)
+  C:\Users\UESR\.ssh 폴더에 있음
 ```
 
 ### 3. 배포 테스트
@@ -450,17 +451,15 @@ git push origin main
 
 ## 🎯 체크리스트
 
-- [ ] RDS 인스턴스 생성 및 보안 그룹 설정
-- [ ] RDS 엔드포인트 확인
-- [ ] docker-compose.yml에서 postgres 서비스 삭제
-- [ ] .env에 RDS_ENDPOINT 추가
-- [ ] 로컬 테스트: `docker compose up -d --build`
-- [ ] EC2에 배포 및 RDS 연결 확인
-- [ ] GitHub Actions Workflow 생성
-- [ ] Secrets (EC2_HOST, EC2_KEY) 설정
-- [ ] git push 후 자동 배포 확인
-
-***
+-  RDS 인스턴스 생성 및 보안 그룹 설정
+-  RDS 엔드포인트 확인
+-  docker-compose.yml에서 postgres 서비스 삭제
+-  .env에 RDS_ENDPOINT 추가
+-  로컬 테스트: `docker compose up -d --build`
+-  EC2에 배포 및 RDS 연결 확인
+-  GitHub Actions Workflow 생성
+-  Secrets (EC2_HOST, EC2_KEY) 설정
+-  git push 후 자동 배포 확인
 
 ## 💡 비용 정리 (프리티어)
 
@@ -473,7 +472,3 @@ git push origin main
 | 데이터 전송 | ~1GB | 프리티어 100GB 포함 |
 
 **합계: 무료!** (주의: 프리티어 기간 후 과금 시작)
-
-***
-
-이제 4단계 시작하시겠어요? 먼저 RDS 생성하고 보고하면 docker-compose.yml 최종 버전 제시해드릴게요! 🚀

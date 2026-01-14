@@ -147,6 +147,7 @@ docker-compose down --rmi all -v
 데이터는 `postgres_data` 볼륨에 영구 저장됩니다.
 
 ```bash
+### docker psql 접속
 # PostgreSQL 쉘 접속 (컨테이너 안에서 바로 psql 실행)
 docker exec -it recipemate-postgres psql -U recipemate -d recipemate
 
@@ -154,6 +155,12 @@ docker exec -it recipemate-postgres psql -U recipemate -d recipemate
 # 암호 입력하라고 나오면 `.env`에 넣은 `${DB_PASSWORD}` 입력.
 psql -h localhost -p 5432 -U recipemate -d recipemate
 
+### aws rds psql 접속
+psql -h recipemate.c3qcycyic4eb.ap-northeast-2.rds.amazonaws.com \
+     -U postgres \
+     -d recipemate
+
+###
 # schema.sql 실행 (테이블 생성)
 docker exec -i recipemate-postgres psql -U recipemate -d recipemate < schema.sql
 

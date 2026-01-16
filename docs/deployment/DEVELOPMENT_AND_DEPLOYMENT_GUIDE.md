@@ -18,7 +18,7 @@
 
 - **Production Mode (Docker)**
   - `prod` 프로필 사용 (PostgreSQL, Redis, Nginx, 최적화된 JVM)
-  - 실행: `docker-compose up -d`
+  - 실행: `docker compose up -d`
   - **장점**: 운영 환경과 거의 100% 동일, 전체 시스템 통합 테스트
   - **단점**: 빌드 속도 느림, 리소스 사용량 높음
 
@@ -29,17 +29,17 @@
     -   필요 시 `docker run redis` 등으로 개별 서비스만 띄워놓고 개발합니다.
 
 2.  **통합 & 최종 검증 (Docker Compose)**
-    -   기능 개발 완료 후, `docker-compose up`으로 전체 시스템을 실행합니다.
+    -   기능 개발 완료 후, `docker compose up`으로 전체 시스템을 실행합니다.
     -   `prod` 환경에서 DB, Redis, Nginx 연동이 완벽한지 최종 검증합니다.
 
 3.  **배포 (AWS EC2 등)**
-    -   검증된 `docker-compose.yml`을 사용하여 서버에 배포합니다.
+    -   검증된 `docker compose.yml`을 사용하여 서버에 배포합니다.
 
 ---
 
 ## 2. Docker 환경 설정 및 기본 운영 (Docker Operations)
 
-### 시작(ssh 접속)
+### aws 접속 (ssh 접속)
 ```bash
 # SSH 접속(Git Bash 또는 WSL에서)
 ### ubuntu
@@ -73,26 +73,26 @@ wsl -d Ubuntu-22.04
 **서비스 실행 및 빌드**
 ```bash
 # 모든 서비스 실행 (이미지 없으면 다운로드/빌드)
-docker-compose up -d
+docker compose up -d
 
 # 코드 변경 후 재빌드 및 실행 
-docker-compose up -d --build app
+docker compose up -d --build app
 
 # 전체 재빌드 및 실행 (초기 설정 시)
-docker-compose up -d --build
+docker compose up -d --build
 
 # 빌드 없음. 단순히 서비스(기존 컨테이너) 재시작만. 변경사항 미반영
-docker-compose restart app
+docker compose restart app
 ```
-- `docker-compose up -d` 예시: RecipeMate Spring Boot Application (port 8080), PostgreSQL 16 (port 5432), Redis 7 (port 6379), Nginx Reverse Proxy (port 80)
-- `docker-compose up -d --build app`: 새 이미지 빌드(적용). 기존 컨테이너 중지→제거→신규 생성. 코드/설정 변경 완전 반영
-- `docker-compose up -d --build`: 첫 실행 시 필요한 이미지 다운로드 및 모든 컨테이너 시작
+- `docker compose up -d` 예시: RecipeMate Spring Boot Application (port 8080), PostgreSQL 16 (port 5432), Redis 7 (port 6379), Nginx Reverse Proxy (port 80)
+- `docker compose up -d --build app`: 새 이미지 빌드(적용). 기존 컨테이너 중지→제거→신규 생성. 코드/설정 변경 완전 반영
+- `docker compose up -d --build`: 첫 실행 시 필요한 이미지 다운로드 및 모든 컨테이너 시작
   - 예시) PostgreSQL 16 이미지 다운로드 (약 100MB), Redis 7 이미지 다운로드 (약 40MB), Nginx 이미지 다운로드 (약 40MB), spring Boot 애플리케이션 빌드 (Gradle 의존성 다운로드 + 컴파일, 3-5분)
 
 **서비스 상태 확인**
 ```bash
 # 현재 프로젝트의 컨테이너 상태 확인
-docker-compose ps
+docker compose ps
 
 # 실행 중인 모든 도커 컨테이너 확인
 docker ps
@@ -101,35 +101,35 @@ docker ps
 docker ps -a 
 
 # 로그 확인 (실시간)
-docker-compose logs -f app       # 앱 로그
-docker-compose logs -f postgres  # DB 로그
-docker-compose logs -f nginx     # Nginx 로그
+docker compose logs -f app       # 앱 로그
+docker compose logs -f postgres  # DB 로그
+docker compose logs -f nginx     # Nginx 로그
 ```
 
-- Check if all services are running: `docker-compose ps`
-  - 현재 디렉토리의 docker-compose.yml 파일에 정의된 프로젝트의 컨테이너만 표시하며, 서비스 이름(예: web, db)을 중심으로 보여줌
+- Check if all services are running: `docker compose ps`
+  - 현재 디렉토리의 docker compose.yml 파일에 정의된 프로젝트의 컨테이너만 표시하며, 서비스 이름(예: web, db)을 중심으로 보여줌
 - `docker ps`
     - 도커 엔진 전체에서 실행 중인 모든 컨테이너를 나열하며, Compose 프로젝트와 무관한 컨테이너도 포함
 
 **서비스 중지 및 정리**
 ```bash
 # 컨테이너 중지 (데이터/상태 보존)
-docker-compose stop
+docker compose stop
 
 # 컨테이너 중지 및 삭제 (데이터 볼륨은 유지)
-docker-compose down
+docker compose down
 
 # 컨테이너, 볼륨까지 모두 삭제 (데이터 삭제됨 - 주의!)
-docker-compose down -v
+docker compose down -v
 
 # 이미지까지 모두 삭제 (완전 초기화)
-docker-compose down --rmi all -v
+docker compose down --rmi all -v
 ```
 
-- `docker-compose stop`
+- `docker compose stop`
   - 컨테이너 중지만. 네트워크 유지. 볼륨 유지. 데이터 보존
-  - 임시 중지하고 나중에 docker-compose start로 재개할 때
-- `docker-compose down`
+  - 임시 중지하고 나중에 docker compose start로 재개할 때
+- `docker compose down`
   - 컨테이너 중지+삭제. 네트워크 삭제. 볼륨 유지. 데이터 유지 x (컨테이너 초기화)
   - 완전 정리하거나 다음 실행 시 깨끗한 상태로 시작하려면
 - 컨테이너를 임시 중지할 때는 stop을, 정리할 때는 rm 후 필요시 rmi를 순차 실행
@@ -232,8 +232,8 @@ docker exec recipemate-redis redis-cli -a recipemate2024!secure INFO stats
 ### 4.2 외부 접속 체크리스트
 | 항목 | 확인 내용 |
 | ---- | ---- |
-| **포트 매핑** | `docker-compose.yml`에 `8080:8080` (혹은 `80:80`) 설정 확인 |
-| **실행 상태** | `docker-compose ps`로 State가 Up인지 확인 |
+| **포트 매핑** | `docker compose.yml`에 `8080:8080` (혹은 `80:80`) 설정 확인 |
+| **실행 상태** | `docker compose ps`로 State가 Up인지 확인 |
 | **방화벽** | 서버(또는 PC)의 방화벽에서 해당 포트 허용 확인 |
 | **네트워크** | 클라이언트가 서버와 통신 가능한 네트워크(같은 LAN 또는 공인 IP)인지 확인 |
 
@@ -241,7 +241,7 @@ docker exec recipemate-redis redis-cli -a recipemate2024!secure INFO stats
 ```bash
 # 1. 패키지 업데이트 & Docker 설치
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y docker.io docker-compose git
+sudo apt install -y docker.io docker compose git
 
 # 2. 프로젝트 클론
 git clone <repo-url>
@@ -251,10 +251,10 @@ cd recipemate-api
 # .env 파일 생성 또는 수정
 
 # 4. 실행
-docker-compose up -d
+docker compose up -d
 
 # 5. 로그 확인
-docker-compose logs -f app
+docker compose logs -f app
 ```
 
 ### 4.4 배포 시 필수 점검 (보안)
@@ -268,7 +268,7 @@ docker-compose logs -f app
 ## 5. 성능 최적화 (Performance Tuning)
 
 ### 5.1 JVM 옵션 (Memory)
-`docker-compose.yml`에서 `JAVA_OPTS`를 조정하여 메모리 사용량을 제어합니다.
+`docker compose.yml`에서 `JAVA_OPTS`를 조정하여 메모리 사용량을 제어합니다.
 ```yaml
 environment:
   JAVA_OPTS: >-
@@ -308,15 +308,15 @@ docker stats recipemate-app
 
 장애 발생 시 다음 5단계를 순서대로 확인하세요.
 
-1.  **컨테이너 상태 확인**: `docker-compose ps` (State가 Exit인지 Up인지)
-2.  **로그 확인**: `docker-compose logs --tail=200 app` (에러 메시지 확인)
+1.  **컨테이너 상태 확인**: `docker compose ps` (State가 Exit인지 Up인지)
+2.  **로그 확인**: `docker compose logs --tail=200 app` (에러 메시지 확인)
 3.  **DB 연결 확인**: `docker exec app ping postgres` 또는 DB 컨테이너 로그 확인
 4.  **포트 점유 확인**: `sudo lsof -i:8080` (다른 프로세스와 충돌 여부)
 5.  **리소스 확인**: `free -h` (메모리 부족/OOM 여부)
 
 ### 자주 발생하는 문제
 -   **App이 시작되지 않음**: DB가 아직 준비되지 않았을 수 있습니다. (Health check 대기)
--   **DB 접속 오류**: `.env`의 DB 정보와 `docker-compose.yml` 설정이 일치하는지 확인하세요.
+-   **DB 접속 오류**: `.env`의 DB 정보와 `docker compose.yml` 설정이 일치하는지 확인하세요.
 -   **Redis Connection Refused**: Redis 컨테이너가 실행 중인지, 비밀번호가 맞는지 확인하세요.
 -   **메모리 부족 (OOM)**: Docker Desktop의 리소스 할당을 늘리거나, JVM Heap 설정을 줄이세요.
 
